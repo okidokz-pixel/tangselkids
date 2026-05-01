@@ -1,102 +1,307 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Check, Shield } from "lucide-react";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
+import { useLang } from "@/context/LanguageContext";
 
-// Payment method options — Midtrans will populate these dynamically
-const PAYMENT_METHODS = [
-  { id: "bca", label: "BCA Virtual Account", icon: "🏦", desc: "Transfer via ATM, m-Banking, atau internet banking" },
-  { id: "gopay", label: "GoPay", icon: "💚", desc: "Bayar langsung dari aplikasi Gojek" },
-  { id: "ovo", label: "OVO", icon: "💜", desc: "Bayar langsung dari aplikasi OVO" },
-  { id: "qris", label: "QRIS", icon: "📱", desc: "Scan QR code dengan aplikasi apapun" },
-  { id: "cc", label: "Kartu Kredit / Debit", icon: "💳", desc: "Visa, Mastercard, JCB" },
-];
-
-export default function PaymentPage() {
-  const router = useRouter();
+// ── Inner component (needs useSearchParams) ───────────────────────────────────
+function PaymentContent() {
+  const router       = useRouter();
+  const searchParams = useSearchParams();
   const { upgradeToPremium } = useAuth();
+  const { t } = useLang();
+
+  const product     = searchParams.get("product") ?? "premium-monthly";
+  const isFeatured  = product === "featured-listing";
+  const isLifetime  = product === "premium-lifetime";
+  const isPremium   = !isFeatured; // monthly or lifetime
+
   const [selectedMethod, setSelectedMethod] = useState("bca");
-  const [paying, setPaying] = useState(false);
+  const [paying,  setPaying]  = useState(false);
   const [success, setSuccess] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ── Confetti effect on premium / lifetime success ─────────────────────────
+  useEffect(() => {
+    if (!success || isFeatured) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const c: HTMLCanvasElement = canvas;
+    const g: CanvasRenderingContext2D = ctx;
+
+    const COLORS = isLifetime
+      ? ["#f59e0b","#fbbf24","#d97706","#78350f","#b45309","#fff8dc","#fff","#fde68a"]
+      : ["#f59e0b","#fbbf24","#d97706","#1d4ed8","#3b82f6","#a78bfa","#ec4899","#34d399","#fff"];
+
+    type Piece = {
+      x: number; y: number; vx: number; vy: number;
+      w: number; h: number; color: string; angle: number; va: number;
+    };
+
+    const pieces: Piece[] = Array.from({ length: 160 }, () => ({
+      x:     Math.random() * c.width,
+      y:     Math.random() * c.height * -1.5,
+      vx:    (Math.random() - 0.5) * 4,
+      vy:    Math.random() * 3 + 1.5,
+      w:     Math.random() * 10 + 5,
+      h:     Math.random() * 5 + 3,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      angle: Math.random() * Math.PI * 2,
+      va:    (Math.random() - 0.5) * 0.15,
+    }));
+
+    let frame: number;
+    const startTime = performance.now();
+
+    function draw() {
+      const elapsed = performance.now() - startTime;
+      g.clearRect(0, 0, c.width, c.height);
+      const alpha = elapsed < 3500 ? 1 : Math.max(0, 1 - (elapsed - 3500) / 800);
+
+      pieces.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        p.vy += 0.06;
+        if (p.y > c.height + 20 && elapsed < 3500) {
+          p.y = -20;
+          p.x = Math.random() * c.width;
+          p.vy = Math.random() * 3 + 1.5;
+        }
+        g.save();
+        g.globalAlpha = alpha;
+        g.translate(p.x, p.y);
+        g.rotate(p.angle);
+        g.fillStyle = p.color;
+        g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        g.restore();
+      });
+
+      if (elapsed < 4300) frame = requestAnimationFrame(draw);
+    }
+
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [success, isFeatured, isLifetime]);
+
+  const price       = isFeatured ? "Rp 299.000" : isLifetime ? "Rp 169.000" : "Rp 29.000";
+  const productName = isFeatured ? "✦ Featured Listing" : "TangselKids Premium";
+  const productSub  = isFeatured ? t.paymentFeaturedSub : isLifetime ? t.paymentLifetimeSub : t.paymentPremiumSub;
+  const productIcon = isFeatured ? "✦" : isLifetime ? "👑" : "⭐";
+  const productBg   = isFeatured
+    ? "linear-gradient(135deg, #1e3a5f, #2563eb)"
+    : isLifetime
+    ? "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)"
+    : "linear-gradient(135deg, #f59e0b, #d97706)";
 
   async function handlePay() {
     setPaying(true);
-    // TODO: Replace this block with Midtrans Snap integration:
-    //   const token = await fetch("/api/midtrans/token", { method: "POST", ... }).then(r => r.json());
-    //   window.snap.pay(token, { onSuccess: () => { upgradeToPremium(); setSuccess(true); }, ... });
-    await new Promise((r) => setTimeout(r, 1800)); // simulate network delay
-    upgradeToPremium();
+    await new Promise((r) => setTimeout(r, 1800));
+    if (isPremium) upgradeToPremium(isLifetime);
     setPaying(false);
     setSuccess(true);
   }
 
-  // ── Success state ──────────────────────────────────────────────────────────
+  // ── Success state ────────────────────────────────────────────────────────────
   if (success) {
-    return (
-      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "40px 28px", textAlign: "center" }}>
-
-        {/* Checkmark circle */}
+    if (isFeatured) {
+      return (
         <div style={{
-          width: 88, height: 88, borderRadius: 999,
-          background: "linear-gradient(135deg, #22c55e, #16a34a)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          marginBottom: 24,
-          boxShadow: "0 8px 24px rgba(34,197,94,0.35)",
+          maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: "40px 28px", textAlign: "center",
         }}>
-          <Check size={42} color="white" strokeWidth={2.5} />
-        </div>
-
-        <h1 style={{
-          margin: "0 0 10px",
-          fontFamily: "var(--font-fraunces), Georgia, serif",
-          fontSize: 26, fontWeight: 700, color: "#1e3a5f",
-        }}>
-          Selamat, kamu Premium!
-        </h1>
-        <p style={{
-          margin: "0 0 32px",
-          fontFamily: "var(--font-jakarta), sans-serif",
-          fontSize: 13, color: "#64748b", lineHeight: 1.65,
-        }}>
-          Akun Premium kamu aktif selama 30 hari. Nikmati akses penuh ke semua fitur TangselKids.
-        </p>
-
-        <ActionButton
-          onClick={() => router.replace("/profile")}
-          style={{
-            width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+          <div style={{
+            width: 96, height: 96, borderRadius: 999,
             background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
-            color: "#fff",
-            fontFamily: "var(--font-jakarta), sans-serif",
-            fontSize: 15, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
-            touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          Lihat Profil Saya
-        </ActionButton>
-        <ActionButton
-          onClick={() => router.replace("/")}
-          style={{
-            marginTop: 10, padding: "13px 0", width: "100%", borderRadius: 16, border: "none",
-            background: "#f1f5f9", color: "#64748b",
-            fontFamily: "var(--font-jakarta), sans-serif",
-            fontSize: 14, fontWeight: 600,
+            marginBottom: 24, fontSize: 42,
+            boxShadow: "0 8px 28px rgba(30,63,176,0.35)",
+          }}>
+            ✦
+          </div>
+          <h1 style={{ margin: "0 0 10px", fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#1e3a5f" }}>
+            {t.paymentFeaturedSuccessTitle}
+          </h1>
+          <p style={{ margin: "0 0 8px", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b", lineHeight: 1.65 }}>
+            {t.paymentFeaturedSuccessDesc}
+          </p>
+          <p style={{ margin: "0 0 32px", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>
+            {t.paymentFeaturedSuccessNote}
+          </p>
+          <ActionButton
+            onClick={() => router.replace("/")}
+            style={{
+              width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+              background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
+              color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 15, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            } as React.CSSProperties}
+          >
+            {t.paymentBackHome}
+          </ActionButton>
+        </div>
+      );
+    }
+
+    // Shared success screen for both monthly and lifetime premium
+    const highlights  = isLifetime ? t.paymentLifetimeHighlights : t.paymentPremiumHighlights;
+    const congrats    = isLifetime ? t.paymentLifetimeCongrats   : t.paymentPremiumCongrats;
+    const title       = isLifetime ? t.paymentLifetimeTitle      : t.paymentPremiumTitle;
+    const desc        = isLifetime ? t.paymentLifetimeDesc       : null;
+    const viewProfile = isLifetime ? t.paymentViewLifetimeProfile : t.paymentViewProfile;
+
+    const iconBg = isLifetime
+      ? "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)"
+      : "linear-gradient(135deg, #f59e0b, #d97706)";
+
+    return (
+      <>
+        <style>{`
+          @keyframes pop-in {
+            0%   { transform: scale(0.4); opacity: 0; }
+            70%  { transform: scale(1.12); }
+            100% { transform: scale(1);   opacity: 1; }
+          }
+          @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0   rgba(245,158,11,0.45), 0 8px 28px rgba(245,158,11,0.35); }
+            50%       { box-shadow: 0 0 0 18px rgba(245,158,11,0),   0 8px 28px rgba(245,158,11,0.35); }
+          }
+          @keyframes float-up {
+            0%   { transform: translateY(28px); opacity: 0; }
+            100% { transform: translateY(0);    opacity: 1; }
+          }
+        `}</style>
+
+        <canvas
+          ref={canvasRef}
+          style={{ position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
+        />
+
+        <div style={{
+          position: "relative", zIndex: 10,
+          maxWidth: 448, margin: "0 auto", minHeight: "100vh",
+          background: "linear-gradient(180deg, #fffbeb 0%, #f8fafc 55%)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: "40px 28px", textAlign: "center",
+        }}>
+
+          <div style={{ position: "absolute", top: 44, left: 0, right: 0, display: "flex", justifyContent: "center", pointerEvents: "none" }}>
+            {(["✦","⭐","✦","⭐","✦"] as const).map((s, i) => (
+              <span key={i} style={{ fontSize: i % 2 === 0 ? 13 : 20, opacity: 0.22, margin: "0 8px", color: "#f59e0b" }}>{s}</span>
+            ))}
+          </div>
+
+          <div style={{
+            width: 96, height: 96, borderRadius: 999,
+            background: iconBg,
             display: "flex", alignItems: "center", justifyContent: "center",
-            touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-          }}
-        >
-          Kembali ke Beranda
-        </ActionButton>
-      </div>
+            marginBottom: 20, fontSize: 46,
+            animation: "pop-in 0.65s cubic-bezier(0.34,1.56,0.64,1) both, pulse-glow 2.2s ease 0.65s infinite",
+          }}>
+            {isLifetime ? "👑" : "⭐"}
+          </div>
+
+          <span style={{
+            display: "inline-block",
+            background: iconBg,
+            color: "#fff", fontSize: 11, fontWeight: 800,
+            padding: "4px 16px", borderRadius: 999,
+            fontFamily: "var(--font-jakarta), sans-serif",
+            letterSpacing: 1.3, marginBottom: 14,
+            animation: "float-up 0.5s ease 0.3s both",
+          }}>
+            {congrats}
+          </span>
+
+          <h1 style={{
+            margin: "0 0 10px",
+            fontFamily: "var(--font-fraunces), Georgia, serif",
+            fontSize: 28, fontWeight: 700, color: "#1e3a5f", lineHeight: 1.2,
+            whiteSpace: "pre-line",
+            animation: "float-up 0.5s ease 0.45s both",
+          }}>
+            {title}
+          </h1>
+
+          <p style={{
+            margin: "0 0 26px",
+            fontFamily: "var(--font-jakarta), sans-serif",
+            fontSize: 13, color: "#64748b", lineHeight: 1.7,
+            animation: "float-up 0.5s ease 0.55s both",
+          }}>
+            {desc ?? (
+              <>
+                {t.paymentPremiumDescPart1} <strong>{t.paymentPremiumDescDays}</strong>.<br />
+                {t.paymentPremiumDescPart2}
+              </>
+            )}
+          </p>
+
+          <div style={{
+            width: "100%", background: "#fff", borderRadius: 20,
+            padding: "18px 16px", marginBottom: 28,
+            border: isLifetime ? "1px solid #fde68a" : "1px solid #fde68a",
+            boxShadow: "0 4px 24px rgba(245,158,11,0.13)",
+            animation: "float-up 0.5s ease 0.65s both",
+          }}>
+            {highlights.map((f, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                paddingTop: i > 0 ? 10 : 2, marginTop: i > 0 ? 10 : 0,
+                borderTop: i > 0 ? "1px solid #fef3c7" : "none",
+              }}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{f.emoji}</span>
+                <p style={{ margin: 0, flex: 1, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 600, color: "#1e3a5f", textAlign: "left" }}>
+                  {f.text}
+                </p>
+                <Check size={15} color="#22c55e" strokeWidth={2.5} style={{ flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ width: "100%", animation: "float-up 0.5s ease 0.75s both" }}>
+            <ActionButton
+              onClick={() => { window.location.href = "/profile"; }}
+              style={{
+                width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+                background: iconBg, color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              } as React.CSSProperties}
+            >
+              {viewProfile}
+            </ActionButton>
+            <ActionButton
+              onClick={() => { window.location.href = "/"; }}
+              style={{
+                marginTop: 10, padding: "13px 0", width: "100%", borderRadius: 16, border: "none",
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              } as React.CSSProperties}
+            >
+              {t.paymentBackHome}
+            </ActionButton>
+          </div>
+        </div>
+      </>
     );
   }
 
-  // ── Payment form ───────────────────────────────────────────────────────────
+  // ── Payment form ─────────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
 
@@ -118,121 +323,70 @@ export default function PaymentPage() {
             <ChevronLeft size={20} color="white" />
           </ActionButton>
           <div>
-            <h1 style={{
-              margin: 0,
-              fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1,
-            }}>
-              Pembayaran
+            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 }}>
+              {t.paymentTitle}
             </h1>
-            <p style={{
-              margin: "3px 0 0",
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 12, color: "rgba(255,255,255,0.6)",
-            }}>
-              TangselKids Premium · 30 hari
+            <p style={{ margin: "3px 0 0", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "rgba(255,255,255,0.6)" }}>
+              {productName} · {productSub}
             </p>
           </div>
         </div>
       </div>
 
-      <div style={{ padding: "20px 20px 120px" }}>
+      <div style={{ padding: "20px 20px 140px" }}>
 
         {/* Order summary */}
-        <div style={{
-          background: "#fff", borderRadius: 18,
-          padding: "18px", marginBottom: 20,
-          border: "1px solid #f1f5f9",
-          boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
-        }}>
-          <p style={{
-            margin: "0 0 14px",
-            fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-            color: "#94a3b8", textTransform: "uppercase",
-            fontFamily: "var(--font-jakarta), sans-serif",
-          }}>
-            Ringkasan Pesanan
+        <div style={{ background: "#fff", borderRadius: 18, padding: "18px", marginBottom: 20, border: "1px solid #f1f5f9", boxShadow: "0 1px 3px rgba(15,23,42,0.05)" }}>
+          <p style={{ margin: "0 0 14px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#94a3b8", textTransform: "uppercase", fontFamily: "var(--font-jakarta), sans-serif" }}>
+            {t.paymentOrderSummary}
           </p>
-
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 40, height: 40, borderRadius: 10,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                background: productBg,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18, flexShrink: 0,
-              }}>⭐</div>
+                fontSize: 18, flexShrink: 0, color: "#fff",
+              }}>
+                {productIcon}
+              </div>
               <div>
                 <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700, color: "#1e3a5f" }}>
-                  TangselKids Premium
+                  {productName}
                 </p>
                 <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8" }}>
-                  Langganan 1 bulan
+                  {productSub}
                 </p>
               </div>
             </div>
             <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#1e3a5f" }}>
-              Rp 29.000
+              {price}
             </p>
           </div>
-
           <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12, display: "flex", justifyContent: "space-between" }}>
-            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b" }}>Total</p>
+            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b" }}>{t.paymentTotal}</p>
             <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#1e3a5f" }}>
-              Rp 29.000
+              {price}
             </p>
           </div>
         </div>
 
         {/* Payment methods */}
-        <p style={{
-          margin: "0 0 12px",
-          fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-          color: "#94a3b8", textTransform: "uppercase",
-          fontFamily: "var(--font-jakarta), sans-serif",
-        }}>
-          Metode Pembayaran
+        <p style={{ margin: "0 0 12px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#94a3b8", textTransform: "uppercase", fontFamily: "var(--font-jakarta), sans-serif" }}>
+          {t.paymentMethodLabel}
         </p>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-          {PAYMENT_METHODS.map((m) => {
+          {t.paymentMethods.map((m) => {
             const isSelected = selectedMethod === m.id;
             return (
-              <label
-                key={m.id}
-                style={{
-                  display: "flex", alignItems: "center", gap: 14,
-                  background: "#fff",
-                  borderRadius: 14,
-                  padding: "14px 16px",
-                  border: `2px solid ${isSelected ? "#1d4ed8" : "#f1f5f9"}`,
-                  cursor: "pointer",
-                  transition: "border-color 0.15s",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment-method"
-                  value={m.id}
-                  checked={isSelected}
-                  onChange={() => setSelectedMethod(m.id)}
-                  style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-                />
+              <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, background: "#fff", borderRadius: 14, padding: "14px 16px", border: `2px solid ${isSelected ? "#1d4ed8" : "#f1f5f9"}`, cursor: "pointer", transition: "border-color 0.15s" }}>
+                <input type="radio" name="payment-method" value={m.id} checked={isSelected} onChange={() => setSelectedMethod(m.id)} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#1e3a5f" }}>
-                    {m.label}
-                  </p>
-                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8", marginTop: 1 }}>
-                    {m.desc}
-                  </p>
+                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#1e3a5f" }}>{m.label}</p>
+                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{m.desc}</p>
                 </div>
-                <div style={{
-                  width: 20, height: 20, borderRadius: 999, flexShrink: 0,
-                  border: `2px solid ${isSelected ? "#1d4ed8" : "#cbd5e1"}`,
-                  background: isSelected ? "#1d4ed8" : "#fff",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
+                <div style={{ width: 20, height: 20, borderRadius: 999, flexShrink: 0, border: `2px solid ${isSelected ? "#1d4ed8" : "#cbd5e1"}`, background: isSelected ? "#1d4ed8" : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSelected && <div style={{ width: 8, height: 8, borderRadius: 999, background: "#fff" }} />}
                 </div>
               </label>
@@ -241,41 +395,53 @@ export default function PaymentPage() {
         </div>
 
         {/* Security note */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 12, background: "#f0fdf4" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 12, background: "#f0fdf4", marginBottom: isLifetime ? 12 : 0 }}>
           <Shield size={16} color="#16a34a" strokeWidth={2} style={{ flexShrink: 0 }} />
           <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#15803d", lineHeight: 1.5 }}>
-            Pembayaran diproses secara aman melalui Midtrans. Data kartu kamu tidak disimpan.
+            {t.paymentSecureNote}
           </p>
         </div>
+
+        {/* Non-refundable note for lifetime */}
+        {isLifetime && (
+          <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8", lineHeight: 1.5, textAlign: "center" }}>
+            {t.paymentNonRefundable}
+          </p>
+        )}
       </div>
 
       {/* Sticky Pay button */}
-      <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10,
-        padding: "14px 20px", paddingBottom: "max(14px, env(safe-area-inset-bottom))",
-        background: "#fff", borderTop: "1px solid #f1f5f9",
-      }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 10, padding: "14px 20px", paddingBottom: "max(14px, env(safe-area-inset-bottom))", background: "#fff", borderTop: "1px solid #f1f5f9" }}>
         <div style={{ maxWidth: 448, margin: "0 auto" }}>
           <ActionButton
             onClick={handlePay}
             style={{
               width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-              background: paying
-                ? "#94a3b8"
+              background: paying ? "#94a3b8" : isFeatured
+                ? "linear-gradient(135deg, #f6b545, #e89a18)"
+                : isLifetime
+                ? "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)"
                 : "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "#fff",
+              color: paying ? "#fff" : isFeatured ? "#3a2304" : "#fff",
               fontFamily: "var(--font-jakarta), sans-serif",
               fontSize: 15, fontWeight: 700,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               cursor: paying ? "not-allowed" : "pointer",
-            }}
+            } as React.CSSProperties}
           >
-            {paying ? "Memproses pembayaran…" : "Bayar Rp 29.000"}
+            {paying ? t.paymentProcessing : t.paymentPay(price)}
           </ActionButton>
         </div>
       </div>
-
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense>
+      <PaymentContent />
+    </Suspense>
   );
 }

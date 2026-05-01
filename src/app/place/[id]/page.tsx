@@ -13,6 +13,7 @@ import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumGate } from "@/components/PremiumGate";
 import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
@@ -140,6 +141,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [userReview,     setUserReview]     = useState<UserReview | null>(null);
   const [showReviewGate, setShowReviewGate] = useState(false);
   const [showPsbSheet,   setShowPsbSheet]   = useState(false);
+  const [showPsbGate,    setShowPsbGate]    = useState(false);
+  const [showFaveGate,      setShowFaveGate]      = useState(false);
+  const [showSaveLimitSheet, setShowSaveLimitSheet] = useState(false);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
@@ -166,9 +170,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   }, [allPhotos.length, lightboxOpen]);
 
   function toggleSave() {
+    if (tier === "guest") {
+      setShowFaveGate(true);
+      return;
+    }
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    if (!ids.includes(id) && tier === "free" && ids.length >= 5) {
-      alert("Kamu sudah menyimpan 5 tempat (batas akun gratis). Upgrade ke Premium untuk menyimpan tanpa batas!");
+    if (!ids.includes(id) && tier === "free" && ids.length >= 3) {
+      setShowSaveLimitSheet(true);
       return;
     }
     const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
@@ -433,6 +441,22 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
         {/* Gradient overlay */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.28) 0%, transparent 50%)", pointerEvents: "none" }} />
 
+        {/* Featured badge */}
+        {place.isFeatured && (
+          <div style={{
+            position: "absolute", top: 14, left: 14, zIndex: 10,
+            display: "flex", alignItems: "center", gap: 4,
+            background: "rgba(0,0,0,0.50)",
+            borderRadius: 999, padding: "5px 11px",
+            fontSize: 12, fontWeight: 700, color: "#f6b545",
+            letterSpacing: 0.4,
+            fontFamily: "var(--font-jakarta), sans-serif",
+            pointerEvents: "none",
+          }}>
+            ✦ Featured
+          </div>
+        )}
+
         {/* Dot indicators */}
         {allPhotos.length > 1 && (
           <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, zIndex: 10, pointerEvents: "none" }}>
@@ -545,13 +569,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "#DBEAFE" }}>
               <div>
                 <p className="text-xs font-jakarta text-[#3B82F6] font-semibold uppercase tracking-wide mb-0.5">
-                  Jadwal Pendaftaran
+                  {t.pdEnrollTitle}
                 </p>
                 <p className="text-base font-bold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                  Info segera hadir
+                  {t.pdEnrollSoon}
                 </p>
                 <p className="text-xs font-jakarta text-[#3B82F6] mt-0.5">
-                  Hubungi sekolah untuk informasi pendaftaran
+                  {t.pdEnrollContact}
                 </p>
               </div>
               <span style={{ fontSize: 30 }}>📅</span>
@@ -561,9 +585,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <ActionButton
               onClick={() => {
                 if (tier === "premium") {
-                  alert("🔔 Fitur notifikasi PSB segera hadir! Kamu akan diberitahu saat pendaftaran dibuka.");
+                  alert(t.pdPsbAlert);
                 } else if (tier === "free") {
-                  router.push("/upgrade");
+                  setShowPsbGate(true);
                 } else {
                   setShowPsbSheet(true);
                 }
@@ -571,9 +595,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               style={{
                 width: "100%", padding: "13px 16px",
                 borderRadius: 14, border: "none",
-                background: tier === "free"
-                  ? "linear-gradient(135deg, #f59e0b, #d97706)"
-                  : "linear-gradient(135deg, #1e3a5f, #2563eb)",
+                background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
                 color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif",
                 fontSize: 14, fontWeight: 700,
@@ -581,15 +603,11 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              🔔{" "}
-              {tier === "free" ? "Notifikasi PSB · Upgrade Premium" : "Aktifkan Notifikasi PSB"}
-              {tier === "free" && (
-                <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.85 }}>Rp 29.000/bln</span>
-              )}
-              {tier === "guest" && (
+              🔔 {t.pdPsbBtn}
+              {tier !== "premium" && (
                 <div style={{
                   width: 20, height: 20, borderRadius: 999,
-                  background: "#ef4444",
+                  background: tier === "guest" ? "#ef4444" : "#d97706",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0, marginLeft: 2,
                 }}>
@@ -605,9 +623,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           const ag = getAreaGroup(place.area);
           const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
           const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
-            ? "Gratis"
+            ? t.free
             : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
-          const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} / bln`;
+          const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`;
 
           // Chip card — label on top, content below
           const chip = (label: string, content: React.ReactNode, wide = false) => (
@@ -626,23 +644,23 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           );
 
           if (place.category === "school") return (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2" style={{ marginTop: 8 }}>
               {chip("Area", txt(areaLabel))}
-              {place.grades?.length ? chip("Jenjang", pills(place.grades)) : null}
-              {place.curriculum ? chip("Kurikulum",
+              {place.grades?.length ? chip(t.pdGrade, pills(place.grades)) : null}
+              {place.curriculum ? chip(t.pdCurriculum,
                 tier === "premium"
                   ? txt(place.curriculum)
                   : <PremiumGate label="Kurikulum">{txt(place.curriculum)}</PremiumGate>
               ) : null}
-              {place.bahasa?.length ? chip("Bahasa", pills(place.bahasa)) : null}
+              {place.bahasa?.length ? chip(t.pdChipBahasa, pills(place.bahasa)) : null}
               {place.uangPangkalMin !== undefined
-                ? chip("Uang Pangkal",
+                ? chip(t.pdChipUangPangkal,
                     tier === "premium"
                       ? txt(`Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}`)
                       : <PremiumGate label="Uang Pangkal">{txt(`Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}`)}</PremiumGate>
                   )
                 : null}
-              {chip("SPP / Bulan",
+              {chip(t.pdChipSpp,
                 tier === "premium"
                   ? txt(fmtBulanan)
                   : <PremiumGate label="SPP">{txt(fmtBulanan)}</PremiumGate>
@@ -653,9 +671,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           if (place.category === "learning-center") return (
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
-              {chip("Usia Anak", txt(place.ageRange))}
-              {place.courseTypes?.length ? chip("Tipe Kursus", pills(place.courseTypes)) : null}
-              {chip("Biaya Bulanan",
+              {chip(t.pdChipAgeChild, txt(place.ageRange))}
+              {place.courseTypes?.length ? chip(t.pdChipCourseType, pills(place.courseTypes)) : null}
+              {chip(t.pdMonthlyFee,
                 tier === "premium"
                   ? txt(fmtBulanan)
                   : <PremiumGate label="Biaya">{txt(fmtBulanan)}</PremiumGate>
@@ -666,12 +684,12 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           if (place.category === "daycare") return (
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
-              {chip("Biaya Bulanan",
+              {chip(t.pdMonthlyFee,
                 tier === "premium"
                   ? txt(fmtBulanan)
                   : <PremiumGate label="Biaya">{txt(fmtBulanan)}</PremiumGate>
               )}
-              {place.daycareAgeGroups?.length ? chip("Usia", pills(place.daycareAgeGroups)) : null}
+              {place.daycareAgeGroups?.length ? chip(t.pdAgeRange, pills(place.daycareAgeGroups)) : null}
             </div>
           );
 
@@ -679,31 +697,31 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
               {place.playgroundType
-                ? chip("Tipe", txt(place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"))
+                ? chip(t.pdType, txt(place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"))
                 : null}
-              {chip("Tiket", txt(fmtTicket))}
+              {chip(t.pdChipTicket, txt(fmtTicket))}
             </div>
           );
 
           if (place.category === "clinic") return (
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
-              {chip("Biaya", txt(`Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`))}
-              {place.clinicServices?.length ? chip("Layanan", pills(place.clinicServices)) : null}
+              {chip(t.pdChipCost, txt(`Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`))}
+              {place.clinicServices?.length ? chip(t.pdChipServices, pills(place.clinicServices)) : null}
             </div>
           );
 
           if (place.category === "cafe") return (
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
-              {place.priceCategory ? chip("Budget", txt(place.priceCategory)) : null}
+              {place.priceCategory ? chip(t.pdChipBudget, txt(place.priceCategory)) : null}
             </div>
           );
 
           if (place.category === "mini-zoo" || place.category === "swimming-pool") return (
             <div className="grid grid-cols-2 gap-2">
               {chip("Area", txt(areaLabel))}
-              {chip("Tiket", txt(fmtTicket))}
+              {chip(t.pdChipTicket, txt(fmtTicket))}
             </div>
           );
 
@@ -941,10 +959,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             }}
           >
             <Pencil size={15} /> {t.reviewWriteBtn}
-            {tier === "guest" && (
+            {tier !== "premium" && (
               <div style={{
                 width: 20, height: 20, borderRadius: 999,
-                background: "#ef4444",
+                background: tier === "guest" ? "#ef4444" : "#d97706",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, marginLeft: 2,
               }}>
@@ -956,8 +974,189 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
       </div>
 
-      {/* ── PSB Guest Sheet ───────────────────────────────────────────────── */}
+      {/* ── Favourite Gate Sheet (unregistered) ─────────────────────────── */}
+      <FilterGateSheet isOpen={showFaveGate} onClose={() => setShowFaveGate(false)} />
+
+      {/* ── Save Limit Upgrade Sheet (registered free — 5-place cap) ─────── */}
+      {showSaveLimitSheet && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 70,
+            background: "rgba(0,0,0,0.45)",
+            animation: "sheet-fade-in 0.25s ease both",
+          }}
+          onClick={() => setShowSaveLimitSheet(false)}
+        >
+          <div
+            style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "#fff", borderRadius: "24px 24px 0 0",
+              padding: "20px 20px 40px",
+              maxWidth: 448, margin: "0 auto",
+              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
+
+            {/* Icon */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 999,
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 30,
+              }}>
+                ⭐
+              </div>
+            </div>
+
+            {/* Title */}
+            <p style={{
+              fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              textAlign: "center", margin: "0 0 8px",
+            }}>
+              {t.premiumGateTitle}
+            </p>
+
+            {/* Body */}
+            <p style={{
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, color: "#64748b", lineHeight: 1.6,
+              textAlign: "center", margin: "0 0 24px",
+            }}>
+              {t.premiumGateDesc}
+            </p>
+
+            {/* CTA */}
+            <ActionButton
+              onClick={() => { setShowSaveLimitSheet(false); router.push("/upgrade"); }}
+              style={{
+                width: "100%", padding: "15px 0",
+                borderRadius: 16, border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 15, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {t.premiumGateCta}
+            </ActionButton>
+
+            {/* Cancel */}
+            <ActionButton
+              onClick={() => setShowSaveLimitSheet(false)}
+              style={{
+                width: "100%", marginTop: 10, padding: "13px 0",
+                borderRadius: 16, border: "none",
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {t.premiumGateCancel}
+            </ActionButton>
+          </div>
+        </div>
+      )}
+
+      {/* ── PSB Guest Sheet (unregistered) ───────────────────────────────── */}
       <PremiumGuestSheet isOpen={showPsbSheet} onClose={() => setShowPsbSheet(false)} />
+
+      {/* ── PSB Upgrade Sheet (registered) ───────────────────────────────── */}
+      {showPsbGate && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 70,
+            background: "rgba(0,0,0,0.45)",
+            animation: "sheet-fade-in 0.25s ease both",
+          }}
+          onClick={() => setShowPsbGate(false)}
+        >
+          <div
+            style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "#fff", borderRadius: "24px 24px 0 0",
+              padding: "20px 20px 40px",
+              maxWidth: 448, margin: "0 auto",
+              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
+
+            {/* Icon */}
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: 999,
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 30,
+              }}>
+                ⭐
+              </div>
+            </div>
+
+            {/* Title */}
+            <p style={{
+              fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              textAlign: "center", margin: "0 0 8px",
+            }}>
+              {t.premiumGateTitle}
+            </p>
+
+            {/* Body */}
+            <p style={{
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, color: "#64748b", lineHeight: 1.6,
+              textAlign: "center", margin: "0 0 24px",
+            }}>
+              {t.premiumGateDesc}
+            </p>
+
+            {/* CTA */}
+            <ActionButton
+              onClick={() => { setShowPsbGate(false); router.push("/upgrade"); }}
+              style={{
+                width: "100%", padding: "15px 0",
+                borderRadius: 16, border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 15, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {t.premiumGateCta}
+            </ActionButton>
+
+            {/* Cancel */}
+            <ActionButton
+              onClick={() => setShowPsbGate(false)}
+              style={{
+                width: "100%", marginTop: 10, padding: "13px 0",
+                borderRadius: 16, border: "none",
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {t.premiumGateCancel}
+            </ActionButton>
+          </div>
+        </div>
+      )}
 
       {/* ── Review Gate Bottom Sheet ──────────────────────────────────────── */}
       {showReviewGate && (
@@ -986,7 +1185,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: 999,
-                background: "#FEF3C7",
+                background: tier === "guest" ? "#FEF3C7" : "linear-gradient(135deg, #f59e0b, #d97706)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 30,
               }}>
@@ -1000,19 +1199,17 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               fontSize: 20, fontWeight: 700, color: "#1E3A5F",
               textAlign: "center", margin: "0 0 8px",
             }}>
-              Fitur Khusus Premium
+              {t.premiumGateTitle}
             </p>
             <p style={{
               fontFamily: "var(--font-jakarta), sans-serif",
               fontSize: 13, color: "#64748b", lineHeight: 1.6,
               textAlign: "center", margin: "0 0 24px",
             }}>
-              {tier === "guest"
-                ? "Fitur ini khusus untuk member Premium. Daftar gratis terlebih dahulu, lalu upgrade ke Premium untuk mengakses fitur ini."
-                : "Tulis ulasan dan bantu ribuan orang tua lain membuat keputusan terbaik untuk anak mereka. Tersedia eksklusif untuk anggota Premium."}
+              {tier === "guest" ? t.premiumGateGuestDesc : t.premiumGateDesc}
             </p>
 
-            {/* Two-step visual — guests only */}
+            {/* Two-step visual — unregistered only */}
             {tier === "guest" && (
               <div style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
@@ -1030,7 +1227,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     fontSize: 11, fontWeight: 700, color: "#16a34a",
                     fontFamily: "var(--font-jakarta), sans-serif",
                     whiteSpace: "nowrap",
-                  }}>Daftar Gratis</span>
+                  }}>{t.premiumGateStepRegister}</span>
                 </div>
 
                 {/* Arrow */}
@@ -1050,7 +1247,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     fontSize: 11, fontWeight: 700, color: "#d97706",
                     fontFamily: "var(--font-jakarta), sans-serif",
                     whiteSpace: "nowrap",
-                  }}>Upgrade Premium</span>
+                  }}>{t.premiumGateStepUpgrade}</span>
                 </div>
               </div>
             )}
@@ -1061,8 +1258,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 setShowReviewGate(false);
                 if (tier === "guest") {
                   openRegisterSheet({
-                    title: "Daftar untuk Mulai",
-                    subtitle: "Daftar gratis terlebih dahulu, lalu upgrade ke Premium untuk menulis ulasan.",
+                    title: t.premiumGateGuestSheetTitle,
+                    subtitle: t.premiumGateGuestSheetSubtitle,
                   });
                 } else {
                   router.push("/upgrade");
@@ -1081,7 +1278,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              {tier === "guest" ? "Daftar Gratis" : "Upgrade ke Premium · Rp 29.000/bln"}
+              {tier === "guest" ? t.premiumGateGuestCta : t.premiumGateCta}
             </ActionButton>
 
             {/* Cancel */}
@@ -1098,7 +1295,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              Batal
+              {t.premiumGateCancel}
             </ActionButton>
           </div>
         </div>

@@ -3,38 +3,15 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "lucide-react";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
-
-const BENEFITS = [
-  {
-    emoji: "📊",
-    title: "Data SPP & Uang Pangkal",
-    desc: "Lihat biaya lengkap setiap sekolah — SPP bulanan, uang pangkal, dan kurikulum — tanpa blur.",
-  },
-  {
-    emoji: "⚖️",
-    title: "Bandingkan Sekolah",
-    desc: "Bandingkan hingga 3 sekolah sekaligus: biaya, kurikulum, jenjang, dan rating.",
-  },
-  {
-    emoji: "✍️",
-    title: "Tulis Ulasan",
-    desc: "Bagikan pengalamanmu dan bantu ribuan orang tua lain membuat keputusan terbaik.",
-  },
-  {
-    emoji: "❤️",
-    title: "Simpan Tanpa Batas",
-    desc: "Simpan sebanyak apapun tempat favoritmu. Akun gratis dibatasi 5 tempat.",
-  },
-  {
-    emoji: "🔔",
-    title: "Notifikasi PSB (Segera Hadir)",
-    desc: "Dapatkan notifikasi otomatis saat sekolah pilihanmu membuka pendaftaran siswa baru.",
-  },
-];
+import { useLang } from "@/context/LanguageContext";
 
 export default function UpgradePage() {
   const router = useRouter();
-  const { tier } = useAuth();
+  const { tier, user } = useAuth();
+  const { t } = useLang();
+
+  const isLifetime = !!(user?.lifetime && tier === "premium");
+  const isMonthly  = tier === "premium" && !isLifetime;
 
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
@@ -76,7 +53,7 @@ export default function UpgradePage() {
             fontFamily: "var(--font-jakarta), sans-serif",
             letterSpacing: 1,
           }}>
-            ⭐ PREMIUM
+            {t.upgradeBadge}
           </span>
         </div>
 
@@ -85,8 +62,9 @@ export default function UpgradePage() {
           fontFamily: "var(--font-fraunces), Georgia, serif",
           fontSize: 30, fontWeight: 700, color: "#fff",
           textAlign: "center", lineHeight: 1.2,
+          whiteSpace: "pre-line",
         }}>
-          Akses Penuh,<br />Keputusan Terbaik
+          {t.upgradeTitle}
         </h1>
         <p style={{
           margin: 0,
@@ -94,32 +72,8 @@ export default function UpgradePage() {
           fontSize: 13, color: "rgba(255,255,255,0.65)",
           textAlign: "center", lineHeight: 1.6,
         }}>
-          Semua yang kamu butuhkan untuk memilih tempat terbaik bagi si kecil.
+          {t.upgradeSubtitle}
         </p>
-
-        {/* Price pill */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
-          <div style={{
-            background: "rgba(255,255,255,0.15)",
-            borderRadius: 16, padding: "12px 24px",
-            textAlign: "center",
-          }}>
-            <p style={{
-              margin: 0,
-              fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 28, fontWeight: 700, color: "#fff", lineHeight: 1,
-            }}>
-              Rp 29.000
-            </p>
-            <p style={{
-              margin: "4px 0 0",
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 12, color: "rgba(255,255,255,0.6)",
-            }}>
-              per bulan · batalkan kapan saja
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Benefits list */}
@@ -130,11 +84,11 @@ export default function UpgradePage() {
           color: "#94a3b8", textTransform: "uppercase",
           fontFamily: "var(--font-jakarta), sans-serif",
         }}>
-          Yang kamu dapatkan
+          {t.upgradeWhatYouGet}
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {BENEFITS.map((b) => (
+          {t.upgradeBenefits.map((b) => (
             <div
               key={b.title}
               style={{
@@ -175,7 +129,7 @@ export default function UpgradePage() {
           ))}
         </div>
 
-        {/* Free vs Premium compare note */}
+        {/* Free vs Premium compare table */}
         <div style={{
           marginTop: 20,
           background: "#fff",
@@ -186,19 +140,10 @@ export default function UpgradePage() {
         }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, textAlign: "center" }}>
             <div />
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>Gratis</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>{t.upgradeCompareGratis}</p>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#1d4ed8", fontFamily: "var(--font-jakarta), sans-serif" }}>Premium</p>
 
-            {[
-              ["Lihat listing", "✓", "✓"],
-              ["Filter & urutkan", "✓", "✓"],
-              ["Simpan tempat", "5", "∞"],
-              ["Data SPP & biaya", "—", "✓"],
-              ["Kurikulum sekolah", "—", "✓"],
-              ["Bandingkan sekolah", "—", "✓"],
-              ["Tulis ulasan", "—", "✓"],
-              ["Notifikasi PSB", "—", "✓"],
-            ].map(([label, free, prem]) => (
+            {t.upgradeCompareRows.map(([label, free, prem]) => (
               <>
                 <p key={label} style={{ margin: 0, fontSize: 12, color: "#374151", fontFamily: "var(--font-jakarta), sans-serif", textAlign: "left", padding: "6px 0", borderTop: "1px solid #f8fafc" }}>{label}</p>
                 <p key={label + "f"} style={{ margin: 0, fontSize: 12, color: free === "—" ? "#d1d5db" : "#374151", fontFamily: "var(--font-jakarta), sans-serif", padding: "6px 0", borderTop: "1px solid #f8fafc" }}>{free}</p>
@@ -213,45 +158,210 @@ export default function UpgradePage() {
           fontSize: 11, color: "#94a3b8",
           fontFamily: "var(--font-jakarta), sans-serif",
         }}>
-          Tanpa kontrak · Batalkan kapan saja
+          {t.upgradeNoContract}
         </p>
       </div>
 
-      {/* Sticky CTA */}
-      <div style={{
-        position: "sticky", bottom: 0,
-        padding: "14px 20px", paddingBottom: "max(14px, env(safe-area-inset-bottom))",
-        background: "#fff", borderTop: "1px solid #f1f5f9",
-        marginTop: 24,
-      }}>
-        {tier === "premium" ? (
+      {/* Plan cards / CTA */}
+      <div style={{ padding: "20px 20px", paddingBottom: "max(24px, env(safe-area-inset-bottom))", marginTop: 8 }}>
+        {isLifetime ? (
+          /* Already lifetime — show a "you're all set" banner */
           <div style={{
             width: "100%", padding: "15px 0", borderRadius: 16,
-            background: "#f0fdf4", border: "2px solid #bbf7d0",
+            background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
             fontFamily: "var(--font-jakarta), sans-serif",
-            fontSize: 15, fontWeight: 700, color: "#15803d",
+            fontSize: 15, fontWeight: 700, color: "#fff",
             textAlign: "center",
           }}>
-            ✓ Kamu sudah Premium
+            👑 {t.upgradeAlreadyPremium}
+          </div>
+        ) : isMonthly ? (
+          /* Monthly member — can upgrade to lifetime */
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{
+              width: "100%", padding: "13px 0", borderRadius: 16,
+              background: "#f0fdf4", border: "2px solid #bbf7d0",
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 14, fontWeight: 700, color: "#15803d",
+              textAlign: "center",
+            }}>
+              {t.upgradeAlreadyPremium}
+            </div>
+            <ActionButton
+              onClick={() => router.push("/payment?product=premium-lifetime")}
+              style={{
+                position: "relative", overflow: "clip",
+                width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+                background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+                color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              👑 {t.upgradePayLifetime}
+            </ActionButton>
+            <p style={{ margin: 0, textAlign: "center", fontSize: 10, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
+              {t.upgradeLifetimeNote}
+            </p>
           </div>
         ) : (
-          <ActionButton
-            onClick={() => router.push("/payment")}
-            style={{
-              width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-              background: "linear-gradient(135deg, #f59e0b, #d97706)",
-              color: "#fff",
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 15, fontWeight: 700,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-            }}
-          >
-            Bayar Sekarang · Rp 29.000
-          </ActionButton>
+          /* Free user — stacked plan cards */
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+            {/* Monthly card */}
+            <div style={{
+              background: "#fff",
+              border: "2px solid #e2e8f0",
+              borderRadius: 24,
+              padding: "22px 20px",
+              display: "flex", flexDirection: "column", gap: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e3a5f", fontFamily: "var(--font-jakarta), sans-serif", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                    {t.upgradeMonthlyLabel}
+                  </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                    {t.upgradeMonthlyTagline}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#1e3a5f", lineHeight: 1 }}>
+                    {t.upgradeMonthlyPrice}
+                  </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                    {t.upgradeMonthlyPer}
+                  </p>
+                </div>
+              </div>
+              <ActionButton
+                onClick={() => router.push("/payment?product=premium-monthly")}
+                style={{
+                  marginTop: 6,
+                  width: "100%", padding: "14px 0", borderRadius: 14, border: "none",
+                  background: "#1d4ed8",
+                  color: "#fff",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: 14, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {t.upgradePayMonthly}
+              </ActionButton>
+            </div>
+
+            {/* Lifetime card */}
+            <div style={{
+              position: "relative",
+              background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+              borderRadius: 24,
+              padding: "22px 20px",
+              display: "flex", flexDirection: "column", gap: 0,
+              boxShadow: "0 6px 28px rgba(217,119,6,0.42)",
+              overflow: "clip",
+            }}>
+              {/* Shimmer overlay */}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.25) 50%, transparent 65%)", animation: "gold-shimmer 2.8s ease-in-out infinite", pointerEvents: "none" }} />
+
+              {/* Pill badge */}
+              <div style={{ position: "relative", display: "flex", gap: 7, marginBottom: 14 }}>
+                <span style={{
+                  background: "#dc2626",
+                  color: "#fff",
+                  fontSize: 10, fontWeight: 800,
+                  padding: "4px 11px", borderRadius: 999,
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  letterSpacing: 0.4,
+                  border: "none",
+                }}>
+                  ⚡ {t.upgradeEarlyAdopterBadge}
+                </span>
+              </div>
+
+              {/* Label + price row */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, position: "relative" }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#fff", fontFamily: "var(--font-jakarta), sans-serif", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                    {t.upgradeLifetimeLabel}
+                  </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                    {t.upgradeLifetimeTagline}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#fff", lineHeight: 1 }}>
+                    {t.upgradeLifetimePrice}
+                  </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                    {t.upgradeLifetimeOnce}
+                  </p>
+                </div>
+              </div>
+
+              {/* Strikethrough price + limit + savings */}
+              <div style={{ position: "relative", marginBottom: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+                {/* "Normally Rp 299,000 · For 50 New Users ONLY!" */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <p style={{ margin: 0, fontSize: 13, fontFamily: "var(--font-jakarta), sans-serif", color: "rgba(255,255,255,0.80)" }}>
+                    {t.upgradeLifetimeWasPrice.replace(/Rp.*/, "").trim()}{" "}
+                    <s style={{ color: "rgba(255,255,255,0.50)", fontWeight: 700 }}>
+                      {t.upgradeLifetimeWasPrice.match(/Rp[\s\d.,]+/)?.[0]?.trim() ?? "Rp 299.000"}
+                    </s>
+                  </p>
+                  <span style={{
+                    background: "rgba(0,0,0,0.28)",
+                    color: "#fef9c3",
+                    fontSize: 10, fontWeight: 800,
+                    padding: "2px 9px", borderRadius: 999,
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                    letterSpacing: 0.3,
+                    border: "1px solid rgba(255,255,255,0.20)",
+                    whiteSpace: "nowrap",
+                  }}>
+                    🎯 {t.upgradeLifetimeLimit}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#fef9c3", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                  ✨ {t.upgradeLifetimeSavings}
+                </p>
+              </div>
+
+              <ActionButton
+                onClick={() => router.push("/payment?product=premium-lifetime")}
+                style={{
+                  position: "relative",
+                  width: "100%", padding: "14px 0", borderRadius: 14, border: "none",
+                  background: "#fff",
+                  color: "#b45309",
+                  border: "2.5px solid #92400e",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: 14, fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  letterSpacing: 0.3,
+                }}
+              >
+                👑 {t.upgradePayLifetime}
+              </ActionButton>
+            </div>
+
+            <p style={{ margin: 0, textAlign: "center", fontSize: 10, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.5 }}>
+              {t.upgradeLifetimeNote}
+            </p>
+          </div>
         )}
       </div>
 
+      <style>{`
+        @keyframes gold-shimmer {
+          0%   { transform: translateX(-100%); }
+          60%  { transform: translateX(100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 }

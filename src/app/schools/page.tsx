@@ -1,7 +1,7 @@
 ﻿"use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, Check, Scale, ArrowUpDown, X } from "lucide-react";
 import { schools, placeMatchesAreas, type Grade } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
@@ -159,19 +159,20 @@ export default function SchoolsPage() {
   const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
 
-  const [view,       setView]       = useState<"filter"|"results">("filter");
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const view: "filter" | "results" =
+    (loaded && tier === "guest") || searchParams.get("view") === "results"
+      ? "results"
+      : "filter";
 
-  // Guests skip the filter view — go straight to results
-  useEffect(() => {
-    if (loaded && tier === "guest") setView("results");
-  }, [loaded, tier]);
-  const [area,       setArea]       = useState<"all"|"bintaro"|"bsd">("all");
-  const [grade,      setGrade]      = useState("all");
-  const [curriculum, setCurriculum] = useState("all");
-  const [bahasa,     setBahasa]     = useState("all");
-  const [upBucket,   setUpBucket]   = useState("all");
-  const [sppBucket,  setSppBucket]  = useState("all");
-  const [sortBy,     setSortBy]     = useState<"rating"|"price">("rating");
+  const [area,       setArea]       = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
+  const [grade,      setGrade]      = useState(searchParams.get("grade") ?? "all");
+  const [curriculum, setCurriculum] = useState(searchParams.get("cur") ?? "all");
+  const [bahasa,     setBahasa]     = useState(searchParams.get("bhs") ?? "all");
+  const [upBucket,   setUpBucket]   = useState(searchParams.get("up") ?? "all");
+  const [sppBucket,  setSppBucket]  = useState(searchParams.get("spp") ?? "all");
+  const [sortBy,     setSortBy]     = useState<"rating"|"price">((searchParams.get("sort") as "rating"|"price") ?? "rating");
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
   const filtered = schools
@@ -181,7 +182,11 @@ export default function SchoolsPage() {
     .filter(s => bahasa === "all" || s.bahasa?.includes(bahasa))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
     .filter(s => matchesSppBucket(s.priceMin, sppBucket))
-    .sort((a, b) => sortBy === "price" ? a.priceMin - b.priceMin : b.rating - a.rating);
+    .sort((a, b) => {
+    if (a.isFeatured && !b.isFeatured) return -1;
+    if (!a.isFeatured && b.isFeatured) return 1;
+    return sortBy === "price" ? a.priceMin - b.priceMin : b.rating - a.rating;
+  });
 
   const activeCount = [
     area !== "all", grade !== "all", curriculum !== "all",
@@ -191,6 +196,30 @@ export default function SchoolsPage() {
   function resetFilters() {
     setArea("all"); setGrade("all"); setCurriculum("all");
     setBahasa("all"); setUpBucket("all"); setSppBucket("all");
+  }
+
+  function toResults() {
+    const p = new URLSearchParams({ view: "results" });
+    if (area !== "all") p.set("area", area);
+    if (grade !== "all") p.set("grade", grade);
+    if (curriculum !== "all") p.set("cur", curriculum);
+    if (bahasa !== "all") p.set("bhs", bahasa);
+    if (upBucket !== "all") p.set("up", upBucket);
+    if (sppBucket !== "all") p.set("spp", sppBucket);
+    if (sortBy !== "rating") p.set("sort", sortBy);
+    return `${pathname}?${p}`;
+  }
+  function toFilter() {
+    const p = new URLSearchParams();
+    if (area !== "all") p.set("area", area);
+    if (grade !== "all") p.set("grade", grade);
+    if (curriculum !== "all") p.set("cur", curriculum);
+    if (bahasa !== "all") p.set("bhs", bahasa);
+    if (upBucket !== "all") p.set("up", upBucket);
+    if (sppBucket !== "all") p.set("spp", sppBucket);
+    if (sortBy !== "rating") p.set("sort", sortBy);
+    const qs = p.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
   }
 
   function toggleCompare(id: string) {
@@ -216,11 +245,14 @@ export default function SchoolsPage() {
       <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
         <div style={HEADER_STYLE}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Link href="/" style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-              background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
-              justifyContent: "center", textDecoration: "none" }}>
+            <ActionButton
+              onClick={() => router.back()}
+              ariaLabel="Back"
+              style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+                background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
+                justifyContent: "center" }}>
               <ChevronLeft size={20} color="white" />
-            </Link>
+            </ActionButton>
             <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
               fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
               {t.schoolsTitle}
@@ -269,8 +301,8 @@ export default function SchoolsPage() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => tier === "guest" ? setShowFilterGate(true) : setView("results")}
-              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : setView("results"); }}
+              onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toResults())}
+              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : router.replace(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1e3a5f,#2563eb)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
@@ -289,7 +321,7 @@ export default function SchoolsPage() {
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f8fafc" }}>
       <div style={HEADER_STYLE}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ActionButton onClick={() => tier === "guest" ? router.back() : setView("filter")} ariaLabel="Back" style={{
+          <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
             width: 36, height: 36, borderRadius: 999, flexShrink: 0,
             background: "rgba(255,255,255,0.18)", display: "inline-flex",
             alignItems: "center", justifyContent: "center" }}>
@@ -309,7 +341,7 @@ export default function SchoolsPage() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setView("filter")} style={{
+        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0f172a", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>

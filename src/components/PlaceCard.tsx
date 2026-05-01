@@ -31,6 +31,21 @@ export function PlaceCard({
           alt={place.name}
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
         />
+        {place.isFeatured && (
+          <div style={{
+            position: "absolute", top: 6, left: 6,
+            background: "rgba(0,0,0,0.55)",
+            borderRadius: 999,
+            padding: "3px 7px",
+            fontSize: 9, fontWeight: 700,
+            color: "#f6b545",
+            letterSpacing: 0.3,
+            fontFamily: "var(--font-jakarta), sans-serif",
+            whiteSpace: "nowrap",
+          }}>
+            ✦ Featured
+          </div>
+        )}
         {photoOverlay}
       </div>
 

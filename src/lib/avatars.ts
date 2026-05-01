@@ -1,12 +1,10 @@
 export const PREMADE_AVATARS = [
-  { id: "avatar_0", emoji: "🦊", bg: "#FEF3C7" },
-  { id: "avatar_1", emoji: "🐼", bg: "#F0FDF4" },
-  { id: "avatar_2", emoji: "🐨", bg: "#DBEAFE" },
-  { id: "avatar_3", emoji: "🦁", bg: "#FEF9C3" },
-  { id: "avatar_4", emoji: "🐸", bg: "#D1FAE5" },
-  { id: "avatar_5", emoji: "🦋", bg: "#EDE9FE" },
-  { id: "avatar_6", emoji: "🌸", bg: "#FFE4E6" },
-  { id: "avatar_7", emoji: "🌟", bg: "#FFF7ED" },
+  { id: "avatar_0", emoji: "👨", bg: "#DBEAFE" },
+  { id: "avatar_1", emoji: "👩", bg: "#FCE7F3" },
+  { id: "avatar_2", emoji: "👴", bg: "#F0FDF4" },
+  { id: "avatar_3", emoji: "👵", bg: "#FEF3C7" },
+  { id: "avatar_4", emoji: "🧔", bg: "#FEF9C3" },
+  { id: "avatar_5", emoji: "👱‍♀️", bg: "#FFF7ED" },
 ] as const;
 
 export type AvatarId = typeof PREMADE_AVATARS[number]["id"];

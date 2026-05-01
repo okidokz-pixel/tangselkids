@@ -13,7 +13,8 @@ export type UserData = {
   kids: Kid[];
   avatar?: string; // "avatar_0"–"avatar_7" or "data:image/jpeg;base64,…"
   tier?: "free" | "premium";
-  premiumExpiresAt?: string; // ISO date string
+  lifetime?: boolean;        // true = lifetime member, premiumExpiresAt is ignored
+  premiumExpiresAt?: string; // ISO date string — undefined for lifetime members
 };
 
 export type Tier = "guest" | "free" | "premium";
@@ -25,18 +26,19 @@ type AuthContextType = {
   loaded: boolean;
   register: (data: UserData) => void;
   logout: () => void;
-  upgradeToPremium: () => void;
+  upgradeToPremium: (lifetime?: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null, tier: "guest", isRegistered: false, loaded: false,
-  register: () => {}, logout: () => {}, upgradeToPremium: () => {},
+  register: () => {}, logout: () => {}, upgradeToPremium: (_lifetime?: boolean) => {},
 });
 
 function computeTier(user: UserData | null): Tier {
   if (!user) return "guest";
-  if (user.tier === "premium" && user.premiumExpiresAt) {
-    if (new Date(user.premiumExpiresAt) > new Date()) return "premium";
+  if (user.tier === "premium") {
+    if (user.lifetime) return "premium"; // lifetime never expires
+    if (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date()) return "premium";
   }
   return "free";
 }
@@ -73,14 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  function upgradeToPremium() {
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 30);
-    const updated: UserData = {
-      ...(user as UserData),
-      tier: "premium",
-      premiumExpiresAt: expiry.toISOString(),
-    };
+  function upgradeToPremium(lifetime = false) {
+    const updated: UserData = lifetime
+      ? { ...(user as UserData), tier: "premium", lifetime: true, premiumExpiresAt: undefined }
+      : (() => {
+          const expiry = new Date();
+          expiry.setDate(expiry.getDate() + 30);
+          return { ...(user as UserData), tier: "premium", lifetime: undefined, premiumExpiresAt: expiry.toISOString() };
+        })();
     localStorage.setItem("tkUser", JSON.stringify(updated));
     setUser(updated);
   }

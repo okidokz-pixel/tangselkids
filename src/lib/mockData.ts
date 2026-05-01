@@ -36,6 +36,7 @@ export type Place = {
   description: string;
   phone: string;
   tag?: string;
+  isFeatured?: boolean;
   icon: string;
   photo: string;
   photos?: string[];
@@ -116,6 +117,7 @@ export const places: Place[] = [
   {
     id: "s1",
     category: "school",
+    isFeatured: true,
     name: "Little Stars Montessori",
     area: "Bintaro Sektor 7",
     address: "Jl. Bintaro Utama VII No. 15, Sektor 7, Pesanggrahan, Jakarta Selatan",
@@ -592,6 +594,7 @@ export const places: Place[] = [
   {
     id: "lc3",
     category: "learning-center",
+    isFeatured: true,
     name: "Little Picasso Art Studio",
     area: "Bintaro Sektor 3",
     address: "Jl. Sektor 3 Bintaro No. 8, Tangerang Selatan",
@@ -903,6 +906,7 @@ export const places: Place[] = [
   {
     id: "d2",
     category: "daycare",
+    isFeatured: true,
     name: "Sunshine Nursery",
     area: "Bintaro Sektor 7",
     address: "Jl. Bintaro Utama VII No. 8, Sektor 7, Tangerang Selatan",
@@ -1102,6 +1106,7 @@ export const places: Place[] = [
   {
     id: "pg6",
     category: "playground",
+    isFeatured: true,
     name: "Amazonia Indoor Play BSD",
     area: "BSD City",
     address: "Jl. Pahlawan Seribu No. 10, BSD City, Tangerang Selatan",
@@ -1132,6 +1137,7 @@ export const places: Place[] = [
   // ── CLINICS ──────────────────────────────────────────────
   {
     id: "cl1",
+    isFeatured: true,
     category: "clinic",
     name: "Klinik Anak Sehat Bintaro",
     area: "Bintaro Sektor 7",
@@ -1260,6 +1266,7 @@ export const places: Place[] = [
   {
     id: "cf1",
     category: "cafe",
+    isFeatured: true,
     name: "Pik Nik Family Cafe",
     area: "Bintaro Sektor 3",
     address: "Jl. Sektor 3 No. 5, Bintaro, Tangerang Selatan",
@@ -1386,6 +1393,7 @@ export const places: Place[] = [
   {
     id: "mz1",
     category: "mini-zoo",
+    isFeatured: true,
     name: "BioKids Tangsel",
     area: "Bintaro Sektor 7",
     address: "Jl. Bintaro Utama VII No. 50, Sektor 7, Tangerang Selatan",
@@ -1479,6 +1487,7 @@ export const places: Place[] = [
   {
     id: "sw1",
     category: "swimming-pool",
+    isFeatured: true,
     name: "Bintaro Sport Club",
     area: "Bintaro Sektor 7",
     address: "Jl. Bintaro Sektor 7 No. 5, Tangerang Selatan",
@@ -1575,6 +1584,7 @@ export const places: Place[] = [
   {
     id: "bk1",
     category: "bookstore",
+    isFeatured: true,
     name: "Gramedia Bintaro Xchange",
     area: "Bintaro Sektor 7",
     address: "Bintaro Xchange Mall Lt. 1, Jl. Bintaro Sektor 7, Tangerang Selatan",

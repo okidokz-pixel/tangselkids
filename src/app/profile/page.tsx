@@ -12,15 +12,22 @@ import { BottomNav } from "@/components/BottomNav";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth, type Kid, type Tier } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
+import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { PREMADE_AVATARS, getAvatarMeta, resizeImageToDataUrl } from "@/lib/avatars";
 import { getReviews } from "@/lib/reviewsStorage";
 
 export default function ProfilePage() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { user, register, logout, tier } = useAuth();
   const router = useRouter();
+  const { openRegisterSheet } = useRegisterSheet();
   const [savedCount,    setSavedCount]    = useState(0);
   const [reviewsCount,  setReviewsCount]  = useState(0);
+  const [showGuestGate,    setShowGuestGate]    = useState(false);
+  const [showPremiumSheet, setShowPremiumSheet] = useState(false);
+  const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
 
   // Edit mode state
   const [editing, setEditing] = useState(false);
@@ -145,6 +152,12 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col pb-28">
+      <style>{`
+        @keyframes gold-shimmer {
+          0%        { transform: translateX(-150%); }
+          60%, 100% { transform: translateX(150%);  }
+        }
+      `}</style>
 
       {/* Header */}
       <div
@@ -193,10 +206,34 @@ export default function ProfilePage() {
             <p className="font-jakarta text-white/60 text-xs mt-0.5 leading-snug">
               {user?.phone || t.profileGuestDesc}
             </p>
+            {tier === "premium" && (
+              <div style={{
+                marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4,
+                position: "relative", overflow: "hidden",
+                background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+                borderRadius: 999, padding: "2px 9px",
+                boxShadow: "0 2px 8px rgba(217,119,6,0.5)",
+              }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 800, color: "#fff",
+                  letterSpacing: 1.1, fontFamily: "var(--font-jakarta), sans-serif",
+                  position: "relative",
+                }}>
+                  {user?.lifetime ? t.profileLifetimeBadge : "👑 PREMIUM"}
+                </span>
+                {/* Shimmer */}
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.32) 50%, transparent 65%)",
+                  animation: "gold-shimmer 2.8s ease-in-out infinite",
+                  pointerEvents: "none",
+                }} />
+              </div>
+            )}
           </div>
           {!editing && (
             <ActionButton
-              onClick={openEdit}
+              onClick={tier === "guest" ? () => setShowGuestGate(true) : openEdit}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
                 padding: "7px 12px", borderRadius: 999, flexShrink: 0,
@@ -216,20 +253,69 @@ export default function ProfilePage() {
         {/* ── TIER CARD ───────────────────────────────────────────────────── */}
         {tier === "premium" ? (
           <div className="rounded-2xl p-4 flex items-center gap-3"
-               style={{ background: "linear-gradient(135deg, #1e3a5f, #2563eb)", color: "#fff" }}>
+               style={{
+                 position: "relative", overflow: "hidden",
+                 background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+                 color: "#fff",
+                 boxShadow: "0 4px 20px rgba(217,119,6,0.45)",
+               }}>
+            {/* Shimmer sweep */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%)",
+              animation: "gold-shimmer 2.8s ease-in-out infinite",
+              pointerEvents: "none",
+            }} />
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: "rgba(255,255,255,0.18)", fontSize: 22 }}>⭐</div>
-            <div className="flex-1">
-              <p className="font-jakarta font-bold text-sm">Akun Premium Aktif</p>
-              <p className="font-jakarta text-xs opacity-70 mt-0.5">
-                Akses penuh · Berlaku hingga{" "}
-                {user?.premiumExpiresAt
-                  ? new Date(user.premiumExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
-                  : "—"}
+                 style={{ background: "rgba(0,0,0,0.18)", fontSize: 22, position: "relative" }}>
+              {user?.lifetime ? "👑" : "⭐"}
+            </div>
+            <div className="flex-1" style={{ position: "relative" }}>
+              <p className="font-jakarta font-bold text-sm">
+                {user?.lifetime ? t.profileLifetimeStatus : t.profilePremiumStatus}
+              </p>
+              <p className="font-jakarta text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
+                {user?.lifetime
+                  ? t.profileLifetimeDesc
+                  : <>
+                      {t.profilePremiumDesc}{" "}
+                      {user?.premiumExpiresAt
+                        ? new Date(user.premiumExpiresAt).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID", { day: "numeric", month: "long", year: "numeric" })
+                        : "—"}
+                    </>}
               </p>
             </div>
             <span className="font-jakarta text-xs font-bold px-2 py-1 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.22)" }}>PREMIUM</span>
+                  style={{ background: "rgba(0,0,0,0.20)", color: "#fef9c3", position: "relative" }}>
+              {user?.lifetime ? "LIFETIME" : "PREMIUM"}
+            </span>
+          </div>
+        ) : tier === "guest" ? (
+          <div className="rounded-2xl p-4 border-2"
+               style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                   style={{ background: "#fef3c7", fontSize: 22 }}>🔓</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="font-jakarta font-bold text-sm text-amber-900">{t.profileGuestStatus}</p>
+                <p className="font-jakarta text-xs text-amber-700 mt-1" style={{ lineHeight: 1.5 }}>
+                  {t.profileGuestStatusDesc}
+                </p>
+              </div>
+              <ActionButton
+                onClick={openRegisterSheet}
+                style={{
+                  padding: "7px 12px", borderRadius: 999, flexShrink: 0,
+                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                  color: "#fff", fontSize: 11, fontWeight: 800,
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t.profileGuestRegister}
+              </ActionButton>
+            </div>
           </div>
         ) : (
           <div className="rounded-2xl p-4 flex items-center gap-3 border-2"
@@ -237,9 +323,9 @@ export default function ProfilePage() {
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{ background: "#fef3c7", fontSize: 22 }}>🔓</div>
             <div className="flex-1">
-              <p className="font-jakarta font-bold text-sm text-amber-900">Akun Gratis</p>
+              <p className="font-jakarta font-bold text-sm text-amber-900">{t.profileFreeStatus}</p>
               <p className="font-jakarta text-xs text-amber-700 mt-0.5">
-                Simpan 5 tempat · Tanpa ulasan & compare
+                {t.profileFreeStatusDesc}
               </p>
             </div>
             <ActionButton
@@ -252,7 +338,7 @@ export default function ProfilePage() {
                 fontFamily: "var(--font-jakarta), sans-serif",
               }}
             >
-              Upgrade
+              {t.profileFreeUpgradeBtn}
             </ActionButton>
           </div>
         )}
@@ -561,16 +647,38 @@ export default function ProfilePage() {
           </p>
           <div className="rounded-2xl flex overflow-hidden divide-x"
                style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)" }}>
-            <Link href="/saved" className="flex-1 flex items-center gap-3 px-4 py-3">
-              <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-              <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatSaved}</span>
-              <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{savedCount}</span>
-            </Link>
-            <Link href="/my-reviews" className="flex-1 flex items-center gap-3 px-4 py-3">
-              <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-              <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
-              <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{reviewsCount}</span>
-            </Link>
+            {tier === "guest" ? (
+              <ActionButton onClick={() => setShowGuestGate(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
+                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatSaved}</span>
+                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              </ActionButton>
+            ) : (
+              <Link href="/saved" className="flex-1 flex items-center gap-3 px-4 py-3">
+                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatSaved}</span>
+                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{savedCount}</span>
+              </Link>
+            )}
+            {tier === "guest" ? (
+              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
+                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              </ActionButton>
+            ) : tier === "free" ? (
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
+                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              </ActionButton>
+            ) : (
+              <Link href="/my-reviews" className="flex-1 flex items-center gap-3 px-4 py-3">
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
+                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{reviewsCount}</span>
+              </Link>
+            )}
           </div>
         </section>
 
@@ -579,8 +687,8 @@ export default function ProfilePage() {
           <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
             {t.profileSectionPref}
           </p>
-          <div className="rounded-2xl overflow-hidden"
-               style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)" }}>
+          <div className="rounded-2xl"
+               style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)", overflow: "clip" }}>
             <div className="flex items-center gap-3 px-4 py-3">
               <Globe size={20} strokeWidth={1.75} style={{ color: "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
               <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileLang}</span>
@@ -641,6 +749,73 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav active="profile" />
+      <FilterGateSheet isOpen={showGuestGate} onClose={() => setShowGuestGate(false)} />
+      <PremiumGuestSheet isOpen={showPremiumSheet} onClose={() => setShowPremiumSheet(false)} />
+
+      {/* Upgrade sheet — registered → premium */}
+      {showUpgradeSheet && (
+        <>
+          <style>{`
+            @keyframes pu-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes pu-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          `}</style>
+          <div
+            onClick={() => setShowUpgradeSheet(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 1000,
+              background: "rgba(0,0,0,0.45)", animation: "pu-fade-in 0.25s ease both" }}
+          />
+          <div
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0,
+              maxWidth: 448, margin: "0 auto",
+              background: "#fff", borderRadius: "24px 24px 0 0",
+              padding: "20px 20px 40px", zIndex: 1001,
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
+              animation: "pu-slide-up 0.38s cubic-bezier(0.32,0.72,0,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{ width: 64, height: 64, borderRadius: 999,
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>
+                ⭐
+              </div>
+            </div>
+            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              textAlign: "center", margin: "0 0 8px" }}>
+              {t.premiumGateTitle}
+            </p>
+            <p style={{ fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, color: "#64748b", lineHeight: 1.6,
+              textAlign: "center", margin: "0 0 24px" }}>
+              {t.premiumGateDesc}
+            </p>
+            <ActionButton
+              onClick={() => { setShowUpgradeSheet(false); router.push("/upgrade"); }}
+              style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 15, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
+            >
+              {t.premiumGateCta}
+            </ActionButton>
+            <ActionButton
+              onClick={() => setShowUpgradeSheet(false)}
+              style={{ width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16, border: "none",
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
+            >
+              {t.premiumGateCancel}
+            </ActionButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }

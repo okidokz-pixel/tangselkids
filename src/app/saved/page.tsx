@@ -53,7 +53,7 @@ export default function SavedPage() {
         )}
         {mounted && tier === "free" && (
           <p className="text-white/50 text-xs font-jakarta mt-0.5">
-            {savedPlaces.length}/5 tersimpan · <span className="underline cursor-pointer" onClick={() => router.push("/upgrade")}>Upgrade untuk tanpa batas</span>
+            {savedPlaces.length}/5 favorit ·<span className="underline cursor-pointer" onClick={() => router.push("/upgrade")}>Upgrade untuk tanpa batas</span>
           </p>
         )}
       </div>
@@ -66,20 +66,45 @@ export default function SavedPage() {
           </div>
           <div>
             <h2 className="text-xl font-semibold" style={{ color: "#1e3a5f", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-              Simpan Tempat Favoritmu
+              {t.savedGuestTitle}
             </h2>
             <p className="font-jakarta text-sm mt-2 leading-relaxed text-gray-500">
-              Daftar gratis untuk menyimpan dan mengakses tempat favoritmu kapan saja.
+              {t.savedGuestDesc}
             </p>
           </div>
           <button
             onClick={() => openRegisterSheet()}
-            className="px-8 py-3 rounded-full text-white font-jakarta font-bold text-sm shadow-md mt-2"
-            style={{ background: "linear-gradient(135deg, #16a34a, #22c55e)" }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "16px 36px", borderRadius: 999,
+              background: "linear-gradient(135deg, #16a34a, #22c55e)",
+              color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
+              fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(22,163,74,0.35)",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              marginTop: 8,
+            }}
           >
-            Daftar GRATIS Sekarang!
+            {t.savedGuestCta}
+            <span style={{ display: "inline-block", fontSize: 20, lineHeight: 1, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
           </button>
-          <p className="font-jakarta text-xs text-gray-400">Gratis selamanya · Tanpa kartu kredit</p>
+
+          {/* Benefit bullets */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignSelf: "stretch", marginTop: 4 }}>
+            {t.guestGateBenefits.map((benefit) => (
+              <p key={benefit} style={{
+                margin: 0,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#1e3a5f",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                lineHeight: 1.4,
+                textAlign: "left",
+              }}>
+                {benefit}
+              </p>
+            ))}
+          </div>
         </div>
       ) : savedPlaces.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">

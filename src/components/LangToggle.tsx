@@ -22,9 +22,6 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
   const trackBg     = isDark ? "rgba(15,23,42,0.08)"       : "rgba(255,255,255,0.18)";
   const trackBorder = isDark ? "1.5px solid rgba(15,23,42,0.14)" : "1.5px solid rgba(255,255,255,0.28)";
 
-  // Knob travels: left:2 (ID) → left:28 (EN) inside a 52px track
-  const knobLeft = isEN ? 28 : 2;
-
   return (
     <button
       type="button"
@@ -58,32 +55,32 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
       {/* Track */}
       <div style={{
         position: "relative",
-        width: 52,
-        height: 28,
+        width: 56,
+        height: 30,
         borderRadius: 999,
         background: trackBg,
         border: trackBorder,
         flexShrink: 0,
+        overflow: "clip",
       }}>
-        {/* Sliding knob */}
+        {/* Sliding knob — flag image fills the circle */}
         <div style={{
           position: "absolute",
-          top: 2,
-          left: knobLeft,
-          width: 22,
-          height: 22,
+          top: 3,
+          left: isEN ? 29 : 3,
+          width: 24,
+          height: 24,
           borderRadius: 999,
-          background: "#ffffff",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.04)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 15,
-          lineHeight: 1,
+          overflow: "clip",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.28), 0 0 0 1.5px rgba(255,255,255,0.6)",
           transition: "left 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
           // No transform — uses left for the slide (iOS-safe, no compositing layer)
         }}>
-          {isEN ? "🇬🇧" : "🇮🇩"}
+          <img
+            src={isEN ? "https://flagcdn.com/gb.svg" : "https://flagcdn.com/id.svg"}
+            alt={isEN ? "EN" : "ID"}
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
         </div>
       </div>
 

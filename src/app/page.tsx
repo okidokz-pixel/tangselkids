@@ -16,8 +16,8 @@ import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
 import { places } from "@/lib/mockData";
 
-// First 4 places for the featured 2×2 grid
-const featured = places.slice(0, 4);
+// Editor's Pick — driven by isFeatured flag in mockData
+const featured = places.filter(p => p.isFeatured);
 
 function formatPrice(priceMin: number): string {
   if (priceMin === 0) return "Gratis";
@@ -119,7 +119,7 @@ function PaperTile({
 export default function HomePage() {
   const { t } = useLang();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, tier } = useAuth();
   const avatarMeta = getAvatarMeta(user?.avatar);
   const [showReveal, setShowReveal] = useState(false);
 
@@ -135,6 +135,11 @@ export default function HomePage() {
 
       {/* ── Tap-effect styles ─────────────────────────────────────────── */}
       <style>{`
+        @keyframes gold-shimmer {
+          0%        { transform: translateX(-150%); }
+          60%, 100% { transform: translateX(150%);  }
+        }
+
         /* Banner cards (Schools, Learning Centers) */
         .press-banner {
           transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -240,27 +245,38 @@ export default function HomePage() {
 
             {/* top row */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 1 }}>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "5px 11px", borderRadius: 999,
-                background: "rgba(0,0,0,0.18)",
-                border: "0.5px solid rgba(255,255,255,0.18)",
-                fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5,
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: 999, background: "#7af0b6", flexShrink: 0 }}/>
-                BINTARO · TANGSEL
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <LangToggle />
+              <LangToggle />
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                {tier === "premium" && (
+                  <div style={{
+                    position: "relative", overflow: "hidden",
+                    display: "inline-flex", alignItems: "center",
+                    background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+                    borderRadius: 999, padding: "3px 9px",
+                    boxShadow: "0 2px 8px rgba(217,119,6,0.55)",
+                  }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, color: "#fff",
+                      letterSpacing: 1.1, fontFamily: "var(--font-jakarta), sans-serif",
+                      position: "relative",
+                    }}>{user?.lifetime ? "👑 LIFETIME" : "👑 PREMIUM"}</span>
+                    <div style={{
+                      position: "absolute", inset: 0,
+                      background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.32) 50%, transparent 65%)",
+                      animation: "gold-shimmer 2.8s ease-in-out infinite",
+                      pointerEvents: "none",
+                    }} />
+                  </div>
+                )}
                 <button
                   onClick={() => router.push("/profile")}
                   onTouchEnd={(e) => { e.preventDefault(); router.push("/profile"); }}
                   style={{
                     width: 32, height: 32, borderRadius: 999,
-                    background: avatarMeta ? (avatarMeta.type === "emoji" ? avatarMeta.bg : "transparent") : "linear-gradient(135deg,#f6b545,#e26a4f)",
+                    background: avatarMeta ? (avatarMeta.type === "emoji" ? avatarMeta.bg : "transparent") : "#fff",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     border: "2px solid rgba(255,255,255,0.4)",
-                    cursor: "pointer", flexShrink: 0,
+                    cursor: "pointer",
                     touchAction: "manipulation", overflow: "clip",
                     padding: 0,
                   }}
@@ -270,7 +286,7 @@ export default function HomePage() {
                   ) : avatarMeta?.type === "emoji" ? (
                     <span style={{ fontSize: 18, lineHeight: 1 }}>{avatarMeta.emoji}</span>
                   ) : (
-                    <User size={16} color="#3a2304" strokeWidth={2} />
+                    <User size={16} color="#1e3a5f" strokeWidth={2} />
                   )}
                 </button>
               </div>
@@ -430,7 +446,7 @@ export default function HomePage() {
             gridTemplateColumns: "repeat(2, 1fr)",
             gap: 12,
           }}>
-            {featured.map((place) => (
+            {featured.slice(0, 4).map((place) => (
               <Link key={place.id} href={`/place/${place.id}`} className="press-photo" style={{ textDecoration: "none", borderRadius: 20 }}>
                 <div style={{
                   height: 175,
@@ -484,6 +500,26 @@ export default function HomePage() {
                 </div>
               </Link>
             ))}
+          </div>
+
+          {/* Explore more button */}
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+            <Link href="/explore" style={{ textDecoration: "none" }}>
+              <div style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "12px 28px", borderRadius: 999,
+                border: "2px solid #1d4ed8",
+                color: "#1d4ed8",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 700,
+              }}>
+                Explore more
+                <span style={{
+                  display: "inline-block",
+                  animation: "arrow-slide 1s ease-in-out infinite",
+                }}>→</span>
+              </div>
+            </Link>
           </div>
         </div>
 

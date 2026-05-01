@@ -26,9 +26,10 @@ export function GuestGate({
   return (
     <div style={{
       position: "relative",
-      marginTop: 20,
+      marginTop: -80,
       marginLeft: -20,
       marginRight: -20,
+      minHeight: "70vh",
     }}>
       {/* Blurred content — restore horizontal padding so cards stay aligned */}
       <div style={{
@@ -50,14 +51,14 @@ export function GuestGate({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-start",
-          paddingTop: 28,
+          paddingTop: 60,
           background: `linear-gradient(
             to bottom,
-            rgba(${bg}, 1)    0%,
-            rgba(${bg}, 0.96) 40%,
-            rgba(${bg}, 0.6)  68%,
-            rgba(${bg}, 0.1)  88%,
-            rgba(${bg}, 0)    100%
+            rgba(${bg}, 0)    0%,
+            rgba(${bg}, 0.5)  18%,
+            rgba(${bg}, 0.92) 36%,
+            rgba(${bg}, 1)    50%,
+            rgba(${bg}, 1)    100%
           )`,
         }}
       >
@@ -89,29 +90,6 @@ export function GuestGate({
           </p>
         )}
 
-        {/* Benefit bullets */}
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 7,
-          marginBottom: 22,
-          alignSelf: "stretch",
-          padding: "0 24px",
-        }}>
-          {t.guestGateBenefits.map((benefit) => (
-            <p key={benefit} style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#1e3a5f",
-              margin: 0,
-              fontFamily: "var(--font-jakarta), sans-serif",
-              lineHeight: 1.4,
-            }}>
-              {benefit}
-            </p>
-          ))}
-        </div>
-
         {/* CTA button */}
         <ActionButton
           onClick={openRegisterSheet}
@@ -141,6 +119,29 @@ export function GuestGate({
             →
           </span>
         </ActionButton>
+
+        {/* Benefit bullets */}
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 7,
+          marginTop: 20,
+          alignSelf: "stretch",
+          padding: "0 24px",
+        }}>
+          {t.guestGateBenefits.map((benefit) => (
+            <p key={benefit} style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#1e3a5f",
+              margin: 0,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              lineHeight: 1.4,
+            }}>
+              {benefit}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );

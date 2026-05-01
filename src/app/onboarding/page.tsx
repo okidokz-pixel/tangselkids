@@ -41,6 +41,29 @@ const confettiDots = [
   { top: "50%", left: "88%",  size: 7,  color: "#4ade80", dur: 1.3, delay: 0.18 },
 ];
 
+const bigConfetti = [
+  { top: "8%",  left: "8%",   size: 14, color: "#fbbf24", dur: 1.6, delay: 0.05 },
+  { top: "6%",  left: "30%",  size: 10, color: "#f472b6", dur: 1.4, delay: 0.12 },
+  { top: "5%",  left: "55%",  size: 12, color: "#60a5fa", dur: 1.5, delay: 0.08 },
+  { top: "7%",  left: "78%",  size: 9,  color: "#34d399", dur: 1.3, delay: 0.18 },
+  { top: "4%",  left: "92%",  size: 11, color: "#a78bfa", dur: 1.6, delay: 0.22 },
+  { top: "20%", left: "3%",   size: 8,  color: "#fb923c", dur: 1.4, delay: 0.30 },
+  { top: "22%", left: "94%",  size: 10, color: "#e879f9", dur: 1.5, delay: 0.15 },
+  { top: "35%", left: "12%",  size: 7,  color: "#38bdf8", dur: 1.3, delay: 0.25 },
+  { top: "38%", left: "86%",  size: 9,  color: "#f87171", dur: 1.4, delay: 0.10 },
+  { top: "50%", left: "5%",   size: 11, color: "#4ade80", dur: 1.6, delay: 0.35 },
+  { top: "52%", left: "90%",  size: 8,  color: "#fbbf24", dur: 1.3, delay: 0.20 },
+  { top: "65%", left: "18%",  size: 13, color: "#60a5fa", dur: 1.5, delay: 0.08 },
+  { top: "68%", left: "75%",  size: 10, color: "#f472b6", dur: 1.4, delay: 0.28 },
+  { top: "78%", left: "8%",   size: 8,  color: "#a78bfa", dur: 1.6, delay: 0.16 },
+  { top: "80%", left: "48%",  size: 12, color: "#34d399", dur: 1.3, delay: 0.32 },
+  { top: "82%", left: "88%",  size: 9,  color: "#fb923c", dur: 1.5, delay: 0.12 },
+  { top: "90%", left: "25%",  size: 11, color: "#e879f9", dur: 1.4, delay: 0.22 },
+  { top: "92%", left: "65%",  size: 7,  color: "#38bdf8", dur: 1.6, delay: 0.18 },
+  { top: "15%", left: "42%",  size: 10, color: "#f87171", dur: 1.3, delay: 0.38 },
+  { top: "44%", left: "56%",  size: 14, color: "#fbbf24", dur: 1.5, delay: 0.06 },
+];
+
 export default function OnboardingPage() {
   const { t } = useLang();
   const { register } = useAuth();
@@ -70,7 +93,10 @@ export default function OnboardingPage() {
   const [geoError, setGeoError]       = useState("");
   const [dob, setDob]                 = useState("");
   const [kids, setKids]               = useState<Kid[]>([]);
-  const [avatar, setAvatar]           = useState("");
+  const [avatar, setAvatar]           = useState<string>(
+    () => PREMADE_AVATARS[Math.floor(Math.random() * PREMADE_AVATARS.length)].id
+  );
+  const [showReveal, setShowReveal]   = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Holds submitted data until the "done" animation finishes
@@ -100,12 +126,13 @@ export default function OnboardingPage() {
       return () => clearTimeout(timer);
     }
     if (step === "done") {
-      const timer = setTimeout(() => {
+      const revealTimer = setTimeout(() => setShowReveal(true), 350);
+      const navTimer = setTimeout(() => {
         if (pendingData.current) register(pendingData.current);
         sessionStorage.setItem("justRegistered", "1");
         router.replace("/");
-      }, 2200);
-      return () => clearTimeout(timer);
+      }, 2800);
+      return () => { clearTimeout(revealTimer); clearTimeout(navTimer); };
     }
   }, [step, router]);
 
@@ -270,6 +297,10 @@ export default function OnboardingPage() {
         @keyframes slideFadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
+        }
+        @keyframes revealSlideUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
         }
       `}</style>
 
@@ -486,6 +517,61 @@ export default function OnboardingPage() {
         </div>
       )}
 
+      {/* ── REVEAL overlay (slides up after done popup) ───────────────────── */}
+      {showReveal && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 15,
+          background: "linear-gradient(160deg, #0a1628 0%, #1e3a5f 55%, #1d4ed8 100%)",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "0 40px",
+          animation: "revealSlideUp 0.55s cubic-bezier(0.32, 0.72, 0, 1) both",
+        }}>
+          {/* Confetti */}
+          {bigConfetti.map((dot, i) => (
+            <div key={i} style={{
+              position: "absolute",
+              top: dot.top, left: dot.left,
+              width: dot.size, height: dot.size,
+              borderRadius: 999, background: dot.color,
+              animation: `floatDot ${dot.dur}s ease-out ${dot.delay}s both`,
+              zIndex: 1,
+            }} />
+          ))}
+
+          {/* 🎉 circle */}
+          <div style={{
+            position: "relative", zIndex: 2,
+            width: 100, height: 100, borderRadius: 999,
+            background: "linear-gradient(135deg, #d97706, #f59e0b)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 50, lineHeight: 1,
+            boxShadow: "0 16px 48px rgba(245,158,11,0.50)",
+            animation: "popIn 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both, pulseRingGold 1.2s ease-out 0.7s both",
+          }}>
+            🎉
+          </div>
+
+          <h2 style={{
+            position: "relative", zIndex: 2,
+            fontFamily: "var(--font-fraunces), Georgia, serif",
+            fontSize: 30, fontWeight: 700, color: "#fff",
+            margin: "26px 0 10px", textAlign: "center", letterSpacing: -0.5,
+            animation: "fadeUp 0.5s ease 0.3s both",
+          }}>
+            {t.obDoneTitle(firstName)}
+          </h2>
+          <p style={{
+            position: "relative", zIndex: 2,
+            fontSize: 15, color: "rgba(255,255,255,0.72)",
+            textAlign: "center", lineHeight: 1.6, margin: 0,
+            animation: "fadeUp 0.5s ease 0.45s both",
+          }}>
+            {t.obDoneSub}
+          </p>
+        </div>
+      )}
+
       {/* ── PANEL (phone / otp / profile steps) ──────────────────────────── */}
       {step !== "splash" && step !== "verified" && step !== "done" && (
         <div style={{
@@ -616,103 +702,6 @@ export default function OnboardingPage() {
                 {t.obProfileDesc}
               </p>
 
-              {/* Avatar picker */}
-              <div style={{ marginBottom: 24 }}>
-                <label style={labelStyle}>{t.obAvatarLabel} <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span></label>
-
-                {/* Current selection preview */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <div style={{
-                    width: 64, height: 64, borderRadius: 999, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    overflow: "clip",
-                    background: avatar
-                      ? (avatar.startsWith("data:")
-                          ? "transparent"
-                          : (PREMADE_AVATARS.find(a => a.id === avatar)?.bg ?? "#f1f5f9"))
-                      : "#f1f5f9",
-                    border: "2.5px solid #e2e8f0",
-                  }}>
-                    {avatar && avatar.startsWith("data:") ? (
-                      <img src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
-                    ) : avatar ? (
-                      <span style={{ fontSize: 28 }}>{PREMADE_AVATARS.find(a => a.id === avatar)?.emoji}</span>
-                    ) : (
-                      <Camera size={22} color="#94a3b8" strokeWidth={1.75} />
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <ActionButton
-                      onClick={() => photoInputRef.current?.click()}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "7px 14px", borderRadius: 999,
-                        background: "#f1f5f9", color: "#475569",
-                        fontSize: 12.5, fontWeight: 700,
-                        border: "1.5px solid #e2e8f0",
-                      }}
-                    >
-                      <Camera size={13} strokeWidth={2} /> {t.obAvatarUpload}
-                    </ActionButton>
-                    {avatar && (
-                      <ActionButton
-                        onClick={() => setAvatar("")}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 5,
-                          padding: "5px 12px", borderRadius: 999,
-                          background: "#fee2e2", color: "#ef4444",
-                          fontSize: 12, fontWeight: 700,
-                        }}
-                      >
-                        <X size={11} strokeWidth={3} /> {t.obAvatarRemove}
-                      </ActionButton>
-                    )}
-                  </div>
-                </div>
-
-                {/* Hidden file input */}
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const dataUrl = await resizeImageToDataUrl(file);
-                    setAvatar(dataUrl);
-                    e.target.value = "";
-                  }}
-                />
-
-                {/* Premade avatar row — 6 avatars, single row */}
-                <div style={{ display: "flex", gap: 8 }}>
-                  {PREMADE_AVATARS.slice(0, 6).map((a) => (
-                    <label key={a.id} style={{ cursor: "pointer", flex: 1 }}>
-                      <input
-                        type="radio"
-                        name="ob-avatar"
-                        value={a.id}
-                        checked={avatar === a.id}
-                        onChange={() => setAvatar(a.id)}
-                        style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-                      />
-                      <div style={{
-                        width: "100%", aspectRatio: "1", borderRadius: 14,
-                        background: a.bg,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 22,
-                        border: avatar === a.id ? "2.5px solid #1d4ed8" : "2px solid transparent",
-                        boxShadow: avatar === a.id ? "0 0 0 3px #bfdbfe" : "none",
-                        transition: "border 0.15s, box-shadow 0.15s",
-                      }}>
-                        {a.emoji}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               {/* Name */}
               <div style={{ marginBottom: 20 }}>
                 <label style={labelStyle}>
@@ -733,9 +722,18 @@ export default function OnboardingPage() {
                 <label style={labelStyle}>
                   {t.obAddressLabel} <span style={{ color: "#ef4444" }}>*</span>
                 </label>
-                <p style={{ fontSize: 11.5, color: "#94a3b8", margin: "0 0 8px", lineHeight: 1.4 }}>
-                  {t.obAddressHint}
-                </p>
+                {/* Prominent hint */}
+                <div style={{
+                  display: "flex", alignItems: "flex-start", gap: 8,
+                  background: "#fffbeb", border: "1.5px solid #f59e0b",
+                  borderRadius: 12, padding: "10px 12px", marginBottom: 10,
+                }}>
+                  <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔔</span>
+                  <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: "#92400e", lineHeight: 1.45, fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                    <span style={{ color: "#d97706" }}>PENTING!</span>{" "}
+                    Agar kami dapat menemukan tempat terdekat dari rumahmu.
+                  </p>
+                </div>
                 <textarea
                   placeholder={t.obAddressPlaceholder}
                   value={address}
@@ -777,6 +775,103 @@ export default function OnboardingPage() {
                     />
                   </div>
                 )}
+              </div>
+
+              {/* Avatar picker */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={labelStyle}>{t.obAvatarLabel} <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span></label>
+
+                {/* Current selection preview */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <div style={{
+                    width: 64, height: 64, borderRadius: 999, flexShrink: 0,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    overflow: "clip",
+                    background: avatar
+                      ? (avatar.startsWith("data:")
+                          ? "transparent"
+                          : (PREMADE_AVATARS.find(a => a.id === avatar)?.bg ?? "#f1f5f9"))
+                      : "#f1f5f9",
+                    border: "2.5px solid #e2e8f0",
+                  }}>
+                    {avatar && avatar.startsWith("data:") ? (
+                      <img src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
+                    ) : avatar ? (
+                      <span style={{ fontSize: 28 }}>{PREMADE_AVATARS.find(a => a.id === avatar)?.emoji}</span>
+                    ) : (
+                      <Camera size={22} color="#94a3b8" strokeWidth={1.75} />
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <ActionButton
+                      onClick={() => photoInputRef.current?.click()}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        padding: "7px 14px", borderRadius: 999,
+                        background: "#f1f5f9", color: "#475569",
+                        fontSize: 12.5, fontWeight: 700,
+                        border: "1.5px solid #e2e8f0",
+                      }}
+                    >
+                      <Camera size={13} strokeWidth={2} /> {t.obAvatarUpload}
+                    </ActionButton>
+                    {avatar && avatar.startsWith("data:") && (
+                      <ActionButton
+                        onClick={() => setAvatar(PREMADE_AVATARS[0].id)}
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 5,
+                          padding: "5px 12px", borderRadius: 999,
+                          background: "#fee2e2", color: "#ef4444",
+                          fontSize: 12, fontWeight: 700,
+                        }}
+                      >
+                        <X size={11} strokeWidth={3} /> {t.obAvatarRemove}
+                      </ActionButton>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const dataUrl = await resizeImageToDataUrl(file);
+                    setAvatar(dataUrl);
+                    e.target.value = "";
+                  }}
+                />
+
+                {/* Premade avatar row — 6 avatars, single row */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  {PREMADE_AVATARS.map((a) => (
+                    <label key={a.id} style={{ cursor: "pointer", flex: 1 }}>
+                      <input
+                        type="radio"
+                        name="ob-avatar"
+                        value={a.id}
+                        checked={avatar === a.id}
+                        onChange={() => setAvatar(a.id)}
+                        style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
+                      />
+                      <div style={{
+                        width: "100%", aspectRatio: "1", borderRadius: 14,
+                        background: a.bg,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 22,
+                        border: avatar === a.id ? "2.5px solid #1d4ed8" : "2px solid transparent",
+                        boxShadow: avatar === a.id ? "0 0 0 3px #bfdbfe" : "none",
+                        transition: "border 0.15s, box-shadow 0.15s",
+                      }}>
+                        {a.emoji}
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Date of birth */}

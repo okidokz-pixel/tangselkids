@@ -53,7 +53,10 @@
       "Bash(git init *)",
       "Bash(git commit -m ' *)",
       "Bash(git config *)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/list-your-place)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/list-your-place/upsell?name=Test)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:3000/list-your-place/upsell?name=Test+Cafe\")"
     ]
   }
 }

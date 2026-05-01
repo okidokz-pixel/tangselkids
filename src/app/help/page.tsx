@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "Bagaimana cara menyimpan tempat favorit?",
-    a: "Buka halaman detail tempat, lalu klik ikon hati (❤) di bagian atas halaman. Tempat akan tersimpan di halaman 'Tersimpan' dan bisa diakses kapan saja.",
+    a: "Buka halaman detail tempat, lalu klik ikon hati (❤) di bagian atas halaman. Tempat akan tersimpan di halaman 'Favorit' dan bisa diakses kapan saja.",
   },
   {
     q: "Bagaimana cara menulis ulasan?",

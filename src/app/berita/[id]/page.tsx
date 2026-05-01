@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { use } from "react";
-import { ChevronLeft, Clock, ArrowLeft } from "lucide-react";
+import { ChevronLeft, Clock } from "lucide-react";
 import { articles } from "@/lib/articles";
 import { BottomNav } from "@/components/BottomNav";
 import { ActionButton } from "@/components/ActionButton";
@@ -37,7 +37,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px",
             borderRadius: 12, background: "#1d4ed8", color: "#fff",
             fontSize: 13, fontWeight: 700 }}>
-          <ArrowLeft size={14} />
+          <ChevronLeft size={14} />
           Kembali
         </ActionButton>
       </div>
@@ -47,9 +47,29 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
   const catStyle = CATEGORY_COLORS[article.category] ?? { bg: "#e8eaef", color: "#64748b" };
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 110 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 110, paddingTop: 52 }}>
 
-      {/* ── Hero image with overlaid header ──────────────────────────── */}
+      {/* ── Sticky top bar — blue gradient ───────────────────────────── */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, height: 52, zIndex: 50,
+        background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+      }}>
+        <div style={{ maxWidth: 448, margin: "0 auto", height: "100%",
+          display: "flex", alignItems: "center", padding: "0 12px" }}>
+          <ActionButton onClick={() => router.back()} style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            padding: "7px 12px", borderRadius: 999,
+            background: "rgba(255,255,255,0.18)", color: "#fff",
+            fontSize: 13, fontWeight: 700,
+            border: "1px solid rgba(255,255,255,0.22)",
+          }}>
+            <ChevronLeft size={14} strokeWidth={2.5} color="#fff" />
+            Back
+          </ActionButton>
+        </div>
+      </div>
+
+      {/* ── Hero image ───────────────────────────────────────────────── */}
       <div style={{ position: "relative", height: 280 }}>
 
         {/* Photo */}
@@ -59,28 +79,14 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
         />
 
-        {/* Dark gradient overlay — top for back button, bottom for title */}
+        {/* Dark gradient overlay — bottom for title */}
         <div style={{
           position: "absolute", inset: 0,
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.70) 100%)",
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.70) 100%)",
         }} />
 
-        {/* Back button — top left */}
-        <div style={{ position: "absolute", top: 44, left: 20 }}>
-          <ActionButton
-            onClick={() => router.back()}
-            style={{
-              width: 36, height: 36, borderRadius: 999,
-              background: "rgba(0,0,0,0.32)", display: "inline-flex",
-              alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <ChevronLeft size={20} color="white" />
-          </ActionButton>
-        </div>
-
         {/* Category chip — top right */}
-        <div style={{ position: "absolute", top: 50, right: 20 }}>
+        <div style={{ position: "absolute", top: 14, right: 16 }}>
           <span style={{
             display: "inline-block", padding: "4px 10px", borderRadius: 999,
             fontSize: 10.5, fontWeight: 700, letterSpacing: 0.4,
@@ -160,20 +166,6 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
             </span>
           </div>
         </div>
-
-        {/* Back button */}
-        <ActionButton
-          onClick={() => router.back()}
-          style={{
-            marginTop: 24, width: "100%", padding: "14px 0",
-            borderRadius: 14, background: "#f1f5f9",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            fontSize: 13.5, fontWeight: 700, color: "#475569",
-          }}
-        >
-          <ArrowLeft size={15} strokeWidth={2.5} />
-          Kembali ke Artikel
-        </ActionButton>
 
       </div>
 
