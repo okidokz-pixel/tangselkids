@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+:root {
+  /* legacy tokens (kept for other pages) */
+  --blue-dark:    #1E3A5F;
+  --blue-primary: #1D4ED8;
+  --blue-medium:  #3B82F6;
+  --blue-light:   #60A5FA;
+  --blue-pale:    #BFDBFE;
+  --blue-faint:   #DBEAFE;
+  --cream:        #EFF6FF;
+
+  /* Variation B design tokens */
+  --tk-ink:       #0f172a;
+  --tk-muted:     #64748b;
+  --tk-blue-700:  #1e3fb0;
+  --tk-blue-50:   #eff6ff;
+  --tk-line:      #e2e8f0;
+  --tk-paper-bg:  #f3efe8;
+  --tk-amber:     #f6b545;
+  --tk-green:     #1f9b6a;
+}
+
+@theme inline {
+  --font-jakarta:   var(--font-jakarta);
+  --font-playfair:  var(--font-playfair);
+  --font-fraunces:  var(--font-fraunces);
+}
+
+body {
+  background-color: #EFF6FF;
+  /* Eliminate 300ms tap delay on mobile */
+  touch-action: manipulation;
+  /* Prevent text selection interfering with taps on iOS */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection inside inputs/text areas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* ─── iOS WebKit: ensure all interactive elements are always tappable ────────
+   touch-action: manipulation  → removes 300ms tap delay
+   -webkit-tap-highlight-color → removes the grey flash on tap
+   These apply globally so no individual component needs to remember them.    */
+[onclick], button, a, label, [role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+/* ─── Global press feedback ──────────────────────────────────────────────────
+   Adds a subtle scale + brightness press effect to every button and link.
+   More specific selectors (e.g. .press-banner:active) override these values
+   automatically via CSS specificity — no conflicts with home-page card effects. */
+button, a {
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+button:active, a:active {
+  transform: scale(0.96);
+  filter: brightness(0.91);
+}
+
+/* ─── iOS WebKit: prevent compositing-layer touch blindness ──────────────────
+   When fixed/sticky elements use `transform` they get promoted to their own
+   GPU layer. iOS touch hit-testing between compositing layers is broken and
+   silently swallows taps on overlapping content.
+   Rule: fixed/sticky elements must NEVER use transform for positioning.
+   Use left/right/margin:auto instead of transform:translateX(-50%).          */
+*[style*="position: fixed"],
+*[style*="position:fixed"],
+*[style*="position: sticky"],
+*[style*="position:sticky"] {
+  /* Explicitly NOT using transform here — see comment above */
+  will-change: auto; /* prevent accidental layer promotion */
+}
+
+
+/* ─── Dual-range slider (TK custom) ─────────────────────────────────────────
+   Two overlapping <input type="range" class="tk-range"> stack on a shared
+   container. Both inputs are pointer-events: none; only the thumbs are
+   pointer-events: auto so each thumb can be grabbed independently.          */
+input[type="range"].tk-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0; padding: 0;
+  pointer-events: none;
+}
+input[type="range"].tk-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 22px; width: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid #1d4ed8;
+  box-shadow: 0 1px 6px rgba(29, 78, 216, 0.22);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+input[type="range"].tk-range::-moz-range-thumb {
+  height: 22px; width: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid #1d4ed8;
+  box-shadow: 0 1px 6px rgba(29, 78, 216, 0.22);
+  cursor: grab;
+  pointer-events: auto;
+}
+input[type="range"].tk-range::-webkit-slider-runnable-track {
+  height: 0;
+  background: transparent;
+}
+input[type="range"].tk-range::-moz-range-track {
+  height: 0;
+  background: transparent;
+}
+
+/* ─── Shared bottom-sheet animations ────────────────────────────────────────── */
+@keyframes sheet-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.font-playfair {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+.font-jakarta {
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+
+.font-fraunces {
+  font-family: var(--font-fraunces), Georgia, serif;
+}
