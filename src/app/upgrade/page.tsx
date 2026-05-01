@@ -333,10 +333,10 @@ export default function UpgradePage() {
                 onClick={() => router.push("/payment?product=premium-lifetime")}
                 style={{
                   position: "relative",
-                  width: "100%", padding: "14px 0", borderRadius: 14, border: "none",
+                  width: "100%", padding: "14px 0", borderRadius: 14,
+                  border: "2.5px solid #92400e",
                   background: "#fff",
                   color: "#b45309",
-                  border: "2.5px solid #92400e",
                   fontFamily: "var(--font-jakarta), sans-serif",
                   fontSize: 14, fontWeight: 800,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 6,

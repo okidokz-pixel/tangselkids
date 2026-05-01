@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
@@ -104,7 +104,7 @@ const HEADER_STYLE = {
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
 };
 
-export default function ClinicsPage() {
+function ClinicsContent() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
   const [showFilterGate, setShowFilterGate] = useState(false);
@@ -326,5 +326,13 @@ export default function ClinicsPage() {
 
       <BottomNav active="explore" />
     </div>
+  );
+}
+
+export default function ClinicsPage() {
+  return (
+    <Suspense>
+      <ClinicsContent />
+    </Suspense>
   );
 }

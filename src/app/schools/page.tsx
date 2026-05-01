@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, Check, Scale, ArrowUpDown, X } from "lucide-react";
@@ -153,7 +153,7 @@ function matchesUpBucket(upMin: number | undefined, bucket: string): boolean {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function SchoolsPage() {
+function SchoolsContent() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
   const [showFilterGate, setShowFilterGate] = useState(false);
@@ -440,5 +440,13 @@ export default function SchoolsPage() {
 
       <BottomNav active="explore" />
     </div>
+  );
+}
+
+export default function SchoolsPage() {
+  return (
+    <Suspense>
+      <SchoolsContent />
+    </Suspense>
   );
 }
