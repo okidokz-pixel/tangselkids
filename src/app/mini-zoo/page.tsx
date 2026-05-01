@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -9,8 +9,8 @@ import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
 import { GuestGate } from "@/components/GuestGate";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
@@ -97,7 +97,7 @@ const HEADER_STYLE = {
 export default function MiniZooPage() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
-  const { openRegisterSheet } = useRegisterSheet();
+  const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
 
   const [view,        setView]        = useState<"filter"|"results">("filter");
@@ -179,8 +179,8 @@ export default function MiniZooPage() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => tier === "guest" ? openRegisterSheet({ title: "Daftar untuk Menggunakan Fitur Ini", subtitle: "Filter & sort hanya tersedia untuk pengguna terdaftar. Daftar gratis sekarang!" }) : setView("results")}
-              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? openRegisterSheet({ title: "Daftar untuk Menggunakan Fitur Ini", subtitle: "Filter & sort hanya tersedia untuk pengguna terdaftar. Daftar gratis sekarang!" }) : setView("results"); }}
+              onClick={() => tier === "guest" ? setShowFilterGate(true) : setView("results")}
+              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : setView("results"); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1e3a5f,#2563eb)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
@@ -219,7 +219,7 @@ export default function MiniZooPage() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => tier === "guest" ? openRegisterSheet({ title: "Daftar untuk Menggunakan Fitur Ini", subtitle: "Filter & sort hanya tersedia untuk pengguna terdaftar. Daftar gratis sekarang!" }) : setView("filter")} style={{
+        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setView("filter")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0f172a", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
@@ -233,7 +233,7 @@ export default function MiniZooPage() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => tier === "guest" ? openRegisterSheet({ title: "Daftar untuk Menggunakan Fitur Ini", subtitle: "Filter & sort hanya tersedia untuk pengguna terdaftar. Daftar gratis sekarang!" }) : setSortBy(s => s === "rating" ? "price" : "rating")} style={{
+        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "rating" ? "price" : "rating")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
@@ -281,6 +281,7 @@ export default function MiniZooPage() {
           </GuestGate>
         )}
       </div>
+      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
 
       <BottomNav active="explore" />
     </div>

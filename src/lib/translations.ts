@@ -338,6 +338,11 @@ export const translations = {
     ],
     guestGateCta: "Daftar GRATIS Sekarang!",
 
+    // ── FILTER GATE ──────────────────────────────────────────
+    filterGateTitle: "Daftar Gratis untuk Akses Filter & Sort",
+    filterGateSubtitle: "Temukan tempat yang tepat lebih cepat dengan fitur filter dan sort — gratis untuk semua pengguna terdaftar.",
+    filterGateCta: "Daftar GRATIS Sekarang!",
+
     // ── PROFILE ──────────────────────────────────────────────
     profileTitle: "Profil",
     profileSubtitle: "Pengaturan & preferensi",
@@ -753,6 +758,11 @@ export const translations = {
       "📋  Access full details for every place",
     ],
     guestGateCta: "Register FREE Now!",
+
+    // ── FILTER GATE ──────────────────────────────────────────
+    filterGateTitle: "Register Free to Access Filters & Sorting",
+    filterGateSubtitle: "Find the perfect place faster with filters and sorting — free for all registered users.",
+    filterGateCta: "Register FREE Now!",
 
     // ── PROFILE ──────────────────────────────────────────────
     profileTitle: "Profile",
