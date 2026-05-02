@@ -255,7 +255,7 @@ function Typewriter() {
 // Paths verbatim from design handoff home-v1-polished.jsx Ico object.
 const Ico: Record<string, React.ReactNode> = {
   daycare: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="6.5" cy="6.5" r="2"/>
       <circle cx="17.5" cy="6.5" r="2"/>
@@ -266,7 +266,7 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   playground: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 20V8"/>
       <path d="M5 8l11-3"/>
@@ -276,7 +276,7 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   clinic: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 4v6a4 4 0 008 0V4"/>
       <path d="M3 4h3M10 4h3"/>
@@ -285,7 +285,7 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   cafe: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 4c-.5 1 .5 1.5 0 2.5M13 4c-.5 1 .5 1.5 0 2.5"/>
       <path d="M5 10h12v5a4 4 0 01-4 4H9a4 4 0 01-4-4v-5z"/>
@@ -293,7 +293,7 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   animals: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <ellipse cx="6" cy="9" rx="1.6" ry="2.2"/>
       <ellipse cx="10" cy="6" rx="1.6" ry="2.2"/>
@@ -303,7 +303,7 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   pool: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 10c2 0 2-1.5 5-1.5s3 1.5 5 1.5 2-1.5 5-1.5 3 1.5 5 1.5"/>
       <path d="M2 15c2 0 2-1.5 5-1.5s3 1.5 5 1.5 2-1.5 5-1.5 3 1.5 5 1.5"/>
@@ -311,14 +311,14 @@ const Ico: Record<string, React.ReactNode> = {
     </svg>
   ),
   books: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 5h7a2 2 0 012 2v12a1.5 1.5 0 00-1.5-1.5H3V5z"/>
       <path d="M21 5h-7a2 2 0 00-2 2v12a1.5 1.5 0 011.5-1.5H21V5z"/>
     </svg>
   ),
   more: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="6"  cy="12" r="1.4" fill="currentColor"/>
       <circle cx="12" cy="12" r="1.4" fill="currentColor"/>
