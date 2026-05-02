@@ -1,11 +1,10 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { X, ChevronLeft, Navigation, Loader, Plus, Camera } from "lucide-react";
+import { X, ChevronLeft, Navigation, Loader, Plus } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
-import { PREMADE_AVATARS, resizeImageToDataUrl } from "@/lib/avatars";
 
 type Step = "phone" | "otp" | "profile" | "done";
 
@@ -79,11 +78,7 @@ export function RegisterSheet() {
   const [geoError, setGeoError]     = useState("");
   const [dob, setDob]               = useState("");
   const [kids, setKids]             = useState<Kid[]>([]);
-  const [avatar, setAvatar]         = useState<string>(
-    () => PREMADE_AVATARS[Math.floor(Math.random() * PREMADE_AVATARS.length)].id
-  );
   const [showReveal, setShowReveal] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const pendingData = useRef<Parameters<typeof register>[0] | null>(null);
 
@@ -99,7 +94,6 @@ export function RegisterSheet() {
       setAddressLat(undefined); setAddressLng(undefined);
       setLocLoading(false); setGeoError("");
       setDob(""); setKids([]);
-      setAvatar(PREMADE_AVATARS[Math.floor(Math.random() * PREMADE_AVATARS.length)].id);
       setShowReveal(false);
       pendingData.current = null;
     }
@@ -202,7 +196,6 @@ export function RegisterSheet() {
       addressLng,
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
-      avatar: avatar || undefined,
     };
     setStep("done");
   }
@@ -608,96 +601,6 @@ export function RegisterSheet() {
                       />
                     </div>
                   )}
-                </div>
-
-                {/* Avatar picker */}
-                <div style={{ marginBottom: 22 }}>
-                  <label style={labelStyle}>
-                    {t.obAvatarLabel} <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <div style={{
-                      width: 56, height: 56, borderRadius: 999, flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      overflow: "clip",
-                      background: avatar
-                        ? (avatar.startsWith("data:") ? "transparent" : (PREMADE_AVATARS.find(a => a.id === avatar)?.bg ?? "#f1f5f9"))
-                        : "#f1f5f9",
-                      border: "2.5px solid #e2e8f0",
-                    }}>
-                      {avatar && avatar.startsWith("data:") ? (
-                        <img src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
-                      ) : avatar ? (
-                        <span style={{ fontSize: 24 }}>{PREMADE_AVATARS.find(a => a.id === avatar)?.emoji}</span>
-                      ) : (
-                        <Camera size={20} color="#94a3b8" strokeWidth={1.75} />
-                      )}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <ActionButton
-                        onClick={() => photoInputRef.current?.click()}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 6,
-                          padding: "7px 14px", borderRadius: 999,
-                          background: "#f1f5f9", color: "#475569",
-                          fontSize: 12, fontWeight: 700, border: "1.5px solid #e2e8f0",
-                        }}
-                      >
-                        <Camera size={12} strokeWidth={2} /> {t.obAvatarUpload}
-                      </ActionButton>
-                      {avatar && avatar.startsWith("data:") && (
-                        <ActionButton
-                          onClick={() => setAvatar(PREMADE_AVATARS[0].id)}
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 5,
-                            padding: "5px 12px", borderRadius: 999,
-                            background: "#fee2e2", color: "#ef4444",
-                            fontSize: 12, fontWeight: 700,
-                          }}
-                        >
-                          <X size={11} strokeWidth={3} /> {t.obAvatarRemove}
-                        </ActionButton>
-                      )}
-                    </div>
-                  </div>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const dataUrl = await resizeImageToDataUrl(file);
-                      setAvatar(dataUrl);
-                      e.target.value = "";
-                    }}
-                  />
-                  <div style={{ display: "flex", gap: 8 }}>
-                    {PREMADE_AVATARS.map((a) => (
-                      <label key={a.id} style={{ cursor: "pointer", flex: 1 }}>
-                        <input
-                          type="radio"
-                          name="rs-avatar"
-                          value={a.id}
-                          checked={avatar === a.id}
-                          onChange={() => setAvatar(a.id)}
-                          style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-                        />
-                        <div style={{
-                          width: "100%", aspectRatio: "1", borderRadius: 12,
-                          background: a.bg,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 20,
-                          border: avatar === a.id ? "2.5px solid #1d4ed8" : "2px solid transparent",
-                          boxShadow: avatar === a.id ? "0 0 0 3px #bfdbfe" : "none",
-                          transition: "border 0.15s, box-shadow 0.15s",
-                        }}>
-                          {a.emoji}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
                 </div>
 
                 {/* Date of birth */}

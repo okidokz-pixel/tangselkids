@@ -1,14 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, ArrowRight, ChevronLeft, Plus, X, Navigation, Loader, Camera } from "lucide-react";
+import { MapPin, ArrowRight, ChevronLeft, Plus, X, Navigation, Loader } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
 import type { Kid } from "@/context/AuthContext";
-import { PREMADE_AVATARS, getAvatarMeta, resizeImageToDataUrl } from "@/lib/avatars";
-import { ImageCropper } from "@/components/ImageCropper";
 import { MapPicker } from "@/components/MapPicker";
 
 const SPLASH_PHOTOS = ["/splash.jpg", "/splash2.jpg", "/splash3.jpg"];
@@ -95,13 +93,8 @@ export default function OnboardingPage() {
   const [geoError, setGeoError]       = useState("");
   const [dob, setDob]                 = useState("");
   const [kids, setKids]               = useState<Kid[]>([]);
-  const [avatar, setAvatar]           = useState<string>(
-    () => PREMADE_AVATARS[Math.floor(Math.random() * PREMADE_AVATARS.length)].id
-  );
   const [showReveal, setShowReveal]   = useState(false);
-  const [cropSrc,    setCropSrc]      = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Holds submitted data until the "done" animation finishes
   const pendingData = useRef<Parameters<typeof register>[0] | null>(null);
@@ -227,7 +220,6 @@ export default function OnboardingPage() {
       addressLng,
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
-      avatar: avatar || undefined,
     };
     setStep("done");
   }
@@ -576,26 +568,6 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* ── Photo crop overlay ───────────────────────────────────────────── */}
-      {cropSrc && (
-        <ImageCropper
-          imageSrc={cropSrc}
-          onConfirm={(dataUrl) => {
-            // Downscale the cropped result to 120px for storage
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement("canvas");
-              canvas.width = 120; canvas.height = 120;
-              canvas.getContext("2d")!.drawImage(img, 0, 0, 120, 120);
-              setAvatar(canvas.toDataURL("image/jpeg", 0.88));
-              setCropSrc(null);
-            };
-            img.src = dataUrl;
-          }}
-          onCancel={() => setCropSrc(null)}
-        />
-      )}
-
       {/* ── Map picker sheet ──────────────────────────────────────────────── */}
       {showMapPicker && (
         <MapPicker
@@ -761,14 +733,15 @@ export default function OnboardingPage() {
                   {t.obAddressLabel} <span style={{ color: "#ef4444" }}>*</span>
                 </label>
 
-                {/* Location helper buttons — shown BEFORE the textarea so they're
-                    always visible inside the fixed panel, above the keyboard fold */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                {/* Location helper buttons — flex:1 on each so they always share the
+                    row equally on any screen width (no wrapping, no hidden second button) */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                   <ActionButton
                     onClick={handleGetLocation}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 14px", borderRadius: 999,
+                      flex: 1,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      padding: "8px 10px", borderRadius: 999,
                       background: "#eff6ff", color: "#1d4ed8",
                       fontSize: 12.5, fontWeight: 700,
                       border: "1.5px solid #bfdbfe",
@@ -782,8 +755,9 @@ export default function OnboardingPage() {
                   <ActionButton
                     onClick={() => setShowMapPicker(true)}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 14px", borderRadius: 999,
+                      flex: 1,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      padding: "8px 10px", borderRadius: 999,
                       background: "#f0fdf4", color: "#16a34a",
                       fontSize: 12.5, fontWeight: 700,
                       border: "1.5px solid #bbf7d0",
@@ -830,103 +804,6 @@ export default function OnboardingPage() {
                     />
                   </div>
                 )}
-              </div>
-
-              {/* Avatar picker */}
-              <div style={{ marginBottom: 24 }}>
-                <label style={labelStyle}>{t.obAvatarLabel} <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span></label>
-
-                {/* Current selection preview */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <div style={{
-                    width: 64, height: 64, borderRadius: 999, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    overflow: "clip",
-                    background: avatar
-                      ? (avatar.startsWith("data:")
-                          ? "transparent"
-                          : (PREMADE_AVATARS.find(a => a.id === avatar)?.bg ?? "#f1f5f9"))
-                      : "#f1f5f9",
-                    border: "2.5px solid #e2e8f0",
-                  }}>
-                    {avatar && avatar.startsWith("data:") ? (
-                      <img src={avatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
-                    ) : avatar ? (
-                      <span style={{ fontSize: 28 }}>{PREMADE_AVATARS.find(a => a.id === avatar)?.emoji}</span>
-                    ) : (
-                      <Camera size={22} color="#94a3b8" strokeWidth={1.75} />
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <ActionButton
-                      onClick={() => photoInputRef.current?.click()}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "7px 14px", borderRadius: 999,
-                        background: "#f1f5f9", color: "#475569",
-                        fontSize: 12.5, fontWeight: 700,
-                        border: "1.5px solid #e2e8f0",
-                      }}
-                    >
-                      <Camera size={13} strokeWidth={2} /> {t.obAvatarUpload}
-                    </ActionButton>
-                    {avatar && avatar.startsWith("data:") && (
-                      <ActionButton
-                        onClick={() => setAvatar(PREMADE_AVATARS[0].id)}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 5,
-                          padding: "5px 12px", borderRadius: 999,
-                          background: "#fee2e2", color: "#ef4444",
-                          fontSize: 12, fontWeight: 700,
-                        }}
-                      >
-                        <X size={11} strokeWidth={3} /> {t.obAvatarRemove}
-                      </ActionButton>
-                    )}
-                  </div>
-                </div>
-
-                {/* Hidden file input */}
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const dataUrl = await resizeImageToDataUrl(file, 1200);
-                    setCropSrc(dataUrl);
-                    e.target.value = "";
-                  }}
-                />
-
-                {/* Premade avatar row — 6 avatars, single row */}
-                <div style={{ display: "flex", gap: 8 }}>
-                  {PREMADE_AVATARS.map((a) => (
-                    <label key={a.id} style={{ cursor: "pointer", flex: 1 }}>
-                      <input
-                        type="radio"
-                        name="ob-avatar"
-                        value={a.id}
-                        checked={avatar === a.id}
-                        onChange={() => setAvatar(a.id)}
-                        style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-                      />
-                      <div style={{
-                        width: "100%", aspectRatio: "1", borderRadius: 14,
-                        background: a.bg,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 22,
-                        border: avatar === a.id ? "2.5px solid #1d4ed8" : "2px solid transparent",
-                        boxShadow: avatar === a.id ? "0 0 0 3px #bfdbfe" : "none",
-                        transition: "border 0.15s, box-shadow 0.15s",
-                      }}>
-                        {a.emoji}
-                      </div>
-                    </label>
-                  ))}
-                </div>
               </div>
 
               {/* Date of birth */}

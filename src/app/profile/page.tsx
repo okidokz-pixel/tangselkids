@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   User, Globe, Bell, Info, MessageSquare, HelpCircle,
   ChevronRight, Heart, Pencil, LogOut, MapPin,
-  Calendar, Baby, Plus, Trash2, Check, X, Camera,
+  Calendar, Baby, Plus, Trash2, Check, X, FileText,
 } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -15,10 +15,20 @@ import { useRouter } from "next/navigation";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
-import { PREMADE_AVATARS, getAvatarMeta, resizeImageToDataUrl } from "@/lib/avatars";
 import { getReviews } from "@/lib/reviewsStorage";
-import { ImageCropper } from "@/components/ImageCropper";
+import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
+
+// ── Support WhatsApp number ───────────────────────────────────────────────────
+const SUPPORT_WA_NUMBER = "6281234567890"; // TODO: replace with real support number
+
+function WhatsAppIcon({ size = 18, color = "#fff" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
 
 export default function ProfilePage() {
   const { t, lang } = useLang();
@@ -27,6 +37,7 @@ export default function ProfilePage() {
   const { openRegisterSheet } = useRegisterSheet();
   const [savedCount,    setSavedCount]    = useState(0);
   const [reviewsCount,  setReviewsCount]  = useState(0);
+  const [myNotes,       setMyNotes]       = useState<FacilityNote[]>([]);
   const [showGuestGate,    setShowGuestGate]    = useState(false);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
@@ -39,11 +50,8 @@ export default function ProfilePage() {
   const [editAddressLng, setEditAddressLng] = useState<number | undefined>(undefined);
   const [editDob, setEditDob] = useState("");
   const [editKids, setEditKids] = useState<Kid[]>([]);
-  const [editAvatar, setEditAvatar] = useState("");
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [nameError, setNameError] = useState(false);
   const [addressError, setAddressError] = useState(false);
@@ -52,6 +60,7 @@ export default function ProfilePage() {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
     setSavedCount(ids.length);
     setReviewsCount(getReviews().length);
+    setMyNotes(getAllNotes());
   }, []);
 
   function openEdit() {
@@ -62,7 +71,6 @@ export default function ProfilePage() {
     setEditAddressLng(user.addressLng);
     setEditDob(user.dob || "");
     setEditKids(user.kids.map((k) => ({ ...k })));
-    setEditAvatar(user.avatar || "");
     setNameError(false);
     setAddressError(false);
     setEditing(true);
@@ -130,7 +138,6 @@ export default function ProfilePage() {
       addressLng: editAddressLng,
       dob: editDob || undefined,
       kids: editKids.filter((k) => k.name.trim()),
-      avatar: editAvatar || undefined,
     });
     setEditing(false);
   }
@@ -179,29 +186,17 @@ export default function ProfilePage() {
           </h1>
         </div>
 
-        {/* Avatar card */}
+        {/* Profile card */}
         <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: "rgba(255,255,255,0.12)" }}>
-          {(() => {
-            const meta = getAvatarMeta(user?.avatar);
-            return (
-              <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{
-                  background: meta
-                    ? (meta.type === "emoji" ? meta.bg : "transparent")
-                    : "rgba(255,255,255,0.2)",
-                  overflow: "clip",
-                  border: meta ? "2px solid rgba(255,255,255,0.3)" : "none",
-                }}>
-                {meta?.type === "photo" ? (
-                  <img src={meta.src} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
-                ) : meta?.type === "emoji" ? (
-                  <span style={{ fontSize: 28 }}>{meta.emoji}</span>
-                ) : (
-                  <User size={28} color="white" strokeWidth={1.5} />
-                )}
-              </div>
-            );
-          })()}
+          <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{
+              background: user ? "#0e1d4f" : "rgba(255,255,255,0.2)",
+              border: "2px solid rgba(255,255,255,0.3)",
+              fontSize: 24, fontWeight: 700, color: "#fff",
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+            {user ? (user.name?.charAt(0).toUpperCase() || "?") : <User size={28} color="white" strokeWidth={1.5} />}
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-lg font-semibold leading-tight truncate"
                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
@@ -366,99 +361,6 @@ export default function ProfilePage() {
             <div className="rounded-2xl p-4 space-y-4"
                  style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)" }}>
 
-              {/* Avatar */}
-              <div>
-                <label className="block font-jakarta text-xs font-semibold mb-2" style={{ color: "var(--tk-muted)" }}>
-                  Photo / Avatar <span style={{ color: "var(--tk-muted)", fontWeight: 400 }}>(optional)</span>
-                </label>
-                {/* Preview + upload button */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: 999, flexShrink: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    overflow: "clip",
-                    background: editAvatar
-                      ? (editAvatar.startsWith("data:")
-                          ? "transparent"
-                          : (PREMADE_AVATARS.find(a => a.id === editAvatar)?.bg ?? "#f1f5f9"))
-                      : "#f1f5f9",
-                    border: "2px solid #e2e8f0",
-                  }}>
-                    {editAvatar && editAvatar.startsWith("data:") ? (
-                      <img src={editAvatar} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="avatar" />
-                    ) : editAvatar ? (
-                      <span style={{ fontSize: 26 }}>{PREMADE_AVATARS.find(a => a.id === editAvatar)?.emoji}</span>
-                    ) : (
-                      <Camera size={20} color="#94a3b8" strokeWidth={1.75} />
-                    )}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <ActionButton
-                      onClick={() => photoInputRef.current?.click()}
-                      style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "7px 14px", borderRadius: 10,
-                        background: "#f1f5f9", color: "#475569",
-                        fontSize: 12, fontWeight: 700,
-                        border: "1.5px solid #e2e8f0",
-                      }}
-                    >
-                      <Camera size={13} /> Upload Photo
-                    </ActionButton>
-                    {editAvatar && (
-                      <ActionButton
-                        onClick={() => setEditAvatar("")}
-                        style={{
-                          display: "inline-flex", alignItems: "center", gap: 5,
-                          padding: "5px 12px", borderRadius: 10,
-                          background: "#fee2e2", color: "#ef4444",
-                          fontSize: 11, fontWeight: 700,
-                        }}
-                      >
-                        <X size={11} strokeWidth={3} /> Remove
-                      </ActionButton>
-                    )}
-                  </div>
-                </div>
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const dataUrl = await resizeImageToDataUrl(file, 1200);
-                    setCropSrc(dataUrl);
-                    e.target.value = "";
-                  }}
-                />
-                {/* Premade row — 6 avatars, single row */}
-                <div style={{ display: "flex", gap: 8 }}>
-                  {PREMADE_AVATARS.slice(0, 6).map((a) => (
-                    <label key={a.id} style={{ cursor: "pointer", flex: 1 }}>
-                      <input
-                        type="radio"
-                        name="profile-avatar"
-                        value={a.id}
-                        checked={editAvatar === a.id}
-                        onChange={() => setEditAvatar(a.id)}
-                        style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
-                      />
-                      <div style={{
-                        width: "100%", aspectRatio: "1", borderRadius: 12,
-                        background: a.bg, display: "flex", alignItems: "center",
-                        justifyContent: "center", fontSize: 20,
-                        border: editAvatar === a.id ? "2.5px solid #1d4ed8" : "2px solid transparent",
-                        boxShadow: editAvatar === a.id ? "0 0 0 3px #bfdbfe" : "none",
-                      }}>
-                        {a.emoji}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
               {/* Name */}
               <div>
                 <label className="block font-jakarta text-xs font-semibold mb-1.5" style={{ color: "var(--tk-muted)" }}>
@@ -499,23 +401,26 @@ export default function ProfilePage() {
                     boxSizing: "border-box",
                   }}
                 />
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                   <ActionButton
                     onClick={useMyLocation}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      flex: 1,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 700,
                       background: "#EFF6FF", color: "#1d4ed8", touchAction: "manipulation",
+                      border: "1.5px solid #bfdbfe",
                     }}
                   >
                     <MapPin size={14} />
-                    {geoLoading ? "Detecting…" : "Use my location"}
+                    {geoLoading ? t.obLocating : t.obUseLocation}
                   </ActionButton>
                   <ActionButton
                     onClick={() => setShowMapPicker(true)}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      flex: 1,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 700,
                       background: "#f0fdf4", color: "#16a34a", touchAction: "manipulation",
                       border: "1.5px solid #bbf7d0",
                     }}
@@ -657,46 +562,145 @@ export default function ProfilePage() {
           </section>
         )}
 
-        {/* Activity stats — compact single row */}
+        {/* Activity stats — 3-column row */}
         <section>
           <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
             {t.profileSectionStats}
           </p>
-          <div className="rounded-2xl flex overflow-hidden divide-x"
-               style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)" }}>
+          <div className="rounded-2xl overflow-hidden"
+               style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", display: "flex" }}>
+
+            {/* Saved */}
             {tier === "guest" ? (
-              <ActionButton onClick={() => setShowGuestGate(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
-                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatSaved}</span>
-                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              <ActionButton onClick={() => setShowGuestGate(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
+                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
               </ActionButton>
             ) : (
-              <Link href="/saved" className="flex-1 flex items-center gap-3 px-4 py-3">
-                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatSaved}</span>
-                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{savedCount}</span>
+              <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{savedCount}</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
               </Link>
             )}
+
+            {/* Reviews */}
             {tier === "guest" ? (
-              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
-                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
               </ActionButton>
             ) : tier === "free" ? (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "transparent" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
-                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>—</span>
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
               </ActionButton>
             ) : (
-              <Link href="/my-reviews" className="flex-1 flex items-center gap-3 px-4 py-3">
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
-                <span className="font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileStatReviews}</span>
-                <span className="ml-auto font-bold text-base" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif" }}>{reviewsCount}</span>
+              <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{reviewsCount}</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
+              </Link>
+            )}
+
+            {/* Notes */}
+            {tier === "guest" ? (
+              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
+                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
+              </ActionButton>
+            ) : tier === "free" ? (
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
+                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
+              </ActionButton>
+            ) : (
+              <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none" }}>
+                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{myNotes.length}</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
               </Link>
             )}
           </div>
+        </section>
+
+        {/* ── Priority Support ────────────────────────────────────── */}
+        <section>
+          <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
+            {t.supportSectionTitle}
+          </p>
+          {tier === "premium" ? (
+            <a
+              href={`https://wa.me/${SUPPORT_WA_NUMBER}?text=${encodeURIComponent(t.supportWaMessage)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px", borderRadius: 16,
+                background: "linear-gradient(135deg, #128C7E 0%, #25D366 100%)",
+                boxShadow: "0 4px 16px rgba(37,211,102,0.30)",
+                textDecoration: "none",
+              }}
+            >
+              <div style={{
+                width: 42, height: 42, borderRadius: 999, flexShrink: 0,
+                background: "rgba(255,255,255,0.20)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <WhatsAppIcon size={22} color="#fff" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="font-jakarta font-bold text-sm" style={{ color: "#fff", margin: 0 }}>
+                  {t.supportWaBtn}
+                </p>
+                <p className="font-jakarta text-xs" style={{ color: "rgba(255,255,255,0.80)", margin: "2px 0 0" }}>
+                  {t.supportWaDesc}
+                </p>
+              </div>
+              <ChevronRight size={18} color="rgba(255,255,255,0.70)" />
+            </a>
+          ) : (
+            <ActionButton
+              onClick={tier === "guest" ? () => setShowPremiumSheet(true) : () => setShowUpgradeSheet(true)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 16px", borderRadius: 16,
+                background: "#F1F5F9", border: "1.5px dashed #CBD5E1",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <div style={{
+                width: 42, height: 42, borderRadius: 999, flexShrink: 0,
+                background: "#E2E8F0",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <WhatsAppIcon size={22} color="#94A3B8" />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                <p className="font-jakarta font-bold text-sm" style={{ color: "#64748B", margin: 0 }}>
+                  {t.supportWaBtn}
+                </p>
+                <p className="font-jakarta text-xs" style={{ color: "#94A3B8", margin: "2px 0 0", lineHeight: 1.4 }}>
+                  {t.supportLockedMsg}
+                </p>
+              </div>
+              <div style={{
+                width: 26, height: 26, borderRadius: 999, flexShrink: 0,
+                background: tier === "guest" ? "#ef4444" : "#d97706",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </ActionButton>
+          )}
         </section>
 
         {/* Preferences */}
@@ -832,25 +836,6 @@ export default function ProfilePage() {
             </ActionButton>
           </div>
         </>
-      )}
-
-      {/* ── Photo crop overlay ─────────────────────────────────────────────── */}
-      {cropSrc && (
-        <ImageCropper
-          imageSrc={cropSrc}
-          onConfirm={(dataUrl) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement("canvas");
-              canvas.width = 120; canvas.height = 120;
-              canvas.getContext("2d")!.drawImage(img, 0, 0, 120, 120);
-              setEditAvatar(canvas.toDataURL("image/jpeg", 0.88));
-              setCropSrc(null);
-            };
-            img.src = dataUrl;
-          }}
-          onCancel={() => setCropSrc(null)}
-        />
       )}
 
       {/* ── Map picker sheet ───────────────────────────────────────────────── */}

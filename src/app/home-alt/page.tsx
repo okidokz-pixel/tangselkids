@@ -1072,7 +1072,7 @@ function FooterMark() {
 // Pinned at bottom via left/right — NO transform centering (iOS WebKit rule #1)
 function TabBar() {
   const tabs = [
-    { href: "/",         label: "Beranda",   Icon: Home,     active: true  },
+    { href: "/home-alt", label: "Beranda",   Icon: Home,     active: true  },
     { href: "/explore",  label: "Jelajah",   Icon: Search,   active: false },
     { href: "/saved",    label: "Tersimpan", Icon: Bookmark, active: false },
     { href: "/profile",  label: "Profil",    Icon: User,     active: false },

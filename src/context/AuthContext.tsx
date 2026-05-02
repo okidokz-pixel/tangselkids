@@ -11,7 +11,7 @@ export type UserData = {
   addressLng?: number;
   dob?: string;
   kids: Kid[];
-  avatar?: string; // "avatar_0"–"avatar_7" or "data:image/jpeg;base64,…"
+  avatar?: string; // kept for home-alt compatibility; no UI to set it on the main site
   tier?: "free" | "premium";
   lifetime?: boolean;        // true = lifetime member, premiumExpiresAt is ignored
   premiumExpiresAt?: string; // ISO date string — undefined for lifetime members
