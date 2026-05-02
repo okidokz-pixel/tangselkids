@@ -83,11 +83,20 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const [showConfetti,       setShowConfetti]       = useState(false);
   const [showLowRatingPopup, setShowLowRatingPopup] = useState(false);
   const [existingReview,     setExistingReview]     = useState<UserReview | null>(null);
+  const [isEditing,          setIsEditing]          = useState(false);
 
   useEffect(() => {
     const found = getReviewForPlace(id);
     if (found) setExistingReview(found);
   }, [id]);
+
+  function startEdit() {
+    if (!existingReview) return;
+    setName(existingReview.name);
+    setRating(existingReview.rating);
+    setComment(existingReview.comment);
+    setIsEditing(true);
+  }
 
   // Only premium users can write reviews
   useEffect(() => {
@@ -229,8 +238,8 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
 
       <div className="flex-1 px-5 py-6 space-y-5">
 
-        {/* ── Already reviewed ── */}
-        {existingReview && step === "form" && (
+        {/* ── Already reviewed (read-only view) ── */}
+        {existingReview && !isEditing && step === "form" && (
           <div className="space-y-5">
             <div>
               <p className="font-jakarta text-sm font-semibold text-gray-400 mb-1">Ulasanmu untuk</p>
@@ -256,7 +265,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <ActionButton
-              onClick={() => router.back()}
+              onClick={startEdit}
               style={{
                 width: "100%", padding: "14px 0", borderRadius: 16,
                 background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
@@ -265,17 +274,31 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               } as React.CSSProperties}
             >
-              Kembali ke Halaman Tempat
+              <Pencil size={15} style={{ display: "inline", marginRight: 7, verticalAlign: "middle" }} />
+              {t.reviewEditBtn}
+            </ActionButton>
+
+            <ActionButton
+              onClick={() => router.back()}
+              style={{
+                width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16,
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 600,
+                cursor: "pointer", textAlign: "center", border: "none",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              } as React.CSSProperties}
+            >
+              {t.reviewBackToPlace}
             </ActionButton>
           </div>
         )}
 
-        {/* ── Review form ── */}
-        {!existingReview && step === "form" && (
+        {/* ── Review form (new or edit) ── */}
+        {(!existingReview || isEditing) && step === "form" && (
           <div className="space-y-5">
             <div>
               <p className="font-jakarta text-sm font-semibold text-gray-400 mb-1">
-                {t.reviewFormTitle}
+                {isEditing ? t.reviewEditTitle : t.reviewFormTitle}
               </p>
               <h2 className="text-2xl font-bold text-[#1E3A5F] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                 {place.name}
@@ -366,7 +389,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               } as React.CSSProperties}
             >
-              {t.reviewSubmit}
+              {isEditing ? t.reviewUpdateSubmit : t.reviewSubmit}
             </button>
 
             <div style={{ textAlign: "center", paddingTop: 8, paddingBottom: 8 }}>
@@ -391,7 +414,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               <Check size={40} style={{ color: "#1D4ED8" }} strokeWidth={2.5} />
             </div>
             <h2 className="text-2xl font-bold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-              {t.reviewSuccess}
+              {isEditing ? t.reviewUpdateSuccess : t.reviewSuccess}
             </h2>
             <p className="font-jakarta text-gray-500 text-sm leading-relaxed max-w-xs">{t.reviewSuccessDesc}</p>
             <ActionButton

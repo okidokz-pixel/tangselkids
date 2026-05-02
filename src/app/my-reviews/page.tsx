@@ -1,13 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Pencil, Star } from "lucide-react";
+import { ChevronLeft, Pencil, Star, ChevronRight } from "lucide-react";
 import { getReviews, type UserReview } from "@/lib/reviewsStorage";
 import { ActionButton } from "@/components/ActionButton";
+import { useLang } from "@/context/LanguageContext";
 import Link from "next/link";
 
 export default function MyReviewsPage() {
   const router = useRouter();
+  const { t } = useLang();
   const [reviews, setReviews] = useState<UserReview[]>([]);
 
   useEffect(() => {
@@ -73,17 +75,20 @@ export default function MyReviewsPage() {
         {/* Review cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {reviews.map((review) => (
-            <Link
+            <div
               key={review.placeId}
-              href={`/place/${review.placeId}`}
-              style={{ textDecoration: "none", display: "block" }}
-            >
-              <div style={{
+              style={{
                 background: "#fff", borderRadius: 20,
                 border: "1px solid #e2e8f0",
                 boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.06)",
-                padding: 16,
-              }}>
+                overflow: "clip",
+              }}
+            >
+              {/* Tappable review body → goes to place detail */}
+              <Link
+                href={`/place/${review.placeId}`}
+                style={{ textDecoration: "none", display: "block", padding: 16 }}
+              >
                 {/* Place name + date */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -130,8 +135,28 @@ export default function MyReviewsPage() {
                 }}>
                   — {review.name}
                 </p>
+              </Link>
+
+              {/* Edit button — separated by a divider */}
+              <div style={{ borderTop: "1px solid #f1f5f9" }}>
+                <ActionButton
+                  onClick={() => router.push(`/write-review/${review.placeId}`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    width: "100%", padding: "11px 16px",
+                    background: "transparent", border: "none",
+                    color: "#1d4ed8",
+                    fontFamily: "var(--font-jakarta),sans-serif",
+                    fontSize: 13, fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Pencil size={14} strokeWidth={2.5} />
+                  {t.reviewEditBtn}
+                  <ChevronRight size={14} style={{ marginLeft: "auto", color: "#94a3b8" }} />
+                </ActionButton>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

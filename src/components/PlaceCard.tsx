@@ -78,9 +78,9 @@ export function PlaceCard({
 
         {/* Area */}
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <MapPin size={10} style={{ color: "var(--tk-muted)", flexShrink: 0 }} strokeWidth={2} />
+          <MapPin size={12} style={{ color: "var(--tk-muted)", flexShrink: 0 }} strokeWidth={2} />
           <span style={{
-            fontSize: 11,
+            fontSize: 13,
             color: "var(--tk-muted)",
             fontFamily: "var(--font-jakarta, sans-serif)",
             overflow: "hidden",
@@ -93,11 +93,11 @@ export function PlaceCard({
 
         {/* Rating */}
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <Star size={11} fill="#f6b545" stroke="none" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+          <Star size={13} fill="#f6b545" stroke="none" />
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
             {place.rating}
           </span>
-          <span style={{ fontSize: 10, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+          <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
             ({place.reviews})
           </span>
         </div>
@@ -105,7 +105,7 @@ export function PlaceCard({
         {/* Price */}
         <p style={{
           margin: 0,
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 700,
           color: "var(--tk-blue-700)",
           fontFamily: "var(--font-jakarta, sans-serif)",

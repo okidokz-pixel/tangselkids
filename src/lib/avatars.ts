@@ -21,24 +21,37 @@ export function getAvatarMeta(avatar?: string):
   return null;
 }
 
-/** Resize an image File to a 120×120 JPEG data URL (for localStorage storage) */
-export function resizeImageToDataUrl(file: File): Promise<string> {
+/**
+ * Resize an image File to a data URL.
+ * @param file - The image file
+ * @param maxSize - Max width/height in px (default 120). When > 120, aspect ratio is preserved (no square crop).
+ */
+export function resizeImageToDataUrl(file: File, maxSize = 120): Promise<string> {
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const size = 120;
         const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d")!;
-        // Crop to square from centre
-        const min = Math.min(img.width, img.height);
-        const sx = (img.width - min) / 2;
-        const sy = (img.height - min) / 2;
-        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        if (maxSize <= 120) {
+          // Square crop (original behaviour for avatar thumbnails)
+          const size = maxSize;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d")!;
+          const min = Math.min(img.width, img.height);
+          const sx = (img.width - min) / 2;
+          const sy = (img.height - min) / 2;
+          ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        } else {
+          // Preserve aspect ratio — just cap the longest side
+          const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          canvas.width  = Math.round(img.width  * ratio);
+          canvas.height = Math.round(img.height * ratio);
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+        resolve(canvas.toDataURL("image/jpeg", 0.88));
       };
       img.src = e.target!.result as string;
     };

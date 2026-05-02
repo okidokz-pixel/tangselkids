@@ -383,6 +383,29 @@ function SchoolsContent() {
         </div>
       )}
 
+      {/* Compare helper text */}
+      {tier !== "guest" && filtered.length > 0 && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "9px 13px", borderRadius: 10,
+            background: compareIds.length === 0 ? "#f1f5f9" : "#eff6ff",
+            border: `1.5px solid ${compareIds.length === 0 ? "#e2e8f0" : "#bfdbfe"}`,
+          }}>
+            <Scale size={14} color={compareIds.length === 0 ? "#94a3b8" : "#1d4ed8"} />
+            <span style={{
+              fontSize: 12, fontWeight: 600,
+              color: compareIds.length === 0 ? "#94a3b8" : "#1d4ed8",
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              {compareIds.length === 0
+                ? t.schoolsCompareHint
+                : t.schoolsSelectedForCompare(compareIds.length)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
         {filtered.length === 0 && (
@@ -426,7 +449,7 @@ function SchoolsContent() {
 
       {/* Compare float button */}
       {tier !== "guest" && compareIds.length >= 2 && (
-        <div style={{ position: "fixed", bottom: 80, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
+        <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
           <ActionButton onClick={goCompare} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             width: "100%", padding: "16px 20px", borderRadius: 18,

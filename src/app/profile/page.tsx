@@ -17,6 +17,8 @@ import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { PREMADE_AVATARS, getAvatarMeta, resizeImageToDataUrl } from "@/lib/avatars";
 import { getReviews } from "@/lib/reviewsStorage";
+import { ImageCropper } from "@/components/ImageCropper";
+import { MapPicker } from "@/components/MapPicker";
 
 export default function ProfilePage() {
   const { t, lang } = useLang();
@@ -41,6 +43,8 @@ export default function ProfilePage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState("");
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [nameError, setNameError] = useState(false);
   const [addressError, setAddressError] = useState(false);
 
@@ -424,8 +428,8 @@ export default function ProfilePage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const dataUrl = await resizeImageToDataUrl(file);
-                    setEditAvatar(dataUrl);
+                    const dataUrl = await resizeImageToDataUrl(file, 1200);
+                    setCropSrc(dataUrl);
                     e.target.value = "";
                   }}
                 />
@@ -495,17 +499,30 @@ export default function ProfilePage() {
                     boxSizing: "border-box",
                   }}
                 />
-                <ActionButton
-                  onClick={useMyLocation}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8,
-                    padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                    background: "#EFF6FF", color: "#1d4ed8", touchAction: "manipulation",
-                  }}
-                >
-                  <MapPin size={14} />
-                  {geoLoading ? "Detecting…" : "Use my location"}
-                </ActionButton>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  <ActionButton
+                    onClick={useMyLocation}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      background: "#EFF6FF", color: "#1d4ed8", touchAction: "manipulation",
+                    }}
+                  >
+                    <MapPin size={14} />
+                    {geoLoading ? "Detecting…" : "Use my location"}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => setShowMapPicker(true)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 10, fontSize: 12, fontWeight: 700,
+                      background: "#f0fdf4", color: "#16a34a", touchAction: "manipulation",
+                      border: "1.5px solid #bbf7d0",
+                    }}
+                  >
+                    <MapPin size={14} /> {t.obSearchOnMap}
+                  </ActionButton>
+                </div>
                 {geoError && (
                   <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 6, lineHeight: 1.4, fontWeight: 500 }}>
                     ⚠ {geoError}
@@ -815,6 +832,39 @@ export default function ProfilePage() {
             </ActionButton>
           </div>
         </>
+      )}
+
+      {/* ── Photo crop overlay ─────────────────────────────────────────────── */}
+      {cropSrc && (
+        <ImageCropper
+          imageSrc={cropSrc}
+          onConfirm={(dataUrl) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              canvas.width = 120; canvas.height = 120;
+              canvas.getContext("2d")!.drawImage(img, 0, 0, 120, 120);
+              setEditAvatar(canvas.toDataURL("image/jpeg", 0.88));
+              setCropSrc(null);
+            };
+            img.src = dataUrl;
+          }}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
+
+      {/* ── Map picker sheet ───────────────────────────────────────────────── */}
+      {showMapPicker && (
+        <MapPicker
+          initialAddress={editAddress}
+          onConfirm={(addr, lat, lng) => {
+            setEditAddress(addr);
+            setEditAddressLat(lat);
+            setEditAddressLng(lng);
+            setShowMapPicker(false);
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
       )}
     </div>
   );

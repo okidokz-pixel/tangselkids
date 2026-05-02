@@ -214,27 +214,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const colors = categoryColor[place.category] ?? { bg: "#DBEAFE", text: "#1E3A5F" };
   const extraParas = aboutExtra[place.category] ?? [];
 
-  // Ken Burns animation variant per photo index
-  const kbVariant = (i: number) => [`kb0`, `kb1`, `kb2`][i % 3];
-
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ paddingTop: 52 }}>
-
-      {/* ── Animation styles ──────────────────────────────────────────────── */}
-      <style>{`
-        @keyframes kb0 {
-          from { transform: scale(1.0)  translate(0%,    0%);   }
-          to   { transform: scale(1.18) translate(-4%,  -3%);   }
-        }
-        @keyframes kb1 {
-          from { transform: scale(1.15) translate(-3%,   1%);   }
-          to   { transform: scale(1.0)  translate( 4%,  -2%);   }
-        }
-        @keyframes kb2 {
-          from { transform: scale(1.0)  translate( 3%,   3%);   }
-          to   { transform: scale(1.18) translate(-2%,  -3%);   }
-        }
-      `}</style>
 
       {/* ── Sticky top bar — blue gradient ────────────────────────────────── */}
       <div style={{
@@ -431,8 +412,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               width: "100%", height: "100%", objectFit: "cover",
               opacity: heroIndex === i ? 1 : 0,
               transition: "opacity 0.6s ease-in-out",
-              animation: heroIndex === i ? `${kbVariant(i)} 12s ease-in-out both` : "none",
-              transformOrigin: "center center",
               cursor: "pointer",
             }}
           />
@@ -931,14 +910,22 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           );
         })()}
 
-        {/* Write a Review button */}
+        {/* Write / Edit a Review button */}
         {userReview ? (
-          <div
-            className="w-full py-3 rounded-2xl font-jakarta font-bold text-sm flex items-center justify-center gap-2 border-2"
-            style={{ borderColor: "#D1D5DB", color: "#9CA3AF", background: "#F9FAFB" }}
+          <ActionButton
+            onClick={() => router.push(`/write-review/${place.id}`)}
+            style={{
+              width: "100%", padding: "12px 16px",
+              borderRadius: 14, border: "2px solid #D1D5DB",
+              background: "#F9FAFB", color: "#6B7280",
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 14, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            }}
           >
-            <Check size={15} /> Sudah Diulas
-          </div>
+            <Pencil size={15} /> {t.reviewEditBtn}
+          </ActionButton>
         ) : (
           <ActionButton
             onClick={() => {

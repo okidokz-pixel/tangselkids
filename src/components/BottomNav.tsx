@@ -117,7 +117,7 @@ export function BottomNav({ active }: { active: NavTab }) {
               flexDirection: "column",
               alignItems: "center",
               gap: 3,
-              fontSize: 10.5,
+              fontSize: 12,
               fontWeight: 700,
               letterSpacing: -0.1,
             }}>

@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { RegisterSheetProvider } from "@/context/RegisterSheetContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { RegisterSheet } from "@/components/RegisterSheet";
+import { DragClickGuard } from "@/components/DragClickGuard";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -65,6 +66,7 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <RegisterSheetProvider>
+              <DragClickGuard />
               <AuthGuard>{children}</AuthGuard>
               <RegisterSheet />
             </RegisterSheetProvider>

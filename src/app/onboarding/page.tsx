@@ -8,6 +8,8 @@ import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
 import type { Kid } from "@/context/AuthContext";
 import { PREMADE_AVATARS, getAvatarMeta, resizeImageToDataUrl } from "@/lib/avatars";
+import { ImageCropper } from "@/components/ImageCropper";
+import { MapPicker } from "@/components/MapPicker";
 
 const SPLASH_PHOTOS = ["/splash.jpg", "/splash2.jpg", "/splash3.jpg"];
 
@@ -97,6 +99,8 @@ export default function OnboardingPage() {
     () => PREMADE_AVATARS[Math.floor(Math.random() * PREMADE_AVATARS.length)].id
   );
   const [showReveal, setShowReveal]   = useState(false);
+  const [cropSrc,    setCropSrc]      = useState<string | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Holds submitted data until the "done" animation finishes
@@ -572,6 +576,40 @@ export default function OnboardingPage() {
         </div>
       )}
 
+      {/* ── Photo crop overlay ───────────────────────────────────────────── */}
+      {cropSrc && (
+        <ImageCropper
+          imageSrc={cropSrc}
+          onConfirm={(dataUrl) => {
+            // Downscale the cropped result to 120px for storage
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              canvas.width = 120; canvas.height = 120;
+              canvas.getContext("2d")!.drawImage(img, 0, 0, 120, 120);
+              setAvatar(canvas.toDataURL("image/jpeg", 0.88));
+              setCropSrc(null);
+            };
+            img.src = dataUrl;
+          }}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
+
+      {/* ── Map picker sheet ──────────────────────────────────────────────── */}
+      {showMapPicker && (
+        <MapPicker
+          initialAddress={address}
+          onConfirm={(addr, lat, lng) => {
+            setAddress(addr);
+            setAddressLat(lat);
+            setAddressLng(lng);
+            setShowMapPicker(false);
+          }}
+          onClose={() => setShowMapPicker(false)}
+        />
+      )}
+
       {/* ── PANEL (phone / otp / profile steps) ──────────────────────────── */}
       {step !== "splash" && step !== "verified" && step !== "done" && (
         <div style={{
@@ -722,6 +760,44 @@ export default function OnboardingPage() {
                 <label style={labelStyle}>
                   {t.obAddressLabel} <span style={{ color: "#ef4444" }}>*</span>
                 </label>
+
+                {/* Location helper buttons — shown BEFORE the textarea so they're
+                    always visible inside the fixed panel, above the keyboard fold */}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <ActionButton
+                    onClick={handleGetLocation}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 999,
+                      background: "#eff6ff", color: "#1d4ed8",
+                      fontSize: 12.5, fontWeight: 700,
+                      border: "1.5px solid #bfdbfe",
+                    }}
+                  >
+                    {locLoading
+                      ? <><Loader size={13} style={{ animation: "spin 1s linear infinite" }} /> {t.obLocating}</>
+                      : <><Navigation size={13} /> {t.obUseLocation}</>
+                    }
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => setShowMapPicker(true)}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 14px", borderRadius: 999,
+                      background: "#f0fdf4", color: "#16a34a",
+                      fontSize: 12.5, fontWeight: 700,
+                      border: "1.5px solid #bbf7d0",
+                    }}
+                  >
+                    <MapPin size={13} /> {t.obSearchOnMap}
+                  </ActionButton>
+                </div>
+                {geoError && (
+                  <p style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8, lineHeight: 1.4, fontWeight: 500 }}>
+                    ⚠ {geoError}
+                  </p>
+                )}
+
                 {/* Prominent hint */}
                 <div style={{
                   display: "flex", alignItems: "flex-start", gap: 8,
@@ -742,27 +818,6 @@ export default function OnboardingPage() {
                   style={{ ...inputStyle, resize: "none" }}
                 />
                 {addressError && <p style={errorStyle}>{t.obAddressError}</p>}
-
-                <ActionButton
-                  onClick={handleGetLocation}
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 6,
-                    marginTop: 8, padding: "8px 14px", borderRadius: 999,
-                    background: "#eff6ff", color: "#1d4ed8",
-                    fontSize: 12.5, fontWeight: 700,
-                    border: "1.5px solid #bfdbfe",
-                  }}
-                >
-                  {locLoading
-                    ? <><Loader size={13} style={{ animation: "spin 1s linear infinite" }} /> {t.obLocating}</>
-                    : <><Navigation size={13} /> {t.obUseLocation}</>
-                  }
-                </ActionButton>
-                {geoError && (
-                  <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 6, lineHeight: 1.4, fontWeight: 500 }}>
-                    ⚠ {geoError}
-                  </p>
-                )}
 
                 {mapSrc && (
                   <div style={{ marginTop: 12, borderRadius: 16, overflow: "clip", border: "1.5px solid #e2e8f0", height: 180 }}>
@@ -840,8 +895,8 @@ export default function OnboardingPage() {
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const dataUrl = await resizeImageToDataUrl(file);
-                    setAvatar(dataUrl);
+                    const dataUrl = await resizeImageToDataUrl(file, 1200);
+                    setCropSrc(dataUrl);
                     e.target.value = "";
                   }}
                 />
