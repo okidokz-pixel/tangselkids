@@ -1,13 +1,14 @@
 ﻿"use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, ArrowRight, ChevronLeft, Plus, X, Navigation, Loader } from "lucide-react";
+import { MapPin, ArrowRight, ChevronLeft, Plus, X, Navigation, Loader, Camera, User } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
 import type { Kid } from "@/context/AuthContext";
 import { MapPicker } from "@/components/MapPicker";
+import { ImageCropper } from "@/components/ImageCropper";
 
 const SPLASH_PHOTOS = ["/splash.jpg", "/splash2.jpg", "/splash3.jpg"];
 
@@ -95,6 +96,10 @@ export default function OnboardingPage() {
   const [kids, setKids]               = useState<Kid[]>([]);
   const [showReveal, setShowReveal]   = useState(false);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const [cropperSrc, setCropperSrc]   = useState("");
+  const [showCropper, setShowCropper] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Holds submitted data until the "done" animation finishes
   const pendingData = useRef<Parameters<typeof register>[0] | null>(null);
@@ -197,6 +202,18 @@ export default function OnboardingPage() {
     );
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCropperSrc(ev.target?.result as string);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
   function addKid() { setKids([...kids, { name: "", dob: "" }]); }
   function removeKid(i: number) { setKids(kids.filter((_, idx) => idx !== i)); }
   function updateKid(i: number, field: keyof Kid, value: string) {
@@ -221,6 +238,7 @@ export default function OnboardingPage() {
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
     };
+    if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
     setStep("done");
   }
 
@@ -568,6 +586,25 @@ export default function OnboardingPage() {
         </div>
       )}
 
+      {/* ── Profile photo file input + cropper ───────────────────────────── */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+      {showCropper && (
+        <ImageCropper
+          imageSrc={cropperSrc}
+          onConfirm={(dataUrl) => {
+            setProfilePhoto(dataUrl);
+            setShowCropper(false);
+          }}
+          onCancel={() => setShowCropper(false)}
+        />
+      )}
+
       {/* ── Map picker sheet ──────────────────────────────────────────────── */}
       {showMapPicker && (
         <MapPicker
@@ -711,6 +748,39 @@ export default function OnboardingPage() {
               <p style={{ fontSize: 13.5, color: "#64748b", margin: "0 0 24px", lineHeight: 1.5 }}>
                 {t.obProfileDesc}
               </p>
+
+              {/* Profile Photo */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
+                <div style={{ position: "relative" }}>
+                  <ActionButton
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      width: 80, height: 80, borderRadius: 999,
+                      background: profilePhoto ? "transparent" : "#e6f4ed",
+                      border: "2.5px solid #2e8a5a",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      overflow: "clip", padding: 0,
+                    }}
+                  >
+                    {profilePhoto
+                      ? <img src={profilePhoto} alt="" style={{ width: 80, height: 80, objectFit: "cover" }} />
+                      : <User size={36} color="#2e8a5a" strokeWidth={1.5} />
+                    }
+                  </ActionButton>
+                  <div style={{
+                    position: "absolute", bottom: 2, right: 2,
+                    width: 22, height: 22, borderRadius: 999,
+                    background: "#2e8a5a", border: "2px solid #fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    pointerEvents: "none",
+                  }}>
+                    <Camera size={11} color="#fff" />
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 8, fontWeight: 600, fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                  Foto Profil (opsional)
+                </p>
+              </div>
 
               {/* Name */}
               <div style={{ marginBottom: 20 }}>

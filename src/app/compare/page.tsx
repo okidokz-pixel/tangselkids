@@ -6,7 +6,6 @@ import { ChevronLeft, Scale, GraduationCap, Lock } from "lucide-react";
 import { places, formatPriceRange, type Place } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
 function getValue(place: Place, key: string): string {
@@ -29,7 +28,6 @@ export default function ComparePage() {
   const router = useRouter();
   const { t }  = useLang();
   const { tier, loaded } = useAuth();
-  const { openRegisterSheet } = useRegisterSheet();
   const [compareSchools, setCompareSchools] = useState<Place[]>([]);
 
   const rows = [
@@ -42,10 +40,6 @@ export default function ComparePage() {
   ];
 
   useEffect(() => {
-    if (loaded && tier === "guest") {
-      openRegisterSheet();
-      return;
-    }
     const ids: string[] = JSON.parse(localStorage.getItem("compareIds") || "[]");
     const found = ids
       .map((id) => places.find((p) => p.id === id))
@@ -88,8 +82,8 @@ export default function ComparePage() {
 
       <div className="flex-1 px-4 py-5">
 
-        {/* Free-user upgrade prompt */}
-        {loaded && tier === "free" && (
+        {/* Non-premium upgrade prompt */}
+        {loaded && tier !== "premium" && (
           <div className="flex flex-col items-center justify-center gap-4 text-center py-8 px-4">
             <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "#FEF3C7" }}>
               <Lock size={36} style={{ color: "#D97706" }} strokeWidth={1.5} />

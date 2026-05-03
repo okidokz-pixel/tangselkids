@@ -3,8 +3,6 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
-import { useAuth } from "@/context/AuthContext";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { ActionButton } from "@/components/ActionButton";
 
 
@@ -197,8 +195,6 @@ function SocialRow({
 
 export default function ListYourPlacePage() {
   const { t } = useLang();
-  const { tier, loaded } = useAuth();
-  const { openRegisterSheet } = useRegisterSheet();
   const router = useRouter();
 
   // Build category list from translations (matches home page labels)
@@ -320,88 +316,6 @@ export default function ListYourPlacePage() {
       <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
     </div>
   );
-
-  // ── Guest gate ───────────────────────────────────────────────────────────────
-  if (loaded && tier === "guest") {
-    return (
-      <div className="max-w-md mx-auto min-h-screen flex flex-col pb-10">
-        {/* Header */}
-        <div
-          style={{
-            padding: "48px 20px 28px",
-            background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
-            borderRadius: "0 0 32px 32px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton
-              onClick={() => router.back()}
-              style={{
-                width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-                background: "rgba(255,255,255,0.18)",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
-              <ChevronLeft size={20} color="white" />
-            </ActionButton>
-            <div>
-              <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>
-                {t.listTitle}
-              </h1>
-              <p style={{ margin: "2px 0 0", color: "rgba(255,255,255,0.65)", fontSize: 12, fontFamily: "var(--font-jakarta), sans-serif" }}>
-                {t.listSubtitle}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Gate */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", gap: 20 }}>
-          <div style={{
-            width: 88, height: 88, borderRadius: 999,
-            background: "#e6f4ed", display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{ fontSize: 40 }}>🏪</span>
-          </div>
-          <div>
-            <h2 style={{
-              margin: "0 0 8px", fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 22, fontWeight: 700, color: "#0e1d4f",
-            }}>
-              {t.listGuestTitle}
-            </h2>
-            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13.5, color: "#64748b", lineHeight: 1.55 }}>
-              {t.listGuestDesc}
-            </p>
-          </div>
-          <ActionButton
-            onClick={() => openRegisterSheet()}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              padding: "16px 36px", borderRadius: 999,
-              background: "linear-gradient(135deg, #16a34a, #22c55e)",
-              color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
-              fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(22,163,74,0.35)",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-            } as React.CSSProperties}
-          >
-            {t.listGuestCta}
-            <span style={{ display: "inline-block", fontSize: 20, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
-          </ActionButton>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignSelf: "stretch" }}>
-            {t.listGuestBenefits.map(b => (
-              <p key={b} style={{
-                margin: 0, fontSize: 13, fontWeight: 600, color: "#0e1d4f",
-                fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.4, textAlign: "left",
-              }}>{b}</p>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (

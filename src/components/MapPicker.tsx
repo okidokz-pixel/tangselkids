@@ -115,7 +115,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 100,
+        position: "fixed", inset: 0, zIndex: 300,
         background: "rgba(0,0,0,0.50)",
         animation: "sheet-fade-in 0.2s ease both",
       }}

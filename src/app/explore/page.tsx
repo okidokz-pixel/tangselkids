@@ -4,9 +4,7 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 import { places, getAreaGroup } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
-import { useAuth } from "@/context/AuthContext";
 import { PlaceCard } from "@/components/PlaceCard";
-import { GuestGate } from "@/components/GuestGate";
 import { type AreaFilter } from "@/components/AreaToggle";
 import { BottomNav } from "@/components/BottomNav";
 import { PremiumBadge } from "@/components/PremiumBadge";
@@ -17,7 +15,6 @@ type Cat =
 
 export default function ExplorePage() {
   const { t } = useLang();
-  const { tier } = useAuth();
   const [query, setQuery] = useState("");
   const [cat,   setCat]   = useState<Cat>("all");
   const [area,  setArea]  = useState<AreaFilter>("all");
@@ -49,10 +46,7 @@ export default function ExplorePage() {
       return b.rating - a.rating;
     });
 
-  const isGuest = tier === "guest";
-  const visiblePlaces  = isGuest ? filtered.slice(0, 3) : filtered;
-  const hiddenPlaces   = isGuest ? filtered.slice(3, 6)  : [];
-  const hiddenCount    = isGuest ? Math.max(0, filtered.length - 3) : 0;
+  const visiblePlaces  = filtered;
 
   const catActive = cat !== "all";
 
@@ -201,18 +195,6 @@ export default function ExplorePage() {
           ))}
         </div>
 
-        {/* Guest blur gate */}
-        {isGuest && hiddenCount > 0 && (
-          <GuestGate hiddenCount={hiddenCount}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {hiddenPlaces.map((place) => (
-                <div key={place.id}>
-                  <PlaceCard place={place} />
-                </div>
-              ))}
-            </div>
-          </GuestGate>
-        )}
       </div>
 
       <BottomNav active="explore" />

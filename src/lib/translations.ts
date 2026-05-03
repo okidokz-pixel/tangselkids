@@ -399,9 +399,9 @@ export const translations = {
     guestGateCta: "Daftar GRATIS Sekarang!",
 
     // ── FILTER GATE ──────────────────────────────────────────
-    filterGateTitle: "Daftar dulu, yuk! GRATIS!",
-    filterGateSubtitle: "Bergabung dengan ribuan orang tua yang menemukan tempat terbaik di Tangsel. Gratis selamanya, hanya 30 detik.",
-    filterGateCta: "Daftar GRATIS Sekarang!",
+    filterGateTitle: "Filter Khusus Premium",
+    filterGateSubtitle: "Filter lanjutan ini tersedia untuk member Premium TangselKids. Upgrade sekarang mulai Rp 29.000/bulan atau Rp 169.000 seumur hidup.",
+    filterGateCta: "Upgrade ke Premium",
 
     // ── PROFILE ──────────────────────────────────────────────
     profileTitle: "Profil",
@@ -616,8 +616,12 @@ export const translations = {
     premiumGateStepRegister: "Daftar Gratis",
     premiumGateStepUpgrade:  "Upgrade Premium",
     premiumGateGuestCta:     "Daftar Gratis",
-    premiumGateGuestSheetTitle:    "Daftar untuk Mulai",
-    premiumGateGuestSheetSubtitle: "Daftar gratis terlebih dahulu, lalu upgrade ke Premium untuk menulis ulasan.",
+    premiumGateGuestSheetTitle:    "Upgrade ke Premium",
+    premiumGateGuestSheetSubtitle: "Upgrade ke Premium untuk mengakses fitur ini. Mulai Rp 29.000/bulan atau Rp 169.000 seumur hidup.",
+
+    // ── SAVE LIMIT ───────────────────────────────────────────
+    saveLimitTitle: "Batas Favorit Tercapai",
+    saveLimitDesc:  "Kamu sudah menyimpan 5 tempat. Upgrade ke Premium untuk menyimpan tanpa batas.",
 
     // ── PAYMENT PAGE ─────────────────────────────────────────
     paymentTitle:               "Pembayaran",
@@ -757,6 +761,13 @@ export const translations = {
     suggestEditLockMsg: "Upgrade ke Premium untuk menyarankan perubahan data",
     suggestEditSuccess: "Terima kasih! Saran kamu akan kami tinjau segera.",
 
+    // ── IMAGE CROPPER ─────────────────────────────────────────
+    cropperTitle:   "Sesuaikan Foto",
+    cropperHint:    "Geser untuk memposisikan • Cubit untuk zoom",
+    cropperZoom:    "ZOOM",
+    cropperCancel:  "Batal",
+    cropperConfirm: "Gunakan",
+
     // ── NEWS / ARTICLES ──────────────────────────────────────
     newsKicker: "Dari Redaksi",
     newsTitle: "Berita & Artikel",
@@ -785,6 +796,21 @@ export const translations = {
     homeAltTypewriterPre:  "Temukan",
     homeAltTypewriterPost: "yang tepat.",
     homeAltSeeAll:         "Lihat semua →",
+
+    // ── SAVE GATE (anonymous → register prompt) ──────────────
+    saveGateTitle:   "Simpan tempat ini?",
+    saveGateBody:    "Buat akun gratis untuk menyimpan favoritmu di semua perangkat.",
+    saveGateCta:     "Daftar Sekarang",
+    saveGateDismiss: "Nanti Saja",
+
+    // ── DISTANCE — anonymous prompt ───────────────────────────
+    distanceAnonPrompt: "Daftar untuk lihat jarak dari rumahmu",
+
+    // ── PROFILE — REGISTERED (TERDAFTAR) TIER CARD ───────────
+    profileRegisteredStatus:     "Status Akun: Terdaftar",
+    profileRegisteredStatusDesc: "Upgrade jadi Premium untuk mendapatkan akses penuh",
+    profileRegisteredUpgradeBtn: "Upgrade",
+    profileRegisteredUpgradeHint:"Hanya Rp 29.000/bln",
 
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Ulasan",
@@ -1191,9 +1217,9 @@ export const translations = {
     guestGateCta: "Register FREE Now!",
 
     // ── FILTER GATE ──────────────────────────────────────────
-    filterGateTitle: "Please register to use this feature",
-    filterGateSubtitle: "Join thousands of parents discovering the best places for kids in Tangsel. Free forever, takes 30 seconds.",
-    filterGateCta: "Register FREE Now!",
+    filterGateTitle: "Premium-Only Filter",
+    filterGateSubtitle: "Advanced filters are available for TangselKids Premium members. Upgrade from Rp 29,000/month or Rp 169,000 lifetime.",
+    filterGateCta: "Upgrade to Premium",
 
     // ── PROFILE ──────────────────────────────────────────────
     profileTitle: "Profile",
@@ -1408,8 +1434,12 @@ export const translations = {
     premiumGateStepRegister: "Register Free",
     premiumGateStepUpgrade:  "Upgrade Premium",
     premiumGateGuestCta:     "Register Free",
-    premiumGateGuestSheetTitle:    "Register to Get Started",
-    premiumGateGuestSheetSubtitle: "Register for free first, then upgrade to Premium to write a review.",
+    premiumGateGuestSheetTitle:    "Upgrade to Premium",
+    premiumGateGuestSheetSubtitle: "Upgrade to Premium to access this feature. From Rp 29,000/month or Rp 169,000 lifetime.",
+
+    // ── SAVE LIMIT ───────────────────────────────────────────
+    saveLimitTitle: "Saved Limit Reached",
+    saveLimitDesc:  "You've saved 5 places. Upgrade to Premium to save unlimited places.",
 
     // ── PAYMENT PAGE ─────────────────────────────────────────
     paymentTitle:               "Payment",
@@ -1549,6 +1579,13 @@ export const translations = {
     suggestEditLockMsg: "Upgrade to Premium to suggest data edits",
     suggestEditSuccess: "Thank you! We'll review your suggestion shortly.",
 
+    // ── IMAGE CROPPER ─────────────────────────────────────────
+    cropperTitle:   "Adjust Photo",
+    cropperHint:    "Drag to reposition • Pinch to zoom",
+    cropperZoom:    "ZOOM",
+    cropperCancel:  "Cancel",
+    cropperConfirm: "Use Photo",
+
     // ── NEWS / ARTICLES ──────────────────────────────────────
     newsKicker: "From the Editors",
     newsTitle: "News & Articles",
@@ -1577,6 +1614,21 @@ export const translations = {
     homeAltTypewriterPre:  "Find the",
     homeAltTypewriterPost: "that's right for you.",
     homeAltSeeAll:         "View all →",
+
+    // ── SAVE GATE (anonymous → register prompt) ──────────────
+    saveGateTitle:   "Save this place?",
+    saveGateBody:    "Create a free account to save your favorites across all devices.",
+    saveGateCta:     "Register Now",
+    saveGateDismiss: "Maybe Later",
+
+    // ── DISTANCE — anonymous prompt ───────────────────────────
+    distanceAnonPrompt: "Register to see distance from your home",
+
+    // ── PROFILE — REGISTERED (TERDAFTAR) TIER CARD ───────────
+    profileRegisteredStatus:     "Account Status: Registered",
+    profileRegisteredStatusDesc: "Upgrade to Premium to get full access",
+    profileRegisteredUpgradeBtn: "Upgrade",
+    profileRegisteredUpgradeHint:"Only Rp 29,000/mo",
 
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Reviews",

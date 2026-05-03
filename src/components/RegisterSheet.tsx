@@ -81,6 +81,8 @@ export function RegisterSheet() {
   const [showReveal, setShowReveal] = useState(false);
 
   const pendingData = useRef<Parameters<typeof register>[0] | null>(null);
+  const onRegisteredRef = useRef(options.onRegistered);
+  useEffect(() => { onRegisteredRef.current = options.onRegistered; });
 
   // Reset state when sheet opens
   useEffect(() => {
@@ -114,6 +116,7 @@ export function RegisterSheet() {
       const doneTimer = setTimeout(() => {
         if (pendingData.current) register(pendingData.current);
         closeRegisterSheet();
+        onRegisteredRef.current?.();
       }, 2800);
       return () => { clearTimeout(revealTimer); clearTimeout(doneTimer); };
     }

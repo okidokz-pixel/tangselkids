@@ -1,0 +1,37 @@
+/* TangselKids — shared tokens (kept from current palette, modernized) */
+:root {
+  /* Brand — same blue family as current */
+  --tk-blue-50:  #eef4ff;
+  --tk-blue-100: #dbe7ff;
+  --tk-blue-200: #b9ceff;
+  --tk-blue-300: #8aacff;
+  --tk-blue-400: #5b86fb;
+  --tk-blue-500: #3a64ee;
+  --tk-blue-600: #2a4fd8;
+  --tk-blue-700: #1e3fb0;
+  --tk-blue-800: #1a3592;
+  --tk-blue-900: #172b73;
+  --tk-blue-950: #0e1d4f;
+
+  /* Accents from the original screenshot */
+  --tk-amber-400: #f6b545;
+  --tk-amber-500: #eea024;
+  --tk-rose-500:  #e26a6a;
+  --tk-emerald-500: #1f9b6a;
+
+  /* Neutrals */
+  --tk-ink:    #0f172a;
+  --tk-ink-2:  #1e293b;
+  --tk-muted:  #64748b;
+  --tk-muted-2:#94a3b8;
+  --tk-line:   rgba(15,23,42,.08);
+  --tk-line-2: rgba(15,23,42,.04);
+
+  --tk-bg:       #f6f7fb;
+  --tk-bg-warm:  #f3efe8;
+  --tk-paper:    #ffffff;
+
+  /* Type */
+  --tk-font: "Plus Jakarta Sans", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --tk-font-display: "Fraunces", "DM Serif Display", "PP Editorial", Georgia, serif;
+}

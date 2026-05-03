@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   User, Globe, Bell, Info, MessageSquare, HelpCircle,
   ChevronRight, Heart, Pencil, LogOut, MapPin,
-  Calendar, Baby, Plus, Trash2, Check, X, FileText,
+  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera,
 } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -18,6 +18,7 @@ import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { getReviews } from "@/lib/reviewsStorage";
 import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
+import { ImageCropper } from "@/components/ImageCropper";
 
 // ── Support WhatsApp number ───────────────────────────────────────────────────
 const SUPPORT_WA_NUMBER = "6281234567890"; // TODO: replace with real support number
@@ -41,6 +42,10 @@ export default function ProfilePage() {
   const [showGuestGate,    setShowGuestGate]    = useState(false);
   const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const [cropperSrc, setCropperSrc] = useState("");
+  const [showCropper, setShowCropper] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit mode state
   const [editing, setEditing] = useState(false);
@@ -61,6 +66,8 @@ export default function ProfilePage() {
     setSavedCount(ids.length);
     setReviewsCount(getReviews().length);
     setMyNotes(getAllNotes());
+    const photo = localStorage.getItem("profilePhoto");
+    if (photo) setProfilePhoto(photo);
   }, []);
 
   function openEdit() {
@@ -70,7 +77,7 @@ export default function ProfilePage() {
     setEditAddressLat(user.addressLat);
     setEditAddressLng(user.addressLng);
     setEditDob(user.dob || "");
-    setEditKids(user.kids.map((k) => ({ ...k })));
+    setEditKids((user.kids ?? []).map((k) => ({ ...k })));
     setNameError(false);
     setAddressError(false);
     setEditing(true);
@@ -147,6 +154,18 @@ export default function ProfilePage() {
     window.location.href = "/";
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCropperSrc(ev.target?.result as string);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
   const mapSrc = (lat?: number, lng?: number) => {
     if (!lat || !lng) return null;
     const d = 0.005;
@@ -167,6 +186,10 @@ export default function ProfilePage() {
         @keyframes gold-shimmer {
           0%        { transform: translateX(-150%); }
           60%, 100% { transform: translateX(150%);  }
+        }
+        @keyframes upgrade-arrow {
+          0%, 100% { transform: translateX(0); }
+          50%       { transform: translateX(4px); }
         }
       `}</style>
 
@@ -190,12 +213,16 @@ export default function ProfilePage() {
         <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: "rgba(255,255,255,0.12)" }}>
           <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
             style={{
-              background: user ? "#0e1d4f" : "rgba(255,255,255,0.2)",
+              background: profilePhoto ? "transparent" : (user ? "#0e1d4f" : "rgba(255,255,255,0.2)"),
               border: "2px solid rgba(255,255,255,0.3)",
               fontSize: 24, fontWeight: 700, color: "#fff",
               fontFamily: "var(--font-jakarta), sans-serif",
+              overflow: "clip",
             }}>
-            {user ? (user.name?.charAt(0).toUpperCase() || "?") : <User size={28} color="white" strokeWidth={1.5} />}
+            {profilePhoto
+              ? <img src={profilePhoto} alt="" style={{ width: 56, height: 56, objectFit: "cover" }} />
+              : user ? (user.name?.charAt(0).toUpperCase() || "?") : <User size={28} color="white" strokeWidth={1.5} />
+            }
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-lg font-semibold leading-tight truncate"
@@ -230,9 +257,9 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          {!editing && (
+          {tier !== "free" && !editing && (
             <ActionButton
-              onClick={tier === "guest" ? () => setShowGuestGate(true) : openEdit}
+              onClick={openEdit}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
                 padding: "7px 12px", borderRadius: 999, flexShrink: 0,
@@ -289,34 +316,43 @@ export default function ProfilePage() {
               {user?.lifetime ? "LIFETIME" : "PREMIUM"}
             </span>
           </div>
-        ) : tier === "guest" ? (
+        ) : tier === "registered" ? (
+          /* ── Terdaftar card ────────────────────────────────── */
           <div className="rounded-2xl p-4 border-2"
-               style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
+               style={{ borderColor: "#22c55e", background: "#f0fdf4" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                   style={{ background: "#fef3c7", fontSize: 22 }}>🔓</div>
+                   style={{ background: "#dcfce7", fontSize: 22 }}>✅</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="font-jakarta font-bold text-sm text-amber-900">{t.profileGuestStatus}</p>
-                <p className="font-jakarta text-xs text-amber-700 mt-1" style={{ lineHeight: 1.5 }}>
-                  {t.profileGuestStatusDesc}
+                <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d" }}>
+                  {t.profileRegisteredStatus}
+                </p>
+                <p className="font-jakarta text-xs mt-0.5" style={{ color: "#16a34a", lineHeight: 1.5 }}>
+                  {t.profileRegisteredStatusDesc}
+                </p>
+                <p className="font-jakarta text-xs mt-1" style={{ color: "#64748b", lineHeight: 1.5 }}>
+                  {t.profileRegisteredUpgradeHint}
                 </p>
               </div>
               <ActionButton
-                onClick={openRegisterSheet}
+                onClick={() => router.push("/upgrade")}
                 style={{
-                  padding: "7px 12px", borderRadius: 999, flexShrink: 0,
-                  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+                  padding: "8px 16px", borderRadius: 999, flexShrink: 0,
+                  background: "linear-gradient(135deg, #f59e0b, #d97706)",
                   color: "#fff", fontSize: 11, fontWeight: 800,
                   touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                   fontFamily: "var(--font-jakarta), sans-serif",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5,
+                  boxShadow: "0 4px 12px rgba(217,119,6,0.35)",
                 }}
               >
-                {t.profileGuestRegister}
+                {t.profileRegisteredUpgradeBtn}
+                <span style={{ display: "inline-block", animation: "upgrade-arrow 0.9s ease-in-out infinite" }}>→</span>
               </ActionButton>
             </div>
           </div>
         ) : (
+          /* ── Dead-code fallback (should never render) ───────── */
           <div className="rounded-2xl p-4 flex items-center gap-3 border-2"
                style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
@@ -342,7 +378,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── EDIT FORM ───────────────────────────────────────────────────── */}
+        {/* ── EDIT FORM (inline) ──────────────────────────────────────────── */}
         {editing && (
           <section>
             <div className="flex items-center justify-between mb-2 px-1">
@@ -360,6 +396,80 @@ export default function ProfilePage() {
 
             <div className="rounded-2xl p-4 space-y-4"
                  style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)" }}>
+
+              {/* Profile Photo */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 4 }}>
+                <div style={{ position: "relative" }}>
+                  <ActionButton
+                    onClick={() => {
+                      if (profilePhoto) {
+                        setCropperSrc(profilePhoto);
+                        setShowCropper(true);
+                      } else {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    style={{
+                      width: 80, height: 80, borderRadius: 999,
+                      background: profilePhoto ? "transparent" : "#e6f4ed",
+                      border: "2.5px solid #2e8a5a",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      overflow: "clip", padding: 0,
+                    }}
+                  >
+                    {profilePhoto
+                      ? <img src={profilePhoto} alt="" style={{ width: 80, height: 80, objectFit: "cover" }} />
+                      : <User size={36} color="#2e8a5a" strokeWidth={1.5} />
+                    }
+                  </ActionButton>
+                  <div style={{
+                    position: "absolute", bottom: 2, right: 2,
+                    width: 22, height: 22, borderRadius: 999,
+                    background: "#2e8a5a", border: "2px solid #fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    pointerEvents: "none",
+                  }}>
+                    <Camera size={11} color="#fff" />
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "#94a3b8", marginTop: 8, fontWeight: 600, fontFamily: "var(--font-jakarta), sans-serif" }}>
+                  {profilePhoto ? "Tap to re-crop" : "Tap to add photo"}
+                </p>
+                {/* Upload new / Delete */}
+                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                  {profilePhoto && (
+                    <ActionButton
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        padding: "5px 10px", borderRadius: 999,
+                        background: "#e6f4ed", color: "#2e8a5a",
+                        fontSize: 11, fontWeight: 700,
+                        border: "1.5px solid #a7d4bc",
+                      }}
+                    >
+                      <Camera size={11} /> Change photo
+                    </ActionButton>
+                  )}
+                  {profilePhoto && (
+                    <ActionButton
+                      onClick={() => {
+                        localStorage.removeItem("profilePhoto");
+                        setProfilePhoto("");
+                      }}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                        padding: "5px 10px", borderRadius: 999,
+                        background: "#fef2f2", color: "#ef4444",
+                        fontSize: 11, fontWeight: 700,
+                        border: "1.5px solid #fecaca",
+                      }}
+                    >
+                      <Trash2 size={11} /> Remove photo
+                    </ActionButton>
+                  )}
+                </div>
+              </div>
 
               {/* Name */}
               <div>
@@ -570,61 +680,41 @@ export default function ProfilePage() {
           <div className="rounded-2xl overflow-hidden"
                style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", display: "flex" }}>
 
-            {/* Saved */}
-            {tier === "guest" ? (
-              <ActionButton onClick={() => setShowGuestGate(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
-                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
-              </ActionButton>
-            ) : (
-              <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
-                <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{savedCount}</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
-              </Link>
-            )}
+            {/* Saved — all users can save (up to 5 for free) */}
+            <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+              <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+              <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{savedCount}</span>
+              <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
+            </Link>
 
-            {/* Reviews */}
-            {tier === "guest" ? (
-              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
-              </ActionButton>
-            ) : tier === "free" ? (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
-              </ActionButton>
-            ) : (
+            {/* Reviews — premium only */}
+            {tier === "premium" ? (
               <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
                 <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
                 <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{reviewsCount}</span>
                 <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
               </Link>
+            ) : (
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
+              </ActionButton>
             )}
 
-            {/* Notes */}
-            {tier === "guest" ? (
-              <ActionButton onClick={() => setShowPremiumSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
-                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
-              </ActionButton>
-            ) : tier === "free" ? (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
-                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
-              </ActionButton>
-            ) : (
+            {/* Notes — premium only */}
+            {tier === "premium" ? (
               <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none" }}>
                 <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
                 <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{myNotes.length}</span>
                 <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
               </Link>
+            ) : (
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
+                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
+                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
+              </ActionButton>
             )}
           </div>
         </section>
@@ -642,31 +732,32 @@ export default function ProfilePage() {
               style={{
                 display: "flex", alignItems: "center", gap: 14,
                 padding: "14px 16px", borderRadius: 16,
-                background: "linear-gradient(135deg, #128C7E 0%, #25D366 100%)",
-                boxShadow: "0 4px 16px rgba(37,211,102,0.30)",
+                background: "#dcfce7",
+                border: "1.5px solid #bbf7d0",
+                boxShadow: "0 4px 16px rgba(37,211,102,0.10)",
                 textDecoration: "none",
               }}
             >
               <div style={{
                 width: 42, height: 42, borderRadius: 999, flexShrink: 0,
-                background: "rgba(255,255,255,0.20)",
+                background: "rgba(22,163,74,0.12)",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <WhatsAppIcon size={22} color="#fff" />
+                <WhatsAppIcon size={22} color="#16a34a" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="font-jakarta font-bold text-sm" style={{ color: "#fff", margin: 0 }}>
+                <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d", margin: 0 }}>
                   {t.supportWaBtn}
                 </p>
-                <p className="font-jakarta text-xs" style={{ color: "rgba(255,255,255,0.80)", margin: "2px 0 0" }}>
+                <p className="font-jakarta text-xs" style={{ color: "#16a34a", margin: "2px 0 0" }}>
                   {t.supportWaDesc}
                 </p>
               </div>
-              <ChevronRight size={18} color="rgba(255,255,255,0.70)" />
+              <ChevronRight size={18} color="#86efac" />
             </a>
           ) : (
             <ActionButton
-              onClick={tier === "guest" ? () => setShowPremiumSheet(true) : () => setShowUpgradeSheet(true)}
+              onClick={() => setShowUpgradeSheet(true)}
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 14,
                 padding: "14px 16px", borderRadius: 16,
@@ -691,7 +782,7 @@ export default function ProfilePage() {
               </div>
               <div style={{
                 width: 26, height: 26, borderRadius: 999, flexShrink: 0,
-                background: tier === "guest" ? "#ef4444" : "#d97706",
+                background: "#d97706",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -754,7 +845,7 @@ export default function ProfilePage() {
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               width: "100%", padding: "13px 0", borderRadius: 14,
-              background: "#FEF2F2", color: "#ef4444", fontSize: 14, fontWeight: 700,
+              background: "#0e1d4f", color: "#fff", fontSize: 14, fontWeight: 700,
             }}
           >
             <LogOut size={17} /> Log Out
@@ -836,6 +927,26 @@ export default function ProfilePage() {
             </ActionButton>
           </div>
         </>
+      )}
+
+      {/* ── Profile photo file input + cropper ───────────────────────────── */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+      {showCropper && (
+        <ImageCropper
+          imageSrc={cropperSrc}
+          onConfirm={(dataUrl) => {
+            localStorage.setItem("profilePhoto", dataUrl);
+            setProfilePhoto(dataUrl);
+            setShowCropper(false);
+          }}
+          onCancel={() => setShowCropper(false)}
+        />
       )}
 
       {/* ── Map picker sheet ───────────────────────────────────────────────── */}

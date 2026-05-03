@@ -15,8 +15,10 @@ import { useAuth } from "@/context/AuthContext";
 import { PremiumGate } from "@/components/PremiumGate";
 import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { SaveGateSheet } from "@/components/SaveGateSheet";
 import { PremiumBadge } from "@/components/PremiumBadge";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { addSaved, removeSaved } from "@/lib/savedPlaces";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 function InstagramIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
@@ -163,7 +165,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [showReviewGate, setShowReviewGate] = useState(false);
   const [showPsbSheet,   setShowPsbSheet]   = useState(false);
   const [showPsbGate,    setShowPsbGate]    = useState(false);
-  const [showFaveGate,      setShowFaveGate]      = useState(false);
+  const [showSaveGate,   setShowSaveGate]   = useState(false);
   const [showSaveLimitSheet, setShowSaveLimitSheet] = useState(false);
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
 
@@ -222,12 +224,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   }, [allPhotos.length, lightboxOpen]);
 
   function toggleSave() {
-    if (tier === "guest") {
-      setShowFaveGate(true);
+    // Anonymous users must register first
+    if (tier === "free") {
+      setShowSaveGate(true);
       return;
     }
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    if (!ids.includes(id) && tier === "free" && ids.length >= 3) {
+    // Terdaftar (registered) users are capped at 5 saves
+    if (!ids.includes(id) && tier === "registered" && ids.length >= 5) {
       setShowSaveLimitSheet(true);
       return;
     }
@@ -235,10 +239,25 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
     const next = adding ? [...ids, id] : ids.filter((x) => x !== id);
     localStorage.setItem("savedIds", JSON.stringify(next));
     setIsSaved(next.includes(id));
-    // Show tooltip
+    // Sync to Supabase in background
+    if (adding) addSaved(id, user?.phone);
+    else removeSaved(id, user?.phone);
     if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
     setFavTooltip(adding ? "add" : "remove");
     favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
+  }
+
+  function saveAfterRegister() {
+    const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
+    if (!ids.includes(id)) {
+      const next = [...ids, id];
+      localStorage.setItem("savedIds", JSON.stringify(next));
+      setIsSaved(true);
+      addSaved(id);
+      if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
+      setFavTooltip("add");
+      favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
+    }
   }
 
   const categoryLabel: Record<string, string> = {
@@ -577,16 +596,31 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               </ActionButton>
             )}
             {/* Distance from home */}
-            {homeKm !== null ? (
+            {tier === "free" ? (
+              /* Anonymous: tappable registration prompt */
+              <ActionButton
+                onClick={() => openRegisterSheet()}
+                style={{
+                  margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                  background: "none", border: "none", padding: 0, cursor: "pointer",
+                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11,
+                  color: "#2e8a5a", textDecoration: "underline", textDecorationStyle: "dotted",
+                  textUnderlineOffset: 2,
+                }}
+              >
+                <MapPin size={11} color="#2e8a5a" style={{ flexShrink: 0 }} />
+                {t.distanceAnonPrompt}
+              </ActionButton>
+            ) : homeKm !== null ? (
               <p style={{ margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
                 fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#64748b" }}>
                 🏠 {t.distanceFromHome(homeKm)}
               </p>
-            ) : tier !== "guest" && (
+            ) : (
               <p
                 style={{ margin: "3px 0 0", cursor: "pointer",
                   fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8" }}
-                onClick={() => { /* navigate to profile to set address */ window.location.href = "/profile"; }}
+                onClick={() => { window.location.href = "/profile"; }}
               >
                 🏠 {t.distanceNoHome}
               </p>
@@ -1015,10 +1049,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               onClick={() => {
                 if (tier === "premium") {
                   alert(t.pdPsbAlert);
-                } else if (tier === "free") {
-                  setShowPsbGate(true);
                 } else {
-                  setShowPsbSheet(true);
+                  setShowPsbGate(true);
                 }
               }}
               style={{
@@ -1040,7 +1072,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 <div style={{
                   position: "absolute", top: -5, right: -5,
                   width: 16, height: 16, borderRadius: 999,
-                  background: tier === "guest" ? "#ef4444" : "#d97706",
+                  background: "#d97706",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <Lock size={8} strokeWidth={3} color="#fff" />
@@ -1239,7 +1271,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             {tier !== "premium" && (
               <div style={{
                 width: 20, height: 20, borderRadius: 999,
-                background: tier === "guest" ? "#ef4444" : "#d97706",
+                background: "#d97706",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, marginLeft: 2,
               }}>
@@ -1445,10 +1477,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
         </>
       )}
 
-      {/* ── Favourite Gate Sheet (unregistered) ─────────────────────────── */}
-      <FilterGateSheet isOpen={showFaveGate} onClose={() => setShowFaveGate(false)} />
+      {/* ── Save Gate Sheet (anonymous → register to save) ────────────────── */}
+      <SaveGateSheet
+        isOpen={showSaveGate}
+        onClose={() => setShowSaveGate(false)}
+        onRegister={() => openRegisterSheet({ onRegistered: saveAfterRegister })}
+      />
 
-      {/* ── Save Limit Upgrade Sheet (registered free — 5-place cap) ─────── */}
+      {/* ── Save Limit Upgrade Sheet (registered — 5-place cap) ───────────── */}
       {showSaveLimitSheet && (
         <div
           style={{
@@ -1489,7 +1525,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               fontSize: 20, fontWeight: 700, color: "#0e1d4f",
               textAlign: "center", margin: "0 0 8px",
             }}>
-              {t.premiumGateTitle}
+              {t.saveLimitTitle}
             </p>
 
             {/* Body */}
@@ -1498,7 +1534,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               fontSize: 13, color: "#64748b", lineHeight: 1.6,
               textAlign: "center", margin: "0 0 24px",
             }}>
-              {t.premiumGateDesc}
+              {t.saveLimitDesc}
             </p>
 
             {/* CTA */}
@@ -1515,7 +1551,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              {t.premiumGateCta}
+              {t.filterGateCta}
             </ActionButton>
 
             {/* Cancel */}
@@ -1656,7 +1692,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
               <div style={{
                 width: 64, height: 64, borderRadius: 999,
-                background: tier === "guest" ? "#FEF3C7" : "linear-gradient(135deg, #f59e0b, #d97706)",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 30,
               }}>
@@ -1677,71 +1713,16 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               fontSize: 13, color: "#64748b", lineHeight: 1.6,
               textAlign: "center", margin: "0 0 24px",
             }}>
-              {tier === "guest" ? t.premiumGateGuestDesc : t.premiumGateDesc}
+              {t.premiumGateDesc}
             </p>
-
-            {/* Two-step visual — unregistered only */}
-            {tier === "guest" && (
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                gap: 8, marginBottom: 24,
-              }}>
-                {/* Step 1 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 999,
-                    background: "linear-gradient(135deg, #16a34a, #22c55e)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, flexShrink: 0,
-                  }}>👤</div>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, color: "#16a34a",
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    whiteSpace: "nowrap",
-                  }}>{t.premiumGateStepRegister}</span>
-                </div>
-
-                {/* Arrow */}
-                <svg width="48" height="12" viewBox="0 0 48 12" fill="none" style={{ flexShrink: 0 }}>
-                  <path d="M0 6 H40 M34 2 L46 6 L34 10" stroke="#cbd5e1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-
-                {/* Step 2 */}
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 999,
-                    background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, flexShrink: 0,
-                  }}>⭐</div>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, color: "#d97706",
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    whiteSpace: "nowrap",
-                  }}>{t.premiumGateStepUpgrade}</span>
-                </div>
-              </div>
-            )}
 
             {/* CTA */}
             <ActionButton
-              onClick={() => {
-                setShowReviewGate(false);
-                if (tier === "guest") {
-                  openRegisterSheet({
-                    title: t.premiumGateGuestSheetTitle,
-                    subtitle: t.premiumGateGuestSheetSubtitle,
-                  });
-                } else {
-                  router.push("/upgrade");
-                }
-              }}
+              onClick={() => { setShowReviewGate(false); router.push("/upgrade"); }}
               style={{
                 width: "100%", padding: "15px 0",
                 borderRadius: 16, border: "none",
-                background: tier === "guest"
-                  ? "linear-gradient(135deg, #16a34a, #22c55e)"
-                  : "linear-gradient(135deg, #f59e0b, #d97706)",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
                 color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif",
                 fontSize: 15, fontWeight: 700,
@@ -1749,7 +1730,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              {tier === "guest" ? t.premiumGateGuestCta : t.premiumGateCta}
+              {t.premiumGateCta}
             </ActionButton>
 
             {/* Cancel */}

@@ -8,9 +8,7 @@ import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
-import { GuestGate } from "@/components/GuestGate";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
@@ -98,16 +96,13 @@ function SwimmingPoolsContent() {
     { value: "45to70",  label: "Rp 45–70 rb" },
     { value: "gt70",    label: "> Rp 70 rb" },
   ];
-  const { tier, loaded } = useAuth();
   const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const view: "filter" | "results" =
-    (loaded && tier === "guest") || searchParams.get("view") === "results"
-      ? "results"
-      : "filter";
+    searchParams.get("view") === "results" ? "results" : "filter";
 
   const [area,        setArea]       = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
   const [priceBucket, setPriceBucket] = useState(searchParams.get("price") ?? "all");
@@ -209,14 +204,14 @@ function SwimmingPoolsContent() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toResults())}
-              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : router.replace(toResults()); }}
+              onClick={() => router.replace(toResults())}
+              onTouchEnd={(e) => { e.preventDefault(); router.replace(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-              {tier === "guest" ? "Daftar untuk Lihat Semua" : t.poolShowResults(filtered.length)}
+              {t.poolShowResults(filtered.length)}
             </button>
           </div>
         </div>
@@ -230,7 +225,7 @@ function SwimmingPoolsContent() {
       <div style={HEADER_STYLE}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
+            <ActionButton onClick={() => router.replace(toFilter())} ariaLabel="Back" style={{
               width: 36, height: 36, borderRadius: 999, flexShrink: 0,
               background: "rgba(255,255,255,0.18)", display: "inline-flex",
               alignItems: "center", justifyContent: "center" }}>
@@ -252,7 +247,7 @@ function SwimmingPoolsContent() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toFilter())} style={{
+        <ActionButton onClick={() => router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
@@ -266,7 +261,7 @@ function SwimmingPoolsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
+        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
@@ -295,21 +290,12 @@ function SwimmingPoolsContent() {
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.slice(0, tier === "guest" ? 3 : undefined).map(place => (
+          {filtered.map(place => (
             <Link key={place.id} href={`/place/${place.id}`} style={{ textDecoration: "none", display: "block" }}>
               <PlaceCard place={place} />
             </Link>
           ))}
         </div>
-        {tier === "guest" && filtered.length > 3 && (
-          <GuestGate hiddenCount={filtered.length - 3}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {filtered.slice(3, 6).map(place => (
-                <div key={place.id}><PlaceCard place={place} /></div>
-              ))}
-            </div>
-          </GuestGate>
-        )}
       </div>
       <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
 

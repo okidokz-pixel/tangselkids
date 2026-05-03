@@ -1,6 +1,7 @@
 "use client";
-import { useRef, useState, useEffect, useCallback } from "react";
-import { Check, X, ZoomIn, ZoomOut } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Check, X } from "lucide-react";
+import { useLang } from "@/context/LanguageContext";
 
 interface Props {
   imageSrc: string;
@@ -13,45 +14,45 @@ const SIZE = 280; // crop circle diameter in px
 export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef    = useRef<HTMLImageElement | null>(null);
+  const { t } = useLang();
 
-  // Offset = how much the image centre is shifted from the circle centre
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
   const [scale,   setScale]   = useState(1);
+  const [minSc,   setMinSc]   = useState(1);
   const [ready,   setReady]   = useState(false);
 
-  // ── Derived helpers ──────────────────────────────────────────────────────────
-  const minScale = useCallback((img: HTMLImageElement) => {
-    // Smallest scale that still fills the crop circle
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function calcMin(img: HTMLImageElement) {
     return Math.max(SIZE / img.naturalWidth, SIZE / img.naturalHeight);
-  }, []);
+  }
 
-  const clamp = useCallback((img: HTMLImageElement, ox: number, oy: number, sc: number) => {
-    // Half the (scaled) image dimensions
+  function clamp(img: HTMLImageElement, ox: number, oy: number, sc: number) {
     const hw = (img.naturalWidth  * sc) / 2;
     const hh = (img.naturalHeight * sc) / 2;
     const hr = SIZE / 2;
-    // The centre of the crop circle must stay within the scaled image
-    const cx = Math.min(Math.max(ox, -(hw - hr)), hw - hr);
-    const cy = Math.min(Math.max(oy, -(hh - hr)), hh - hr);
-    return { cx, cy };
-  }, []);
+    return {
+      cx: Math.min(Math.max(ox, -(hw - hr)), hw - hr),
+      cy: Math.min(Math.max(oy, -(hh - hr)), hh - hr),
+    };
+  }
 
-  // ── Load image ────────────────────────────────────────────────────────────────
+  // ── Load image ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
       imgRef.current = img;
-      const s = minScale(img);
+      const s = calcMin(img);
+      setMinSc(s);
       setScale(s);
       setOffsetX(0);
       setOffsetY(0);
       setReady(true);
     };
     img.src = imageSrc;
-  }, [imageSrc, minScale]);
+  }, [imageSrc]);
 
-  // ── Draw to canvas ────────────────────────────────────────────────────────────
+  // ── Draw ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!ready || !imgRef.current) return;
     const canvas = canvasRef.current;
@@ -59,7 +60,6 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const img = imgRef.current;
-
     ctx.clearRect(0, 0, SIZE, SIZE);
     const w = img.naturalWidth  * scale;
     const h = img.naturalHeight * scale;
@@ -68,80 +68,139 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
     ctx.drawImage(img, x, y, w, h);
   }, [ready, offsetX, offsetY, scale]);
 
-  // ── Touch / mouse drag ───────────────────────────────────────────────────────
-  const dragStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const lastPinchDist = useRef<number | null>(null);
-  const lastPinchScale = useRef<number>(1);
+  // ── Drag via native listeners (avoids React passive/synthetic-event issues) ─
+  // Use refs so event callbacks always see the latest values without stale closures.
+  const offsetRef  = useRef({ x: 0, y: 0 });
+  const scaleRef   = useRef(1);
+  const dragRef    = useRef<{ sx: number; sy: number; ox: number; oy: number } | null>(null);
+  const pinchRef   = useRef<{ dist: number; sc: number } | null>(null);
 
-  function getCenter(e: React.TouchEvent) {
-    const t1 = e.touches[0];
-    const t2 = e.touches[1];
-    return {
-      cx: (t1.clientX + t2.clientX) / 2,
-      cy: (t1.clientY + t2.clientY) / 2,
-      dist: Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY),
+  // Keep refs in sync
+  useEffect(() => { offsetRef.current = { x: offsetX, y: offsetY }; }, [offsetX, offsetY]);
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !ready) return;
+
+    function applyOffset(newOx: number, newOy: number) {
+      const img = imgRef.current;
+      if (!img) return;
+      const { cx, cy } = clamp(img, newOx, newOy, scaleRef.current);
+      offsetRef.current = { x: cx, y: cy };
+      setOffsetX(cx);
+      setOffsetY(cy);
+    }
+
+    function applyScale(newSc: number) {
+      const img = imgRef.current;
+      if (!img) return;
+      const ms = calcMin(img);
+      const sc = Math.min(Math.max(newSc, ms), ms * 4);
+      const { cx, cy } = clamp(img, offsetRef.current.x, offsetRef.current.y, sc);
+      scaleRef.current = sc;
+      offsetRef.current = { x: cx, y: cy };
+      setScale(sc);
+      setOffsetX(cx);
+      setOffsetY(cy);
+    }
+
+    // ── Touch ──────────────────────────────────────────────────────────────
+    function onTouchStart(e: TouchEvent) {
+      e.preventDefault();
+      if (e.touches.length === 1) {
+        dragRef.current = {
+          sx: e.touches[0].clientX, sy: e.touches[0].clientY,
+          ox: offsetRef.current.x,  oy: offsetRef.current.y,
+        };
+        pinchRef.current = null;
+      } else if (e.touches.length === 2) {
+        dragRef.current = null;
+        pinchRef.current = {
+          dist: Math.hypot(
+            e.touches[1].clientX - e.touches[0].clientX,
+            e.touches[1].clientY - e.touches[0].clientY,
+          ),
+          sc: scaleRef.current,
+        };
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      e.preventDefault();
+      if (e.touches.length === 1 && dragRef.current) {
+        applyOffset(
+          dragRef.current.ox + (e.touches[0].clientX - dragRef.current.sx),
+          dragRef.current.oy + (e.touches[0].clientY - dragRef.current.sy),
+        );
+      } else if (e.touches.length === 2 && pinchRef.current) {
+        const dist = Math.hypot(
+          e.touches[1].clientX - e.touches[0].clientX,
+          e.touches[1].clientY - e.touches[0].clientY,
+        );
+        applyScale(pinchRef.current.sc * (dist / pinchRef.current.dist));
+      }
+    }
+
+    function onTouchEnd(e: TouchEvent) {
+      if (e.touches.length < 2) pinchRef.current = null;
+      if (e.touches.length === 0) dragRef.current = null;
+    }
+
+    // ── Mouse (desktop) ────────────────────────────────────────────────────
+    function onMouseDown(e: MouseEvent) {
+      dragRef.current = {
+        sx: e.clientX, sy: e.clientY,
+        ox: offsetRef.current.x, oy: offsetRef.current.y,
+      };
+    }
+
+    function onMouseMove(e: MouseEvent) {
+      if (!dragRef.current) return;
+      applyOffset(
+        dragRef.current.ox + (e.clientX - dragRef.current.sx),
+        dragRef.current.oy + (e.clientY - dragRef.current.sy),
+      );
+    }
+
+    function onMouseUp() { dragRef.current = null; }
+
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    canvas.addEventListener("touchmove",  onTouchMove,  { passive: false });
+    canvas.addEventListener("touchend",   onTouchEnd);
+    canvas.addEventListener("mousedown",  onMouseDown);
+    window.addEventListener("mousemove",  onMouseMove);
+    window.addEventListener("mouseup",    onMouseUp);
+
+    return () => {
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove",  onTouchMove);
+      canvas.removeEventListener("touchend",   onTouchEnd);
+      canvas.removeEventListener("mousedown",  onMouseDown);
+      window.removeEventListener("mousemove",  onMouseMove);
+      window.removeEventListener("mouseup",    onMouseUp);
     };
-  }
+  }, [ready]);
 
-  function onTouchStart(e: React.TouchEvent) {
-    e.preventDefault();
-    if (e.touches.length === 1) {
-      dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, ox: offsetX, oy: offsetY };
-      lastPinchDist.current = null;
-    } else if (e.touches.length === 2) {
-      dragStart.current = null;
-      const { dist } = getCenter(e);
-      lastPinchDist.current = dist;
-      lastPinchScale.current = scale;
-    }
-  }
-
-  function onTouchMove(e: React.TouchEvent) {
-    e.preventDefault();
-    if (!imgRef.current) return;
+  // ── Slider ─────────────────────────────────────────────────────────────────
+  function handleSlider(e: React.ChangeEvent<HTMLInputElement>) {
     const img = imgRef.current;
-    if (e.touches.length === 1 && dragStart.current) {
-      const dx = e.touches[0].clientX - dragStart.current.x;
-      const dy = e.touches[0].clientY - dragStart.current.y;
-      const raw = { ox: dragStart.current.ox + dx, oy: dragStart.current.oy + dy };
-      const { cx, cy } = clamp(img, raw.ox, raw.oy, scale);
-      setOffsetX(cx);
-      setOffsetY(cy);
-    } else if (e.touches.length === 2 && lastPinchDist.current !== null) {
-      const { dist } = getCenter(e);
-      const ratio = dist / lastPinchDist.current;
-      const newScale = Math.min(Math.max(lastPinchScale.current * ratio, minScale(img)), minScale(img) * 4);
-      const { cx, cy } = clamp(img, offsetX, offsetY, newScale);
-      setScale(newScale);
-      setOffsetX(cx);
-      setOffsetY(cy);
-    }
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    if (e.touches.length < 2) {
-      lastPinchDist.current = null;
-    }
-    if (e.touches.length === 0) {
-      dragStart.current = null;
-    }
-  }
-
-  function adjustScale(delta: number) {
-    if (!imgRef.current) return;
-    const img = imgRef.current;
-    const newScale = Math.min(Math.max(scale + delta, minScale(img)), minScale(img) * 4);
-    const { cx, cy } = clamp(img, offsetX, offsetY, newScale);
-    setScale(newScale);
+    if (!img) return;
+    const ms = calcMin(img);
+    const newSc = ms + ms * 3 * (Number(e.target.value) / 100);
+    const { cx, cy } = clamp(img, offsetX, offsetY, newSc);
+    scaleRef.current = newSc;
+    setScale(newSc);
     setOffsetX(cx);
     setOffsetY(cy);
   }
 
-  // ── Extract cropped circle ───────────────────────────────────────────────────
+  const sliderVal = minSc > 0 ? Math.round(((scale - minSc) / (minSc * 3)) * 100) : 0;
+
+  // ── Confirm ────────────────────────────────────────────────────────────────
   function handleConfirm() {
     const src = canvasRef.current;
     if (!src) return;
-    // Draw circular crop into a new canvas
     const out = document.createElement("canvas");
     out.width = SIZE;
     out.height = SIZE;
@@ -170,21 +229,21 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
         color: "#fff", fontFamily: "var(--font-fraunces), Georgia, serif",
         fontSize: 18, fontWeight: 700, margin: 0,
       }}>
-        Sesuaikan Foto
+        {t.cropperTitle}
       </p>
 
       {/* Canvas crop area */}
-      <div style={{ position: "relative", borderRadius: 999, overflow: "clip", flexShrink: 0 }}>
+      <div style={{
+        position: "relative", borderRadius: 999, overflow: "clip",
+        flexShrink: 0, cursor: "grab",
+      }}>
         <canvas
           ref={canvasRef}
           width={SIZE}
           height={SIZE}
           style={{ display: "block", touchAction: "none", userSelect: "none" }}
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
         />
-        {/* Circular overlay ring */}
+        {/* Ring overlay */}
         <div style={{
           position: "absolute", inset: 0, borderRadius: 999,
           boxShadow: "inset 0 0 0 2.5px rgba(255,255,255,0.7), 0 0 0 9999px rgba(0,0,0,0.5)",
@@ -192,52 +251,50 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
         }} />
       </div>
 
+      {/* Hint */}
       <p style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, margin: 0, textAlign: "center" }}>
-        Geser untuk memposisikan • Cubit untuk zoom
+        {t.cropperHint}
       </p>
 
-      {/* Zoom controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <button
-          onClick={() => adjustScale(-0.1)}
-          style={{
-            width: 40, height: 40, borderRadius: 999,
-            background: "rgba(255,255,255,0.18)", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", touchAction: "manipulation",
-          }}
-        >
-          <ZoomOut size={18} color="white" />
-        </button>
-        <div style={{
-          width: 120, height: 4, borderRadius: 999, background: "rgba(255,255,255,0.2)",
-          position: "relative",
-        }}>
-          {imgRef.current && (
-            <div style={{
-              position: "absolute", left: 0, top: 0, height: "100%", borderRadius: 999,
-              background: "var(--tk-accent, #2e8a5a)",
-              width: `${((scale - minScale(imgRef.current)) / (minScale(imgRef.current) * 3)) * 100}%`,
-            }} />
-          )}
+      {/* Zoom slider */}
+      <div style={{ width: "100%", maxWidth: 280 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: 0.8,
+            color: "rgba(255,255,255,0.55)",
+            fontFamily: "var(--font-jakarta), sans-serif",
+          }}>
+            {t.cropperZoom}
+          </span>
+          <span style={{
+            fontSize: 11, color: "rgba(255,255,255,0.45)",
+            fontFamily: "var(--font-jakarta), sans-serif",
+          }}>
+            {sliderVal}%
+          </span>
         </div>
-        <button
-          onClick={() => adjustScale(0.1)}
-          style={{
-            width: 40, height: 40, borderRadius: 999,
-            background: "rgba(255,255,255,0.18)", border: "none",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", touchAction: "manipulation",
-          }}
-        >
-          <ZoomIn size={18} color="white" />
-        </button>
+        <style>{`
+          .cropper-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border-radius: 9999px; background: rgba(255,255,255,0.18); outline: none; cursor: pointer; }
+          .cropper-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 9999px; background: #2e8a5a; border: 2.5px solid #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+          .cropper-slider::-moz-range-thumb { width: 22px; height: 22px; border-radius: 9999px; background: #2e8a5a; border: 2.5px solid #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.35); }
+          .cropper-slider::-webkit-slider-runnable-track { border-radius: 9999px; }
+        `}</style>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={sliderVal}
+          onChange={handleSlider}
+          className="cropper-slider"
+        />
       </div>
 
       {/* Action buttons */}
       <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 280 }}>
         <button
           onClick={onCancel}
+          onTouchEnd={(e) => { e.preventDefault(); onCancel(); }}
           style={{
             flex: 1, padding: "13px 0", borderRadius: 14,
             background: "rgba(255,255,255,0.12)",
@@ -247,10 +304,11 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           }}
         >
-          <X size={16} /> Batal
+          <X size={16} /> {t.cropperCancel}
         </button>
         <button
           onClick={handleConfirm}
+          onTouchEnd={(e) => { e.preventDefault(); handleConfirm(); }}
           style={{
             flex: 1, padding: "13px 0", borderRadius: 14,
             background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
@@ -260,7 +318,7 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
             display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           }}
         >
-          <Check size={16} /> Gunakan
+          <Check size={16} /> {t.cropperConfirm}
         </button>
       </div>
     </div>

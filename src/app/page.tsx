@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -379,8 +378,8 @@ function StickyHeader({ visible }: { visible: boolean }) {
       background: "rgba(246,241,232,0.92)",
       backdropFilter: "blur(14px)",
       WebkitBackdropFilter: "blur(14px)",
-      borderBottom: "1px solid rgba(15,23,42,0.1)",
-      padding: "50px 22px 10px",
+      borderBottom: "2px solid #2e8a5a",
+      padding: "12px 22px 10px",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -830,8 +829,6 @@ function AgeBands({
 // ─── FeaturePair ──────────────────────────────────────────────────────────────
 function FeaturePair() {
   const { t } = useLang();
-  const { tier, loaded } = useAuth();
-  const router = useRouter();
   const [open, setOpen] = useState<CategoryKey | null>(null);
   const [area, setArea] = useState<AreaKey | null>(null);
 
@@ -872,7 +869,6 @@ function FeaturePair() {
           accent="#f6b545"
           expanded={open === "sekolah"}
           onToggle={() => {
-            if (loaded && tier === "guest") { router.push("/schools?view=results"); return; }
             toggleCard("sekolah");
           }}
         />
@@ -885,7 +881,6 @@ function FeaturePair() {
           accent="#7af0b6"
           expanded={open === "kursus"}
           onToggle={() => {
-            if (loaded && tier === "guest") { router.push("/learning-centers?view=results"); return; }
             toggleCard("kursus");
           }}
         />
@@ -1141,20 +1136,16 @@ function ArticleList() {
       {/* See all articles link */}
       <Link href="/berita" style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        marginTop: 16,
-        padding: "11px 0",
-        borderRadius: 8,
-        border: "1px solid rgba(15,23,42,0.14)",
-        background: "#fff",
-        fontSize: 13, fontWeight: 700,
+        marginTop: 14, gap: 4,
+        fontSize: 12, fontWeight: 700,
         color: "var(--tk-accent, #c47a14)",
         textDecoration: "none",
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
-        gap: 6,
+        opacity: 0.85,
       }}>
         {t.newsSeeAll}
-        <Chev size={13} color="var(--tk-accent, #c47a14)" stroke={2.5} />
+        <Chev size={12} color="var(--tk-accent, #c47a14)" stroke={2.5} />
       </Link>
     </div>
   );
@@ -1166,7 +1157,8 @@ function DaftarCard() {
   return (
     <div style={{ padding: "24px 22px 0" }}>
       <div style={{
-        border: "1px solid rgba(15,23,42,0.18)", borderRadius: 4,
+        border: "1px solid rgba(15,23,42,0.12)", borderRadius: 4,
+        background: "#fff",
         padding: "18px 18px", display: "flex", alignItems: "center", gap: 14,
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>

@@ -8,7 +8,6 @@ import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
-import { GuestGate } from "@/components/GuestGate";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
@@ -100,9 +99,7 @@ function LearningCentersContent() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const view: "filter" | "results" =
-    (loaded && tier === "guest") || searchParams.get("view") === "results"
-      ? "results"
-      : "filter";
+    searchParams.get("view") === "results" ? "results" : "filter";
 
   const [area,        setArea]        = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
   const [courseType,  setCourseType]  = useState(searchParams.get("course") ?? "all");
@@ -229,24 +226,48 @@ function LearningCentersContent() {
             </div>
           </div>
 
-          {/* Dropdowns — same-line layout */}
+          {/* Free filters */}
           {([
-            { label: t.filterCourseType, value: courseType,  set: setCourseType,  opts: COURSE_TYPE_OPTIONS },
-            { label: t.filterAgeGroup,   value: ageGroup,    set: setAgeGroup,    opts: ageGroupOptions },
-            { label: t.filterPrice,      value: priceBucket, set: setPriceBucket, opts: PRICE_OPTIONS },
+            { label: t.filterCourseType, value: courseType, set: setCourseType, opts: COURSE_TYPE_OPTIONS },
+            { label: t.filterAgeGroup,   value: ageGroup,   set: setAgeGroup,   opts: ageGroupOptions },
           ] as const).map(({ label, value, set, opts }) => (
             <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
                 color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
               <div style={{ flex: 1 }}>
-                <FilterDropdown
-                  value={value}
-                  onChange={set as (v: string) => void}
-                  options={opts as { value: string; label: string }[]}
-                />
+                <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts as { value: string; label: string }[]} />
               </div>
             </div>
           ))}
+
+          {/* Monthly fee — premium only */}
+          {tier === "premium" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{t.filterPrice}</p>
+              <div style={{ flex: 1 }}>
+                <FilterDropdown value={priceBucket} onChange={setPriceBucket} options={PRICE_OPTIONS} />
+              </div>
+            </div>
+          ) : (
+            <ActionButton
+              onClick={() => setShowFilterGate(true)}
+              style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18,
+                width: "100%", padding: 0, background: "transparent" }}
+            >
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{t.filterPrice}</p>
+              <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
+                fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+                color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
+                display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span>Premium only</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </ActionButton>
+          )}
 
         </div>
 
@@ -256,14 +277,14 @@ function LearningCentersContent() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toResults())}
-              onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : router.replace(toResults()); }}
+              onClick={() => router.replace(toResults())}
+              onTouchEnd={(e) => { e.preventDefault(); router.replace(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-              {tier === "guest" ? "Daftar untuk Lihat Semua" : t.lcFound(filtered.length)}
+              {t.lcFound(filtered.length)}
             </button>
           </div>
         </div>
@@ -277,7 +298,7 @@ function LearningCentersContent() {
       <div style={HEADER_STYLE}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
+            <ActionButton onClick={() => router.replace(toFilter())} ariaLabel="Back" style={{
               width: 36, height: 36, borderRadius: 999, flexShrink: 0,
               background: "rgba(255,255,255,0.18)", display: "inline-flex",
               alignItems: "center", justifyContent: "center" }}>
@@ -299,7 +320,7 @@ function LearningCentersContent() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toFilter())} style={{
+        <ActionButton onClick={() => router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
@@ -313,7 +334,7 @@ function LearningCentersContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
+        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
@@ -344,21 +365,12 @@ function LearningCentersContent() {
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.slice(0, tier === "guest" ? 3 : undefined).map(center => (
+          {filtered.map(center => (
             <Link key={center.id} href={`/place/${center.id}`} style={{ textDecoration: "none", display: "block" }}>
               <PlaceCard place={center} />
             </Link>
           ))}
         </div>
-        {tier === "guest" && filtered.length > 3 && (
-          <GuestGate hiddenCount={filtered.length - 3}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {filtered.slice(3, 6).map(center => (
-                <div key={center.id}><PlaceCard place={center} /></div>
-              ))}
-            </div>
-          </GuestGate>
-        )}
       </div>
       <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
 

@@ -9,13 +9,11 @@ import { BottomNav } from "@/components/BottomNav";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { PlaceCard } from "@/components/PlaceCard";
 import { useAuth } from "@/context/AuthContext";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
 
 export default function SavedPage() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
   const router = useRouter();
-  const { openRegisterSheet } = useRegisterSheet();
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
@@ -55,7 +53,7 @@ export default function SavedPage() {
         {mounted && savedPlaces.length > 0 && (
           <p className="text-white/60 text-xs font-jakarta mt-1">{t.savedCount(savedPlaces.length)}</p>
         )}
-        {mounted && tier === "free" && (
+        {mounted && tier === "registered" && (
           <p className="text-white/50 text-xs font-jakarta mt-0.5">
             {savedPlaces.length}/5 favorit ·<span className="underline cursor-pointer" onClick={() => router.push("/upgrade")}>Upgrade untuk tanpa batas</span>
           </p>
@@ -63,54 +61,7 @@ export default function SavedPage() {
       </div>
 
       {/* Content */}
-      {!mounted ? null : (loaded && tier === "guest") ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
-          <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "#e6f4ed" }}>
-            <Heart size={40} style={{ color: "#a8d5ba" }} strokeWidth={1.5} />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold" style={{ color: "#0e1d4f", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-              {t.savedGuestTitle}
-            </h2>
-            <p className="font-jakarta text-sm mt-2 leading-relaxed text-gray-500">
-              {t.savedGuestDesc}
-            </p>
-          </div>
-          <button
-            onClick={() => openRegisterSheet()}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 10,
-              padding: "16px 36px", borderRadius: 999,
-              background: "linear-gradient(135deg, #16a34a, #22c55e)",
-              color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
-              fontWeight: 800, fontSize: 16, border: "none", cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(22,163,74,0.35)",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              marginTop: 8,
-            }}
-          >
-            {t.savedGuestCta}
-            <span style={{ display: "inline-block", fontSize: 20, lineHeight: 1, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
-          </button>
-
-          {/* Benefit bullets */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignSelf: "stretch", marginTop: 4 }}>
-            {t.guestGateBenefits.map((benefit) => (
-              <p key={benefit} style={{
-                margin: 0,
-                fontSize: 13,
-                fontWeight: 600,
-                color: "#0e1d4f",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                lineHeight: 1.4,
-                textAlign: "left",
-              }}>
-                {benefit}
-              </p>
-            ))}
-          </div>
-        </div>
-      ) : savedPlaces.length === 0 ? (
+      {!mounted ? null : savedPlaces.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center gap-4">
           <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ background: "var(--tk-blue-50)" }}>
             <Heart size={40} style={{ color: "#a8d5ba" }} strokeWidth={1.5} />

@@ -92,3 +92,19 @@ export const viewport: Viewport = {
   width: "device-width", initialScale: 1, maximumScale: 1, userScalable: false,
 };
 ```
+
+# Tailwind v4 broken utilities — always use inline styles for these
+
+Tailwind v4's build does NOT reliably generate certain utility classes in this project. Using them silently has no effect (computed style stays at browser default). **Always use inline `style={{}}` instead of Tailwind classes for:**
+
+- `min-w-*` → use `style={{ minWidth: 0 }}` (or whatever value)
+- `max-w-*` → use `style={{ maxWidth: "..." }}`
+- Any utility that isn't visually working as expected → verify with `getComputedStyle(el).propertyName` in DevTools, and switch to inline style if the Tailwind class isn't applied
+
+```tsx
+// ❌ Silently ignored in this project's Tailwind v4 build
+<div className="flex-1 min-w-0">
+
+// ✅ CORRECT — inline style is always applied
+<div className="flex-1" style={{ minWidth: 0 }}>
+```

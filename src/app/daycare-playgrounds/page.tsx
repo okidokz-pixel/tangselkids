@@ -5,12 +5,9 @@ import { daycares, playgrounds, getAreaGroup } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 import { AreaToggle, type AreaFilter } from "@/components/AreaToggle";
 import { PlaceCard } from "@/components/PlaceCard";
-import { GuestGate } from "@/components/GuestGate";
-import { useAuth } from "@/context/AuthContext";
 
 export default function DaycarePlaygroundsPage() {
   const { t } = useLang();
-  const { tier } = useAuth();
   const [activeTab,        setActiveTab]        = useState<"daycare" | "playground">("daycare");
   const [playgroundFilter, setPlaygroundFilter] = useState<"all" | "indoor" | "outdoor">("all");
   const [freeOnly,         setFreeOnly]         = useState(false);
@@ -83,21 +80,12 @@ export default function DaycarePlaygroundsPage() {
           <>
             <p className="text-xs font-jakarta text-gray-400">{t.dpDaycareCount(filteredDaycares.length)}</p>
             <div className="space-y-2.5">
-              {filteredDaycares.slice(0, tier === "guest" ? 3 : undefined).map((dc) => (
+              {filteredDaycares.map((dc) => (
                 <Link href={`/place/${dc.id}`} key={dc.id} style={{ textDecoration: "none", display: "block" }}>
                   <PlaceCard place={dc} />
                 </Link>
               ))}
             </div>
-            {tier === "guest" && filteredDaycares.length > 3 && (
-              <GuestGate hiddenCount={filteredDaycares.length - 3}>
-                <div className="space-y-2.5">
-                  {filteredDaycares.slice(3, 6).map((dc) => (
-                    <div key={dc.id}><PlaceCard place={dc} /></div>
-                  ))}
-                </div>
-              </GuestGate>
-            )}
           </>
         )}
 
@@ -134,21 +122,12 @@ export default function DaycarePlaygroundsPage() {
               {filteredPlaygrounds.length === 0 && (
                 <div className="text-center py-12 text-gray-400 font-jakarta text-sm">{t.dpNoResults}</div>
               )}
-              {filteredPlaygrounds.slice(0, tier === "guest" ? 3 : undefined).map((pg) => (
+              {filteredPlaygrounds.map((pg) => (
                 <Link href={`/place/${pg.id}`} key={pg.id} style={{ textDecoration: "none", display: "block" }}>
                   <PlaceCard place={pg} />
                 </Link>
               ))}
             </div>
-            {tier === "guest" && filteredPlaygrounds.length > 3 && (
-              <GuestGate hiddenCount={filteredPlaygrounds.length - 3}>
-                <div className="space-y-2.5">
-                  {filteredPlaygrounds.slice(3, 6).map((pg) => (
-                    <div key={pg.id}><PlaceCard place={pg} /></div>
-                  ))}
-                </div>
-              </GuestGate>
-            )}
           </>
         )}
       </div>

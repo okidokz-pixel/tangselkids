@@ -1,21 +1,22 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 
 /**
- * FilterGateSheet — bottom sheet shown to guests when they tap Filter or Sort.
- * Explains that filters & sorting are free for registered users, then opens
- * the RegisterSheet when the CTA is tapped.
+ * SaveGateSheet — shown to anonymous users when they tap the save/favorite
+ * button. Explains the benefit and offers two actions:
+ *   • "Daftar Sekarang" → opens the registration modal (caller handles this)
+ *   • "Nanti Saja"      → dismisses the sheet
  */
-export function FilterGateSheet({
+export function SaveGateSheet({
   isOpen,
   onClose,
+  onRegister,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onRegister: () => void;
 }) {
-  const router = useRouter();
   const { t } = useLang();
 
   if (!isOpen) return null;
@@ -49,11 +50,11 @@ export function FilterGateSheet({
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 999,
-            background: "linear-gradient(135deg, #f59e0b, #d97706)",
+            background: "linear-gradient(135deg, #16a34a, #22c55e)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28,
           }}>
-            🔍
+            ❤️
           </div>
         </div>
 
@@ -63,31 +64,28 @@ export function FilterGateSheet({
           fontSize: 20, fontWeight: 700, color: "var(--tk-ink, #0e1d4f)",
           textAlign: "center", margin: "0 0 10px",
         }}>
-          {t.filterGateTitle}
+          {t.saveGateTitle}
         </p>
 
-        {/* Subtitle */}
+        {/* Body */}
         <p style={{
           fontFamily: "var(--font-jakarta), sans-serif",
           fontSize: 13, color: "#64748b", lineHeight: 1.6,
           textAlign: "center", margin: "0 0 28px",
           padding: "0 8px",
         }}>
-          {t.filterGateSubtitle}
+          {t.saveGateBody}
         </p>
 
-        {/* CTA */}
+        {/* CTA — register */}
         <ActionButton
-          onClick={() => {
-            onClose();
-            router.push("/upgrade");
-          }}
+          onClick={() => { onClose(); onRegister(); }}
           style={{
             width: "100%",
             padding: "17px 0",
             borderRadius: 16,
             border: "none",
-            background: "linear-gradient(135deg, #f59e0b, #d97706)",
+            background: "linear-gradient(135deg, #16a34a, #22c55e)",
             color: "#fff",
             fontFamily: "var(--font-jakarta), sans-serif",
             fontSize: 16,
@@ -98,21 +96,14 @@ export function FilterGateSheet({
             gap: 10,
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
-            boxShadow: "0 4px 16px rgba(217,119,6,0.35)",
+            boxShadow: "0 4px 16px rgba(22,163,74,0.35)",
           }}
         >
-          {t.filterGateCta}
-          <span style={{
-            display: "inline-block",
-            fontSize: 20,
-            lineHeight: 1,
-            animation: "arrow-slide 1s ease-in-out infinite",
-          }}>
-            →
-          </span>
+          {t.saveGateCta}
+          <span style={{ display: "inline-block", fontSize: 20, lineHeight: 1 }}>→</span>
         </ActionButton>
 
-        {/* Cancel */}
+        {/* Dismiss */}
         <ActionButton
           onClick={onClose}
           style={{
@@ -130,7 +121,7 @@ export function FilterGateSheet({
             justifyContent: "center",
           }}
         >
-          Batal
+          {t.saveGateDismiss}
         </ActionButton>
       </div>
     </div>

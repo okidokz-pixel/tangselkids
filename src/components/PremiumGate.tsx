@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LanguageContext";
-import { PremiumGuestSheet } from "./PremiumGuestSheet";
 import { ActionButton } from "./ActionButton";
 
 /**
@@ -22,18 +21,15 @@ export function PremiumGate({
   const router = useRouter();
   const { tier } = useAuth();
   const { t } = useLang();
-  const [showGuestSheet,   setShowGuestSheet]   = useState(false);
   const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
 
   if (tier === "premium") return <>{children}</>;
-
-  const isGuest = tier === "guest";
 
   return (
     <>
       <div
         style={{ position: "relative", display: "inline-flex", cursor: "pointer" }}
-        onClick={() => isGuest ? setShowGuestSheet(true) : setShowUpgradeSheet(true)}
+        onClick={() => setShowUpgradeSheet(true)}
       >
         {/* Blurred content */}
         <div style={{ filter: "blur(4px)", pointerEvents: "none", userSelect: "none" }}>
@@ -45,7 +41,7 @@ export function PremiumGate({
           <div style={{
             position: "absolute", bottom: -6, right: -6,
             width: 22, height: 22, borderRadius: 999,
-            background: isGuest ? "#ef4444" : "#d97706",
+            background: "#d97706",
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: "0 1px 5px rgba(0,0,0,0.25)",
           }}>
@@ -53,9 +49,6 @@ export function PremiumGate({
           </div>
         </div>
       </div>
-
-      {/* Unregistered → register + upgrade sheet */}
-      <PremiumGuestSheet isOpen={showGuestSheet} onClose={() => setShowGuestSheet(false)} />
 
       {/* Registered → upgrade sheet */}
       {showUpgradeSheet && (

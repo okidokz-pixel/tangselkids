@@ -4,6 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 export type RegisterSheetOptions = {
   title?: string;
   subtitle?: string;
+  onRegistered?: () => void;
 };
 
 type RegisterSheetContextType = {
