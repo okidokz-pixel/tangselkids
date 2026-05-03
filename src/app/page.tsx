@@ -49,10 +49,10 @@ const SCHOOL_LEVELS_DATA: Record<"id" | "en", { key: string; label: string; sub:
 // Keys ("Toddler", "Kids", "Tween", "Teen") match the ageGroups field in mockData.
 const LC_AGE_BANDS: Record<"id" | "en", { key: string; label: string; sub: string; dot: string }[]> = {
   id: [
-    { key: "Toddler", label: "Balita",    sub: "0–3 thn",  dot: "#f59e0b" },
-    { key: "Kids",    label: "Anak",      sub: "4–8 thn",  dot: "#ef6f6c" },
-    { key: "Tween",   label: "Praremaja", sub: "9–12 thn", dot: "#1f9b6a" },
-    { key: "Teen",    label: "Remaja",    sub: "13+ thn",  dot: "#3a64ee" },
+    { key: "Toddler", label: "Toddler", sub: "0–3 thn",  dot: "#f59e0b" },
+    { key: "Kids",    label: "Kids",    sub: "4–8 thn",  dot: "#ef6f6c" },
+    { key: "Tween",   label: "Tween",   sub: "9–12 thn", dot: "#1f9b6a" },
+    { key: "Teen",    label: "Teen",    sub: "13+ thn",  dot: "#3a64ee" },
   ],
   en: [
     { key: "Toddler", label: "Toddler", sub: "0–3 yrs",  dot: "#f59e0b" },
@@ -383,14 +383,34 @@ function StickyHeader({ visible }: { visible: boolean }) {
       padding: "50px 22px 10px",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <div style={{
-        fontFamily: "var(--font-fraunces), Georgia, serif",
-        fontWeight: 700, fontSize: 22, letterSpacing: -1, color: "#0e1d4f", lineHeight: 1,
-      }}>
-        Tangsel<span style={{ color: "var(--tk-accent, #c47a14)" }}>.</span>
-        <span style={{ fontStyle: "italic", fontSize: 14, fontWeight: 500, opacity: 0.7, marginLeft: 4 }}>
-          Kids
-        </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <svg viewBox="0 0 52 52" width="28" height="28" style={{ flexShrink: 0 }}>
+          <g transform="rotate(-6 26 26)">
+            <rect x="3" y="3" width="46" height="46" rx="4" fill="var(--tk-accent, #c47a14)" />
+            <rect x="18" y="-2" width="16" height="6" rx="1" fill="#f6b545" opacity="0.9" transform="rotate(8 26 1)" />
+          </g>
+          <g stroke="#fff7ec" strokeWidth="2" strokeLinecap="round" fill="none">
+            <path d="M26 8 v3"/><path d="M26 41 v3"/>
+            <path d="M8 26 h3"/><path d="M41 26 h3"/>
+            <path d="M14 14 l2 2"/><path d="M36 36 l2 2"/>
+            <path d="M38 14 l-2 2"/><path d="M16 36 l-2 2"/>
+          </g>
+          <g transform="translate(26 26)">
+            <path d="M0 -10 l2.6 6 l6.4 .9 l-4.7 4.4 l1.2 6.4 l-5.5 -3.2 l-5.5 3.2 l1.2 -6.4 l-4.7 -4.4 l6.4 -.9 z" fill="#0e1d4f" />
+            <circle cx="-2" cy="-2" r="0.9" fill="#fff7ec" />
+            <circle cx="2" cy="-2" r="0.9" fill="#fff7ec" />
+            <path d="M-2 1.5 q2 1.6 4 0" stroke="#fff7ec" strokeWidth="0.9" fill="none" strokeLinecap="round" />
+          </g>
+        </svg>
+        <div style={{
+          fontFamily: "var(--font-fraunces), Georgia, serif",
+          fontWeight: 700, fontSize: 22, letterSpacing: -1, color: "#0e1d4f", lineHeight: 1,
+        }}>
+          Tangsel<span style={{ color: "var(--tk-accent, #c47a14)" }}>.</span>
+          <span style={{ fontStyle: "italic", fontSize: 14, fontWeight: 500, opacity: 0.7, marginLeft: 4 }}>
+            Kids
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -593,7 +613,7 @@ function AreaPills({
             >
               <span style={{
                 fontFamily: "var(--font-fraunces), Georgia, serif",
-                fontSize: 14, fontWeight: 700, letterSpacing: -0.2,
+                fontSize: 17, fontWeight: 700, letterSpacing: -0.2,
                 color: active ? "#fff" : "#0e1d4f",
                 whiteSpace: "nowrap",
               }}>
@@ -739,7 +759,7 @@ function AgeBands({
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                        fontSize: 17, fontWeight: 700, color: "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
                         {b.label}
@@ -772,7 +792,7 @@ function AgeBands({
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                        fontSize: 17, fontWeight: 700, color: "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
                         {b.label}
