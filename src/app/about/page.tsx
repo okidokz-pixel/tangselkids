@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, MapPin, Heart, Star, Users } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
@@ -13,12 +13,12 @@ export default function AboutPage() {
   const router = useRouter();
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#EFF6FF", paddingBottom: 100 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#e6f4ed", paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{
         padding: "52px 20px 32px",
-        background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
         borderRadius: "0 0 32px 32px",
       }}>
         <button
@@ -39,7 +39,7 @@ export default function AboutPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
           <div style={{
             width: 52, height: 52, borderRadius: 16,
-            background: "linear-gradient(135deg, #1e3fb0, #3a64ee)",
+            background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
             display: "flex", alignItems: "center", justifyContent: "center",
             border: "2px solid rgba(255,255,255,0.25)",
             flexShrink: 0,
@@ -81,10 +81,10 @@ export default function AboutPage() {
           }}>
             <div style={{
               width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              background: "#EFF6FF",
+              background: "#e6f4ed",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Icon size={20} color="#1d4ed8" strokeWidth={1.75} />
+              <Icon size={20} color="#2e8a5a" strokeWidth={1.75} />
             </div>
             <div>
               <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>
@@ -99,7 +99,7 @@ export default function AboutPage() {
 
         {/* Mission card */}
         <div style={{
-          background: "linear-gradient(135deg, #0F1E3C, #1D4ED8)",
+          background: "linear-gradient(135deg, #0a2018, #2e8a5a)",
           borderRadius: 18, padding: "20px 20px",
           marginTop: 4,
         }}>

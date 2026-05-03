@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -13,7 +13,7 @@ function SubmittedContent() {
 
   return (
     <div style={{
-      maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc",
+      maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: "40px 28px", textAlign: "center",
     }}>
@@ -30,7 +30,7 @@ function SubmittedContent() {
       <h1 style={{
         margin: "0 0 10px",
         fontFamily: "var(--font-fraunces), Georgia, serif",
-        fontSize: 26, fontWeight: 700, color: "#1e3a5f",
+        fontSize: 26, fontWeight: 700, color: "#0e1d4f",
       }}>
         {t.submittedTitle}
       </h1>
@@ -39,7 +39,7 @@ function SubmittedContent() {
         <p style={{
           margin: "0 0 8px",
           fontFamily: "var(--font-jakarta), sans-serif",
-          fontSize: 14, fontWeight: 700, color: "#1e3a5f",
+          fontSize: 14, fontWeight: 700, color: "#0e1d4f",
         }}>
           {placeName}
         </p>
@@ -57,7 +57,7 @@ function SubmittedContent() {
         onClick={() => router.replace("/")}
         style={{
           width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-          background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
+          background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
           color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
           fontSize: 15, fontWeight: 700,
           display: "flex", alignItems: "center", justifyContent: "center",

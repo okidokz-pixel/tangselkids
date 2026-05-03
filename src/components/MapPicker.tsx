@@ -140,11 +140,11 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
           display: "flex", alignItems: "center", gap: 12,
           padding: "16px 20px 0",
         }}>
-          <MapPin size={20} color="#1d4ed8" />
+          <MapPin size={20} color="var(--tk-accent, #2e8a5a)" />
           <p style={{
             flex: 1, margin: 0,
             fontFamily: "var(--font-fraunces), Georgia, serif",
-            fontSize: 17, fontWeight: 700, color: "#1E3A5F",
+            fontSize: 17, fontWeight: 700, color: "var(--tk-ink, #0e1d4f)",
           }}>
             Pilih Alamat
           </p>
@@ -196,9 +196,9 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               marginTop: 10, padding: "7px 14px", borderRadius: 999,
-              background: "#eff6ff", color: "#1d4ed8",
+              background: "var(--tk-accent-pale, #e6f4ed)", color: "var(--tk-accent, #2e8a5a)",
               fontSize: 12.5, fontWeight: 700,
-              border: "1.5px solid #bfdbfe",
+              border: "1.5px solid #a7d4bc",
             }}
           >
             {gpsLoading
@@ -249,7 +249,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
                 textAlign: "left",
               }}
             >
-              <MapPin size={15} color="#1d4ed8" style={{ flexShrink: 0, marginTop: 1 }} />
+              <MapPin size={15} color="var(--tk-accent, #2e8a5a)" style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{
                 fontSize: 13, color: "#1e293b", lineHeight: 1.45,
                 fontFamily: "var(--font-jakarta), sans-serif",
@@ -267,7 +267,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             style={{
               width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
               background: selected
-                ? "linear-gradient(135deg, #1e3a5f, #1d4ed8)"
+                ? "linear-gradient(135deg, #1f6b43, #2e8a5a)"
                 : "#e2e8f0",
               color: selected ? "#fff" : "#94a3b8",
               fontFamily: "var(--font-jakarta), sans-serif",

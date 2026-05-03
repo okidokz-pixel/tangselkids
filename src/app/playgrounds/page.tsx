@@ -11,6 +11,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { GuestGate } from "@/components/GuestGate";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
@@ -23,8 +24,8 @@ function Chip({ name, value, checked, onChange, children }: {
       <input type="radio" name={name} value={value} checked={checked} onChange={onChange} style={HI} />
       <span style={{ display: "inline-block", padding: "6px 13px", borderRadius: 999,
         fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
-        border: checked ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-        background: checked ? "#1d4ed8" : "#fff", color: checked ? "#fff" : "#374151" }}>
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#2e8a5a" : "#fff", color: checked ? "#fff" : "#374151" }}>
         {children}
       </span>
     </label>
@@ -47,9 +48,9 @@ function FilterDropdown({ value, onChange, options }: {
           width: "100%", padding: "10px 36px 10px 14px",
           borderRadius: 12, fontSize: 13.5, fontWeight: 600,
           fontFamily: "var(--font-jakarta),sans-serif",
-          border: active ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-          background: active ? "#eff6ff" : "#fff",
-          color: active ? "#1d4ed8" : "#374151",
+          border: active ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+          background: active ? "#e6f4ed" : "#fff",
+          color: active ? "#2e8a5a" : "#374151",
           cursor: "pointer", outline: "none",
         }}
       >
@@ -58,7 +59,7 @@ function FilterDropdown({ value, onChange, options }: {
       <div style={{ position: "absolute", right: 12, top: 0, bottom: 0,
         display: "flex", alignItems: "center", pointerEvents: "none" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#1d4ed8" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          stroke={active ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
@@ -69,40 +70,40 @@ function FilterDropdown({ value, onChange, options }: {
 function FTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 4,
-      background: "#eff6ff", borderRadius: 999, padding: "4px 6px 4px 10px",
-      fontSize: 12, fontWeight: 600, color: "#1e3a5f" }}>
+      background: "#e6f4ed", borderRadius: 999, padding: "4px 6px 4px 10px",
+      fontSize: 12, fontWeight: 600, color: "#0e1d4f" }}>
       {label}
       <ActionButton onClick={onRemove} ariaLabel="Remove" style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#1d4ed8", borderRadius: 999, width: 16, height: 16, flexShrink: 0 }}>
+        background: "#2e8a5a", borderRadius: 999, width: 16, height: 16, flexShrink: 0 }}>
         <X size={8} color="white" strokeWidth={3} />
       </ActionButton>
     </div>
   );
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  all: "Semua",
-  indoor: "🏠 Indoor",
-  outdoor: "🌳 Outdoor",
-};
-
-const PRICE_LABELS: Record<string, string> = {
-  all: "Semua",
-  gratis:     "Gratis",
-  lt50:       "< Rp 50 rb",
-  "50to100":  "Rp 50–100 rb",
-  "100to200": "Rp 100–200 rb",
-  gt200:      "> Rp 200 rb",
-};
 
 const HEADER_STYLE = {
-  background: "linear-gradient(150deg,#1e3a5f 0%,#1d4ed8 55%,#3b82f6 100%)",
+  background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
 };
 
 function PlaygroundsContent() {
   const { t } = useLang();
+
+  const TYPE_OPTIONS = [
+    { value: "all",     label: t.filterAll },
+    { value: "indoor",  label: t.dpIndoorBadge },
+    { value: "outdoor", label: t.dpOutdoorBadge },
+  ];
+  const PRICE_OPTIONS = [
+    { value: "all",       label: t.filterAll },
+    { value: "gratis",    label: t.dpFree },
+    { value: "lt50",      label: "< Rp 50 rb" },
+    { value: "50to100",   label: "Rp 50–100 rb" },
+    { value: "100to200",  label: "Rp 100–200 rb" },
+    { value: "gt200",     label: "> Rp 200 rb" },
+  ];
   const { tier, loaded } = useAuth();
   const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
@@ -117,7 +118,7 @@ function PlaygroundsContent() {
   const [area,    setArea]    = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
   const [pgType,  setPgType]  = useState(searchParams.get("type") ?? "all");
   const [pgPrice, setPgPrice] = useState(searchParams.get("price") ?? "all");
-  const [sortBy,  setSortBy]  = useState<"rating"|"price">((searchParams.get("sort") as "rating"|"price") ?? "rating");
+  const [sortBy,  setSortBy]  = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
 
   function matchesPriceBucket(p: { priceMin: number; priceMax: number }): boolean {
     if (pgPrice === "gratis")   return p.priceMin === 0 && p.priceMax === 0;
@@ -135,7 +136,7 @@ function PlaygroundsContent() {
     .sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "price" ? a.priceMin - b.priceMin : b.rating - a.rating;
+    return sortBy === "price" ? a.priceMin - b.priceMin : sortBy === "rating" ? b.rating - a.rating : a.name.localeCompare(b.name);
   });
 
   const activeCount = [area !== "all", pgType !== "all", pgPrice !== "all"].filter(Boolean).length;
@@ -146,7 +147,7 @@ function PlaygroundsContent() {
     if (area !== "all") p.set("area", area);
     if (pgType !== "all") p.set("type", pgType);
     if (pgPrice !== "all") p.set("price", pgPrice);
-    if (sortBy !== "rating") p.set("sort", sortBy);
+    if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
   function toFilter() {
@@ -154,7 +155,7 @@ function PlaygroundsContent() {
     if (area !== "all") p.set("area", area);
     if (pgType !== "all") p.set("type", pgType);
     if (pgPrice !== "all") p.set("price", pgPrice);
-    if (sortBy !== "rating") p.set("sort", sortBy);
+    if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
@@ -162,21 +163,24 @@ function PlaygroundsContent() {
   // ── Filter View ──────────────────────────────────────────────────────────────
   if (view === "filter") {
     return (
-      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
         <div style={HEADER_STYLE}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton
-              onClick={() => router.back()}
-              ariaLabel="Back"
-              style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-                background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
-                justifyContent: "center" }}>
-              <ChevronLeft size={20} color="white" />
-            </ActionButton>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
-              {t.catPlayground}
-            </h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <ActionButton
+                onClick={() => router.back()}
+                ariaLabel="Back"
+                style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+                  background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
+                  justifyContent: "center" }}>
+                <ChevronLeft size={20} color="white" />
+              </ActionButton>
+              <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
+                fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
+                {t.catPlayground}
+              </h1>
+            </div>
+            <PremiumBadge />
           </div>
         </div>
 
@@ -197,8 +201,8 @@ function PlaygroundsContent() {
 
           {/* Dropdowns */}
           {([
-            { label: "Tipe",        value: pgType,  set: setPgType,  opts: Object.entries(TYPE_LABELS).map(([v, l]) => ({ value: v, label: l })) },
-            { label: "Harga Tiket", value: pgPrice, set: setPgPrice, opts: Object.entries(PRICE_LABELS).map(([v, l]) => ({ value: v, label: l })) },
+            { label: t.filterType,       value: pgType,  set: setPgType,  opts: TYPE_OPTIONS },
+            { label: t.filterHargaTiket, value: pgPrice, set: setPgPrice, opts: PRICE_OPTIONS },
           ] as const).map(({ label, value, set, opts }) => (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
@@ -220,7 +224,7 @@ function PlaygroundsContent() {
               onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toResults())}
               onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : router.replace(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg,#1e3a5f,#2563eb)", color: "#fff",
+                background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
@@ -234,24 +238,27 @@ function PlaygroundsContent() {
 
   // ── Results View ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f8fafc" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f6f1e8" }}>
       <div style={HEADER_STYLE}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
-            width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-            background: "rgba(255,255,255,0.18)", display: "inline-flex",
-            alignItems: "center", justifyContent: "center" }}>
-            <ChevronLeft size={20} color="white" />
-          </ActionButton>
-          <div>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
-              {t.catPlayground}
-            </h1>
-            <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
-              {t.pgShowResults(filtered.length)}
-            </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
+              width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+              background: "rgba(255,255,255,0.18)", display: "inline-flex",
+              alignItems: "center", justifyContent: "center" }}>
+              <ChevronLeft size={20} color="white" />
+            </ActionButton>
+            <div>
+              <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
+                fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
+                {t.catPlayground}
+              </h1>
+              <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+                {t.pgShowResults(filtered.length)}
+              </p>
+            </div>
           </div>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -260,7 +267,7 @@ function PlaygroundsContent() {
         <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
-          background: "#0f172a", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
+          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
           <SlidersHorizontal size={14} strokeWidth={2.5} />
           Filter
           {activeCount > 0 && (
@@ -271,16 +278,13 @@ function PlaygroundsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "rating" ? "price" : "rating")} style={{
+        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
           border: "1.5px solid #e2e8f0" }}>
           <ArrowUpDown size={14} strokeWidth={2.5} />
-          {t.filterSort}
-          <span style={{ fontSize: 11, color: "#1d4ed8", fontWeight: 700 }}>
-            {sortBy === "rating" ? "★" : "↑Rp"}
-          </span>
+          {sortBy === "alpha" ? t.sortAlpha : sortBy === "rating" ? t.sortRating : t.sortPrice}
         </ActionButton>
       </div>
 
@@ -288,9 +292,9 @@ function PlaygroundsContent() {
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
           {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
-          {pgType !== "all" && <FTag label={TYPE_LABELS[pgType]} onRemove={() => setPgType("all")} />}
-          {pgPrice !== "all" && <FTag label={PRICE_LABELS[pgPrice]} onRemove={() => setPgPrice("all")} />}
-          <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#1d4ed8" }}>
+          {pgType !== "all" && <FTag label={TYPE_OPTIONS.find(o => o.value === pgType)?.label ?? pgType} onRemove={() => setPgType("all")} />}
+          {pgPrice !== "all" && <FTag label={PRICE_OPTIONS.find(o => o.value === pgPrice)?.label ?? pgPrice} onRemove={() => setPgPrice("all")} />}
+          <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>
         </div>

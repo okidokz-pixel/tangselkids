@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,6 +7,7 @@ import { places, formatPriceRange, type Place } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 function getValue(place: Place, key: string): string {
   if (key === "priceRange") return formatPriceRange(place.priceMin, place.priceMax);
@@ -66,7 +67,7 @@ export default function ComparePage() {
       {/* Header */}
       <div
         className="px-5 pt-12 pb-6"
-        style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 60%, #3B82F6 100%)", borderRadius: "0 0 32px 32px" }}
+        style={{ background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 60%, #3aab74 100%)", borderRadius: "0 0 32px 32px" }}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -81,6 +82,7 @@ export default function ComparePage() {
               <p className="text-white/70 text-xs font-jakarta">{t.cmpSelected(compareSchools.length)}</p>
             </div>
           </div>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -92,7 +94,7 @@ export default function ComparePage() {
             <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "#FEF3C7" }}>
               <Lock size={36} style={{ color: "#D97706" }} strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-semibold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+            <h2 className="text-xl font-semibold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
               Fitur Khusus Premium
             </h2>
             <p className="font-jakarta text-gray-500 text-sm leading-relaxed">
@@ -117,13 +119,13 @@ export default function ComparePage() {
         {/* Empty state */}
         {loaded && tier === "premium" && compareSchools.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
-            <Scale size={48} style={{ color: "#BFDBFE" }} strokeWidth={1.25} />
-            <p className="text-xl font-semibold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.cmpEmpty}</p>
+            <Scale size={48} style={{ color: "#a7d4bc" }} strokeWidth={1.25} />
+            <p className="text-xl font-semibold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.cmpEmpty}</p>
             <p className="font-jakarta text-gray-400 text-sm">{t.cmpEmptyDesc}</p>
             <Link
               href="/schools"
               className="px-6 py-3 rounded-full text-white font-jakarta font-bold text-sm"
-              style={{ background: "#1D4ED8" }}
+              style={{ background: "#2e8a5a" }}
             >
               {t.cmpBrowse}
             </Link>
@@ -137,8 +139,8 @@ export default function ComparePage() {
               <div />
               {compareSchools.map((school) => (
                 <div key={school.id} className="flex flex-col items-center text-center gap-1">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "#DBEAFE" }}>
-                    <GraduationCap size={24} style={{ color: "#1E3A5F" }} strokeWidth={1.5} />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "#e6f4ed" }}>
+                    <GraduationCap size={24} style={{ color: "#0e1d4f" }} strokeWidth={1.5} />
                   </div>
                   <p className="font-jakarta font-semibold text-gray-800 text-xs leading-tight">{school.name}</p>
                   <button onClick={() => removeSchool(school.id)} className="text-[10px] font-jakarta text-red-400">
@@ -166,14 +168,14 @@ export default function ComparePage() {
                         key={school.id}
                         className="px-2 py-3 flex items-center justify-center text-center rounded-r-2xl"
                         style={{
-                          background: best ? "#DBEAFE" : "white",
-                          border: best ? "1.5px solid #3B82F6" : "1.5px solid #F3F4F6",
+                          background: best ? "#e6f4ed" : "white",
+                          border: best ? "1.5px solid #3aab74" : "1.5px solid #F3F4F6",
                         }}
                       >
-                        <span className="font-jakarta text-xs font-semibold leading-tight" style={{ color: best ? "#1E3A5F" : "#374151" }}>
+                        <span className="font-jakarta text-xs font-semibold leading-tight" style={{ color: best ? "#1f6b43" : "#374151" }}>
                           {getValue(school, row.key)}
                           {best && (
-                            <span className="block text-[9px] font-bold mt-0.5" style={{ color: "#3B82F6" }}>
+                            <span className="block text-[9px] font-bold mt-0.5" style={{ color: "#3aab74" }}>
                               {t.cmpBest}
                             </span>
                           )}
@@ -188,12 +190,12 @@ export default function ComparePage() {
             {/* Add another */}
             {compareSchools.length < 3 && (
               <Link href="/schools">
-                <div className="mt-4 rounded-2xl p-4 flex items-center gap-3 border-2 border-dashed" style={{ borderColor: "#3B82F6" }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "#DBEAFE" }}>
+                <div className="mt-4 rounded-2xl p-4 flex items-center gap-3 border-2 border-dashed" style={{ borderColor: "#3aab74" }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: "#e6f4ed" }}>
                     ➕
                   </div>
                   <div>
-                    <p className="font-jakarta font-semibold text-[#1E3A5F] text-sm">{t.cmpAddAnother}</p>
+                    <p className="font-jakarta font-semibold text-[#0e1d4f] text-sm">{t.cmpAddAnother}</p>
                     <p className="font-jakarta text-xs text-gray-400">{t.cmpAddAnotherDesc}</p>
                   </div>
                 </div>
@@ -204,7 +206,7 @@ export default function ComparePage() {
               <Link href="/schools">
                 <button
                   className="w-full py-3.5 rounded-2xl font-jakarta font-bold text-white text-sm"
-                  style={{ background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)" }}
+                  style={{ background: "linear-gradient(135deg, #1f6b43, #2e8a5a)" }}
                 >
                   {t.cmpBackToSchools}
                 </button>

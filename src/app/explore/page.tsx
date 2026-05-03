@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
@@ -9,6 +9,7 @@ import { PlaceCard } from "@/components/PlaceCard";
 import { GuestGate } from "@/components/GuestGate";
 import { type AreaFilter } from "@/components/AreaToggle";
 import { BottomNav } from "@/components/BottomNav";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 type Cat =
   | "all" | "school" | "learning-center" | "daycare" | "playground"
@@ -62,14 +63,17 @@ export default function ExplorePage() {
       <div
         style={{
           padding: "48px 20px 20px",
-          background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",
         }}
       >
         <div style={{ marginBottom: 16 }}>
-          <p style={{ color: "#93C5FD", fontSize: 11, fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>
-            TangselKids
-          </p>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <p style={{ color: "#a8d5ba", fontSize: 11, fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>
+              TangselKids
+            </p>
+            <PremiumBadge />
+          </div>
           <h1 style={{ color: "#fff", fontSize: 30, fontWeight: 700, lineHeight: 1.1, margin: "4px 0 0", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             {t.exploreTitle}
           </h1>
@@ -120,8 +124,8 @@ export default function ExplorePage() {
                   whiteSpace: "nowrap",
                   fontFamily: "var(--font-jakarta), sans-serif",
                   transition: "all 0.15s",
-                  border: active ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-                  background: active ? "#1d4ed8" : "#fff",
+                  border: active ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+                  background: active ? "#2e8a5a" : "#fff",
                   color: active ? "#fff" : "#374151",
                 }}>
                   {label}
@@ -151,9 +155,9 @@ export default function ExplorePage() {
                 fontSize: 13.5,
                 fontFamily: "var(--font-jakarta), sans-serif",
                 fontWeight: 600,
-                color: catActive ? "#1e3a5f" : "#94a3b8",
-                border: `2px solid ${catActive ? "#1d4ed8" : "#e2e8f0"}`,
-                background: catActive ? "#eff6ff" : "#fff",
+                color: catActive ? "#1f6b43" : "#94a3b8",
+                border: `2px solid ${catActive ? "#2e8a5a" : "#e2e8f0"}`,
+                background: catActive ? "#e6f4ed" : "#fff",
                 outline: "none",
                 appearance: "none",
                 WebkitAppearance: "none",
@@ -167,7 +171,7 @@ export default function ExplorePage() {
             </select>
             <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke={catActive ? "#1d4ed8" : "#94a3b8"} strokeWidth="2.5"
+                stroke={catActive ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5"
                 strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>

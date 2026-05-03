@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
@@ -174,12 +174,12 @@ export default function ProfilePage() {
       <div
         className="px-5 pt-12 pb-8"
         style={{
-          background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",
         }}
       >
         <div className="mb-5">
-          <p className="text-[#93C5FD] text-xs font-jakarta font-semibold tracking-widest uppercase">TangselKids</p>
+          <p className="text-[#a8d5ba] text-xs font-jakarta font-semibold tracking-widest uppercase">TangselKids</p>
           <h1 className="text-white text-3xl font-bold leading-tight mt-0.5"
               style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             {t.profileTitle}
@@ -375,7 +375,7 @@ export default function ProfilePage() {
                     width: "100%", padding: "11px 14px", borderRadius: 12, fontSize: 14,
                     fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600, outline: "none",
                     border: `1.5px solid ${nameError ? "#ef4444" : "#e2e8f0"}`,
-                    color: "var(--tk-ink)", background: nameError ? "#fff5f5" : "#f8fafc",
+                    color: "var(--tk-ink)", background: nameError ? "#fff5f5" : "#f6f1e8",
                     boxSizing: "border-box",
                   }}
                 />
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                     width: "100%", padding: "11px 14px", borderRadius: 12, fontSize: 13,
                     fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500, outline: "none", resize: "none",
                     border: `1.5px solid ${addressError ? "#ef4444" : "#e2e8f0"}`,
-                    color: "var(--tk-ink)", background: addressError ? "#fff5f5" : "#f8fafc",
+                    color: "var(--tk-ink)", background: addressError ? "#fff5f5" : "#f6f1e8",
                     boxSizing: "border-box",
                   }}
                 />
@@ -408,8 +408,8 @@ export default function ProfilePage() {
                       flex: 1,
                       display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
                       padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                      background: "#EFF6FF", color: "#1d4ed8", touchAction: "manipulation",
-                      border: "1.5px solid #bfdbfe",
+                      background: "#e6f4ed", color: "#2e8a5a", touchAction: "manipulation",
+                      border: "1.5px solid #a7d4bc",
                     }}
                   >
                     <MapPin size={14} />
@@ -459,7 +459,7 @@ export default function ProfilePage() {
                   style={{
                     width: "100%", padding: "11px 14px", borderRadius: 12, fontSize: 14,
                     fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500, outline: "none",
-                    border: "1.5px solid #e2e8f0", color: "var(--tk-ink)", background: "#f8fafc",
+                    border: "1.5px solid #e2e8f0", color: "var(--tk-ink)", background: "#f6f1e8",
                     boxSizing: "border-box",
                   }}
                 />
@@ -471,7 +471,7 @@ export default function ProfilePage() {
                   Kids <span style={{ color: "var(--tk-muted)", fontWeight: 400 }}>(optional)</span>
                 </label>
                 {editKids.map((kid, i) => (
-                  <div key={i} style={{ marginBottom: 12, background: "#f8fafc", borderRadius: 12, padding: "10px 12px", border: "1.5px solid #e2e8f0", position: "relative" }}>
+                  <div key={i} style={{ marginBottom: 12, background: "#f6f1e8", borderRadius: 12, padding: "10px 12px", border: "1.5px solid #e2e8f0", position: "relative" }}>
                     <ActionButton
                       onClick={() => removeKid(i)}
                       style={{
@@ -522,9 +522,9 @@ export default function ProfilePage() {
                             <div style={{
                               textAlign: "center", padding: "6px 4px", borderRadius: 8,
                               fontSize: 12, fontWeight: 700,
-                              border: kid.gender === g ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                              background: kid.gender === g ? "#eff6ff" : "#fff",
-                              color: kid.gender === g ? "#1d4ed8" : "#64748b",
+                              border: kid.gender === g ? "2px solid #2e8a5a" : "1.5px solid #e2e8f0",
+                              background: kid.gender === g ? "#e6f4ed" : "#fff",
+                              color: kid.gender === g ? "#2e8a5a" : "#64748b",
                             }}>
                               {g === "male" ? "👦 Boy" : "👧 Girl"}
                             </div>
@@ -552,7 +552,7 @@ export default function ProfilePage() {
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                   width: "100%", padding: "14px 0", borderRadius: 14, marginTop: 4,
-                  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)",
+                  background: "linear-gradient(135deg, #2e8a5a 0%, #2e8a5a 100%)",
                   color: "#fff", fontSize: 15, fontWeight: 700,
                 }}
               >
@@ -803,7 +803,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
               textAlign: "center", margin: "0 0 8px" }}>
               {t.premiumGateTitle}
             </p>

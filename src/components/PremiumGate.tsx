@@ -106,7 +106,7 @@ export function PremiumGate({
             {/* Title */}
             <p style={{
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 20, fontWeight: 700, color: "var(--tk-ink, #0e1d4f)",
               textAlign: "center", margin: "0 0 8px",
             }}>
               {t.premiumGateTitle}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, MessageSquare, Check } from "lucide-react";
@@ -30,7 +30,7 @@ export default function FeedbackPage() {
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "12px 14px", borderRadius: 14, fontSize: 14,
-    border: "1.5px solid #e2e8f0", background: "#f8fafc", outline: "none",
+    border: "1.5px solid #e2e8f0", background: "#f6f1e8", outline: "none",
     fontFamily: "var(--font-jakarta), sans-serif", color: "#0f172a",
     boxSizing: "border-box",
   };
@@ -41,12 +41,12 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 100 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8", paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{
         padding: "52px 20px 24px",
-        background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)",
+        background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)",
         borderRadius: "0 0 32px 32px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -78,10 +78,10 @@ export default function FeedbackPage() {
         {/* Success state */}
         {sent ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "48px 0", gap: 16 }}>
-            <div style={{ width: 80, height: 80, borderRadius: 999, background: "#DBEAFE", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Check size={38} color="#1D4ED8" strokeWidth={2.5} />
+            <div style={{ width: 80, height: 80, borderRadius: 999, background: "#e6f4ed", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Check size={38} color="#2e8a5a" strokeWidth={2.5} />
             </div>
-            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 24, fontWeight: 700, color: "#1E3A5F", margin: "8px 0 0" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 24, fontWeight: 700, color: "#0e1d4f", margin: "8px 0 0" }}>
               Terima kasih! 🙌
             </h2>
             <p style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6, maxWidth: 280, margin: 0, fontFamily: "var(--font-jakarta), sans-serif" }}>
@@ -93,7 +93,7 @@ export default function FeedbackPage() {
               onTouchEnd={(e) => { e.preventDefault(); router.back(); }}
               style={{
                 marginTop: 8, padding: "12px 28px", borderRadius: 999, border: "none", cursor: "pointer",
-                background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
                 fontSize: 14, fontWeight: 700, touchAction: "manipulation",
                 fontFamily: "var(--font-jakarta), sans-serif",
               } as React.CSSProperties}
@@ -150,7 +150,7 @@ export default function FeedbackPage() {
               disabled={!canSubmit}
               style={{
                 width: "100%", padding: "15px 0", borderRadius: 16, border: "none", cursor: canSubmit ? "pointer" : "default",
-                background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
                 fontSize: 15, fontWeight: 700, opacity: canSubmit ? 1 : 0.4,
                 touchAction: "manipulation", fontFamily: "var(--font-jakarta), sans-serif",
               } as React.CSSProperties}

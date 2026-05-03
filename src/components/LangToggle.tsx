@@ -17,8 +17,8 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
   const isDark = variant === "dark";
 
   // Colours that adapt to background
-  const labelActive = isDark ? "#1e3a5f"                   : "#fff";
-  const labelMuted  = isDark ? "rgba(30,58,95,0.30)"       : "rgba(255,255,255,0.40)";
+  const labelActive = isDark ? "var(--tk-ink, #0e1d4f)"    : "#fff";
+  const labelMuted  = isDark ? "rgba(14,29,79,0.30)"       : "rgba(255,255,255,0.40)";
   const trackBg     = isDark ? "rgba(15,23,42,0.08)"       : "rgba(255,255,255,0.18)";
   const trackBorder = isDark ? "1.5px solid rgba(15,23,42,0.14)" : "1.5px solid rgba(255,255,255,0.28)";
 

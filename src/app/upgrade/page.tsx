@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check } from "lucide-react";
 import { ActionButton } from "@/components/ActionButton";
@@ -14,11 +14,11 @@ export default function UpgradePage() {
   const isMonthly  = tier === "premium" && !isLifetime;
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
 
       {/* Header */}
       <div style={{
-        background: "linear-gradient(150deg, #1e3a5f 0%, #1d4ed8 55%, #3b82f6 100%)",
+        background: "linear-gradient(150deg, #1f6b43 0%, #2e8a5a 55%, #3aab74 100%)",
         borderRadius: "0 0 32px 32px",
         padding: "44px 20px 32px",
       }}>
@@ -67,13 +67,78 @@ export default function UpgradePage() {
           {t.upgradeTitle}
         </h1>
         <p style={{
-          margin: 0,
+          margin: "0 0 24px",
           fontFamily: "var(--font-jakarta), sans-serif",
           fontSize: 13, color: "rgba(255,255,255,0.65)",
           textAlign: "center", lineHeight: 1.6,
         }}>
           {t.upgradeSubtitle}
         </p>
+
+        {/* ── Header CTAs — side by side ─────────────────────────────── */}
+        {!isLifetime && !isMonthly && (
+          <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            {/* Monthly — smaller */}
+            <ActionButton
+              onClick={() => router.push("/payment?product=premium-monthly")}
+              style={{
+                flex: "0 0 38%",
+                padding: "11px 8px", borderRadius: 14,
+                background: "rgba(255,255,255,0.18)",
+                border: "1.5px solid rgba(255,255,255,0.35)",
+                color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 12, fontWeight: 700,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 1,
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <span style={{ fontSize: 10, opacity: 0.75 }}>{t.upgradeMonthlyLabel}</span>
+              <span>{t.upgradeMonthlyPrice}</span>
+            </ActionButton>
+            {/* Lifetime — larger / primary */}
+            <ActionButton
+              onClick={() => router.push("/payment?product=premium-lifetime")}
+              style={{
+                flex: 1,
+                position: "relative", overflow: "clip",
+                padding: "13px 10px", borderRadius: 14,
+                background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+                color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 13, fontWeight: 800,
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 1,
+                boxShadow: "0 4px 16px rgba(217,119,6,0.50)",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%)", animation: "gold-shimmer 2.8s ease-in-out infinite", pointerEvents: "none" }} />
+              <span style={{ position: "relative", fontSize: 10, color: "rgba(255,255,255,0.85)" }}>👑 {t.upgradeLifetimeLabel}</span>
+              <span style={{ position: "relative" }}>{t.upgradeLifetimePrice} →</span>
+            </ActionButton>
+          </div>
+        )}
+        {isMonthly && (
+          <ActionButton
+            onClick={() => router.push("/payment?product=premium-lifetime")}
+            style={{
+              position: "relative", overflow: "clip",
+              width: "100%", padding: "14px 0", borderRadius: 14,
+              background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
+              color: "#fff",
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 14, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              boxShadow: "0 4px 16px rgba(217,119,6,0.50)",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%)", animation: "gold-shimmer 2.8s ease-in-out infinite", pointerEvents: "none" }} />
+            <span style={{ position: "relative" }}>👑 {t.upgradePayLifetime}</span>
+          </ActionButton>
+        )}
       </div>
 
       {/* Benefits list */}
@@ -87,44 +152,44 @@ export default function UpgradePage() {
           {t.upgradeWhatYouGet}
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {t.upgradeBenefits.map((b) => (
             <div
               key={b.title}
               style={{
                 background: "#fff",
-                borderRadius: 16,
-                padding: "16px",
-                display: "flex", alignItems: "flex-start", gap: 14,
+                borderRadius: 12,
+                padding: "10px 12px",
+                display: "flex", alignItems: "center", gap: 12,
                 border: "1px solid #f1f5f9",
-                boxShadow: "0 1px 3px rgba(15,23,42,0.05)",
+                boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
               }}
             >
               <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: "#eff6ff",
+                width: 36, height: 36, borderRadius: 10,
+                background: "#e6f4ed",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 22, flexShrink: 0,
+                fontSize: 18, flexShrink: 0,
               }}>
                 {b.emoji}
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{
-                  margin: "0 0 3px",
+                  margin: "0 0 1px",
                   fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: 14, fontWeight: 700, color: "#1e3a5f",
+                  fontSize: 13, fontWeight: 700, color: "#0e1d4f",
                 }}>
                   {b.title}
                 </p>
                 <p style={{
                   margin: 0,
                   fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: 12, color: "#64748b", lineHeight: 1.55,
+                  fontSize: 11, color: "#64748b", lineHeight: 1.45,
                 }}>
                   {b.desc}
                 </p>
               </div>
-              <Check size={16} color="#22c55e" strokeWidth={2.5} style={{ flexShrink: 0, marginTop: 2 }} />
+              <Check size={15} color="#22c55e" strokeWidth={2.5} style={{ flexShrink: 0 }} />
             </div>
           ))}
         </div>
@@ -141,13 +206,13 @@ export default function UpgradePage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, textAlign: "center" }}>
             <div />
             <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>{t.upgradeCompareGratis}</p>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#1d4ed8", fontFamily: "var(--font-jakarta), sans-serif" }}>Premium</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#2e8a5a", fontFamily: "var(--font-jakarta), sans-serif" }}>Premium</p>
 
             {t.upgradeCompareRows.map(([label, free, prem]) => (
               <>
-                <p key={label} style={{ margin: 0, fontSize: 12, color: "#374151", fontFamily: "var(--font-jakarta), sans-serif", textAlign: "left", padding: "6px 0", borderTop: "1px solid #f8fafc" }}>{label}</p>
-                <p key={label + "f"} style={{ margin: 0, fontSize: 12, color: free === "—" ? "#d1d5db" : "#374151", fontFamily: "var(--font-jakarta), sans-serif", padding: "6px 0", borderTop: "1px solid #f8fafc" }}>{free}</p>
-                <p key={label + "p"} style={{ margin: 0, fontSize: 12, color: prem === "—" ? "#d1d5db" : "#1d4ed8", fontWeight: 700, fontFamily: "var(--font-jakarta), sans-serif", padding: "6px 0", borderTop: "1px solid #f8fafc" }}>{prem}</p>
+                <p key={label} style={{ margin: 0, fontSize: 12, color: "#374151", fontFamily: "var(--font-jakarta), sans-serif", textAlign: "left", padding: "6px 0", borderTop: "1px solid #f6f1e8" }}>{label}</p>
+                <p key={label + "f"} style={{ margin: 0, fontSize: 12, color: free === "—" ? "#d1d5db" : "#374151", fontFamily: "var(--font-jakarta), sans-serif", padding: "6px 0", borderTop: "1px solid #f6f1e8" }}>{free}</p>
+                <p key={label + "p"} style={{ margin: 0, fontSize: 12, color: prem === "—" ? "#d1d5db" : "#2e8a5a", fontWeight: 700, fontFamily: "var(--font-jakarta), sans-serif", padding: "6px 0", borderTop: "1px solid #f6f1e8" }}>{prem}</p>
               </>
             ))}
           </div>
@@ -220,7 +285,7 @@ export default function UpgradePage() {
             }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1e3a5f", fontFamily: "var(--font-jakarta), sans-serif", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#0e1d4f", fontFamily: "var(--font-jakarta), sans-serif", textTransform: "uppercase", letterSpacing: 0.8 }}>
                     {t.upgradeMonthlyLabel}
                   </p>
                   <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
@@ -228,7 +293,7 @@ export default function UpgradePage() {
                   </p>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <p style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#1e3a5f", lineHeight: 1 }}>
+                  <p style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#0e1d4f", lineHeight: 1 }}>
                     {t.upgradeMonthlyPrice}
                   </p>
                   <p style={{ margin: "3px 0 0", fontSize: 12, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
@@ -241,7 +306,7 @@ export default function UpgradePage() {
                 style={{
                   marginTop: 6,
                   width: "100%", padding: "14px 0", borderRadius: 14, border: "none",
-                  background: "#1d4ed8",
+                  background: "#2e8a5a",
                   color: "#fff",
                   fontFamily: "var(--font-jakarta), sans-serif",
                   fontSize: 14, fontWeight: 700,

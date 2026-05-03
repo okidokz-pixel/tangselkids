@@ -1,14 +1,35 @@
 export type Article = {
   id: string;
   title: string;
-  category: string;
+  title_en?: string;
+  category: string;       // Indonesian — used as stable color-lookup key
+  category_en?: string;
   date: string;
   summary: string;
+  summary_en?: string;
   emoji: string;
   readTime: string;
+  readTime_en?: string;
   photo: string;
   content: string[];
+  content_en?: string[];
 };
+
+/** Returns the display-ready version of an article in the requested language. */
+export function localizeArticle(article: Article, lang: "id" | "en") {
+  if (lang === "en") {
+    return {
+      ...article,
+      title:    article.title_en    ?? article.title,
+      category: article.category_en ?? article.category,
+      summary:  article.summary_en  ?? article.summary,
+      content:  article.content_en  ?? article.content,
+      readTime: article.readTime_en ?? article.readTime,
+      categoryKey: article.category, // always Indonesian for CATEGORY_COLORS lookup
+    };
+  }
+  return { ...article, categoryKey: article.category };
+}
 
 const PH = (seed: string) => `https://picsum.photos/seed/${seed}/800/500`;
 
@@ -16,11 +37,15 @@ export const articles: Article[] = [
   {
     id: "a1",
     title: "5 Cara Mengajarkan Anak Mengelola Emosi",
+    title_en: "5 Ways to Teach Children to Manage Their Emotions",
     category: "Parenting",
+    category_en: "Parenting",
     date: "28 Apr 2026",
     summary: "Kecerdasan emosional adalah salah satu bekal terpenting bagi anak. Temukan lima pendekatan praktis yang bisa diterapkan setiap hari di rumah untuk membantu si kecil mengenali dan mengelola perasaannya dengan sehat.",
+    summary_en: "Emotional intelligence is one of the most important foundations we can give our children. Discover five practical approaches you can apply every day at home to help your child recognize and healthily manage their feelings.",
     emoji: "🧠",
     readTime: "4 menit",
+    readTime_en: "4 min",
     photo: PH("child-emotions-parenting"),
     content: [
       "Kecerdasan emosional — kemampuan mengenali, memahami, dan mengelola emosi diri sendiri maupun orang lain — terbukti menjadi prediktor kesuksesan yang lebih kuat dibanding IQ. Namun, keterampilan ini tidak datang begitu saja. Ia harus dilatih sejak dini, dan rumah adalah tempat terbaik untuk memulainya.",
@@ -30,15 +55,27 @@ export const articles: Article[] = [
       "Keempat, jadilah model regulasi emosi. Anak belajar paling banyak dari mengamati orang tuanya. Saat Anda sendiri frustrasi, verbalisasikan prosesnya: \"Papa lagi kesal, tapi papa mau tarik napas dulu sebelum bicara.\" Ini memberikan contoh nyata yang jauh lebih berkesan daripada nasihat apapun.",
       "Kelima, ciptakan ruang aman untuk mengekspresikan emosi. Pastikan anak tahu bahwa semua perasaan — termasuk marah dan takut — boleh dirasakan dan dibicarakan di rumah tanpa dihakimi. Sesi check-in harian yang singkat sebelum tidur, seperti \"Cerita satu hal yang bikin kamu senang hari ini dan satu hal yang bikin kamu tidak nyaman,\" bisa membangun kebiasaan ini secara konsisten.",
     ],
+    content_en: [
+      "Emotional intelligence — the ability to recognize, understand, and manage one's own emotions as well as those of others — has been proven to be a stronger predictor of success than IQ. However, this skill doesn't come naturally. It must be cultivated from an early age, and home is the best place to start.",
+      "First, name every emotion. When your child is angry or upset, help them identify their feelings with words: 'It seems like you're frustrated because your toy was taken?' This process of naming emotions (called 'emotion labelling') has been neurologically proven to reduce the intensity of the amygdala's response — the part of the brain that processes negative emotions.",
+      "Second, validate their feelings before offering solutions. Parents often rush to fix the situation, when in reality children need to feel heard first. Try saying, 'It's okay to feel sad, that really is disappointing,' before offering a way forward.",
+      "Third, teach simple self-calming techniques. Deep breathing (inhale for 4 counts, hold for 4, exhale for 4) is very effective for children aged 5 and up. Practice during calm moments so they can use it on their own when emotions peak.",
+      "Fourth, model emotional regulation yourself. Children learn most from observing their parents. When you're frustrated, verbalize the process: 'Daddy is feeling upset, but I'm going to take a deep breath before talking.' This provides a real example far more impactful than any advice.",
+      "Fifth, create a safe space for expressing emotions. Make sure your child knows that all feelings — including anger and fear — are welcome and can be discussed at home without judgment. A short daily check-in before bed, like 'Tell me one thing that made you happy today and one thing that made you uncomfortable,' can build this habit consistently.",
+    ],
   },
   {
     id: "a2",
     title: "Sekolah Terbaik di Bintaro: Panduan Lengkap 2026",
+    title_en: "Best Schools in Bintaro: The Complete 2026 Guide",
     category: "Sekolah",
+    category_en: "Schools",
     date: "20 Apr 2026",
     summary: "Mencari sekolah yang tepat di Bintaro bisa terasa membingungkan dengan begitu banyak pilihan. Panduan ini merangkum sekolah-sekolah unggulan dari jenjang TK hingga SMA berdasarkan kurikulum, fasilitas, dan ulasan orang tua.",
+    summary_en: "Finding the right school in Bintaro can feel overwhelming with so many choices. This guide summarizes the top schools from kindergarten to high school based on curriculum, facilities, and parent reviews.",
     emoji: "🎓",
     readTime: "7 menit",
+    readTime_en: "7 min",
     photo: PH("school-classroom-kids"),
     content: [
       "Bintaro dan kawasan Tangerang Selatan telah berkembang menjadi salah satu pusat pendidikan terbaik di Jabodetabek. Dengan puluhan pilihan sekolah dari berbagai kurikulum — nasional, Cambridge, IB, hingga sekolah Islam terpadu — orang tua kerap merasa kewalahan dalam menentukan pilihan.",
@@ -47,15 +84,26 @@ export const articles: Article[] = [
       "Berdasarkan ulasan orang tua di TangselKids sepanjang 2025–2026, beberapa sekolah yang konsisten mendapat penilaian tinggi di Bintaro antara lain: sekolah-sekolah di kawasan Bintaro Jaya Sektor 7 dan 9 yang menawarkan fasilitas lengkap, serta beberapa sekolah Islam terpadu di Pondok Aren yang unggul dalam pembentukan karakter.",
       "Satu tip praktis: kunjungi sekolah pada hari biasa (bukan open house) untuk melihat suasana belajar yang sesungguhnya. Perhatikan bagaimana guru berinteraksi dengan murid, kondisi fasilitas bermain, dan apakah murid tampak aktif dan bahagia. Intuisi Anda sebagai orang tua seringkali tepat.",
     ],
+    content_en: [
+      "Bintaro and the South Tangerang area have grown into one of the best educational hubs in Greater Jakarta. With dozens of schools offering various curricula — national, Cambridge, IB, and Islamic integrated schools — parents often feel overwhelmed when making their choice.",
+      "For kindergarten and primary school, the main thing to consider is the pedagogical approach. Schools that emphasize play-based learning and emotional literacy in early childhood have been proven to build stronger learning foundations for later years. Look for schools with a teacher-to-student ratio below 1:15 and a structured kindergarten-to-primary transition program.",
+      "At middle and high school level, the curriculum becomes the key differentiator. Cambridge or IB-based schools offer international recognition that benefits children planning to study abroad. Meanwhile, schools implementing Kurikulum Merdeka consistently provide flexibility for students to explore their interests and talents.",
+      "Based on parent reviews on TangselKids throughout 2025–2026, several schools in Bintaro consistently receive high ratings, particularly those in the Bintaro Jaya Sector 7 and 9 areas offering complete facilities, as well as some Islamic integrated schools in Pondok Aren excelling in character formation.",
+      "One practical tip: visit schools on a regular school day (not an open house) to see the true learning atmosphere. Observe how teachers interact with students, the condition of play facilities, and whether students appear active and happy. Your parental instinct is often spot on.",
+    ],
   },
   {
     id: "a3",
     title: "Aktivitas Seru Akhir Pekan Bersama Anak di Tangsel",
+    title_en: "Fun Weekend Activities with Kids in Tangsel",
     category: "Aktivitas",
+    category_en: "Activities",
     date: "15 Apr 2026",
     summary: "Tidak perlu jauh-jauh keluar kota untuk mengisi akhir pekan yang bermakna bersama keluarga. Tangsel punya banyak destinasi dan kegiatan menyenangkan yang cocok untuk semua usia.",
+    summary_en: "There's no need to travel far for a meaningful weekend with family. Tangsel has plenty of fun destinations and activities suitable for all ages.",
     emoji: "🎉",
     readTime: "5 menit",
+    readTime_en: "5 min",
     photo: PH("family-weekend-fun"),
     content: [
       "Salah satu kekhawatiran umum orang tua di area Bintaro dan BSD adalah keterbatasan pilihan aktivitas akhir pekan yang terjangkau namun berkualitas. Ternyata, tanpa harus menempuh perjalanan panjang, Tangerang Selatan menyimpan banyak opsi yang seru dan edukatif.",
@@ -64,15 +112,26 @@ export const articles: Article[] = [
       "Jika anak sudah berusia sekolah, workshop kreatif akhir pekan menjadi pilihan yang semakin populer. Dari kelas memasak anak, kelas seni, hingga workshop coding dan robotik — banyak tempat kursus di Tangsel yang membuka kelas akhir pekan dengan durasi 2–3 jam yang terjangkau.",
       "Jangan lupakan mini zoo dan taman edukasi yang tersebar di beberapa titik di Tangsel. Selain menghibur, kunjungan ke tempat-tempat ini merangsang rasa ingin tahu anak tentang alam dan binatang. Banyak yang bisa dilakukan dengan budget di bawah Rp 100.000 per kepala, cocok untuk keluarga muda.",
     ],
+    content_en: [
+      "A common concern among parents in the Bintaro and BSD area is the perceived lack of affordable yet quality weekend activities. As it turns out, without having to travel far, South Tangerang has plenty of fun and educational options.",
+      "For toddlers to primary school age, indoor playgrounds at various malls and shopping centers in BSD and Bintaro offer safe play areas with a variety of attractions. Some even have dedicated baby zones and creative areas for painting or building.",
+      "For families who want to connect with nature, several city parks and green open spaces in Tangsel make great picnic destinations. Simple activities like playing ball, cycling, or birdwatching can be valuable experiences for children growing up in an urban environment.",
+      "For school-age children, weekend creative workshops are increasingly popular. From kids' cooking classes and art classes to coding and robotics workshops — many learning centers in Tangsel open weekend classes with 2–3 hour sessions at affordable prices.",
+      "Don't forget the mini zoos and educational parks scattered around Tangsel. Beyond being entertaining, visits to these places stimulate children's curiosity about nature and animals. Many can be enjoyed with a budget under Rp 100,000 per person, perfect for young families.",
+    ],
   },
   {
     id: "a4",
     title: "Manfaat Kursus Musik untuk Perkembangan Otak Anak",
+    title_en: "Benefits of Music Lessons for Children's Brain Development",
     category: "Tumbuh Kembang",
+    category_en: "Child Development",
     date: "10 Apr 2026",
     summary: "Penelitian membuktikan bahwa belajar musik sejak dini berdampak positif pada kemampuan bahasa, matematika, dan konsentrasi anak.",
+    summary_en: "Research proves that learning music from an early age positively impacts children's language, math, and concentration abilities.",
     emoji: "🎵",
     readTime: "5 menit",
+    readTime_en: "5 min",
     photo: PH("kids-music-lesson-piano"),
     content: [
       "Selama beberapa dekade terakhir, neurosains telah mengumpulkan bukti yang semakin kuat: belajar musik tidak hanya mengembangkan kemampuan bermusik anak, tetapi secara harfiah membentuk ulang struktur otaknya. Anak-anak yang belajar musik secara konsisten menunjukkan materi abu-abu yang lebih tebal di area otak yang berhubungan dengan pemrosesan suara, motorik halus, dan fungsi eksekutif.",
@@ -81,15 +140,26 @@ export const articles: Article[] = [
       "Dari sisi sosial-emosional, berlatih dalam kelompok atau ensemble mengajarkan anak untuk mendengarkan orang lain, menyesuaikan diri, dan berkontribusi pada sesuatu yang lebih besar dari diri sendiri. Konser dan recital, meskipun menegangkan, membangun keberanian tampil yang sangat berharga.",
       "Usia ideal untuk mulai kursus musik adalah 4–6 tahun untuk instrumen seperti piano dan biola yang mengembangkan koordinasi motorik halus. Namun, tidak ada kata terlambat — anak usia 8–10 tahun juga sangat responsif terhadap pembelajaran musik dan seringkali menunjukkan progres yang lebih cepat karena kapasitas kognitif yang lebih matang.",
     ],
+    content_en: [
+      "Over the past few decades, neuroscience has accumulated increasingly strong evidence: learning music not only develops a child's musical abilities, it literally reshapes the structure of their brain. Children who study music consistently show thicker gray matter in brain areas associated with sound processing, fine motor skills, and executive function.",
+      "The most documented benefit is improved reading and language ability. Training the ear to hear differences in pitch increases phonological awareness — the same skill needed when children learn to distinguish the sounds of letters and words. Children who take music lessons tend to read faster and have a richer vocabulary.",
+      "The connection between music and mathematics is also more than a myth. Reading music involves understanding fractions (note values), patterns (rhythm), and order (scales) that directly train mathematical thinking.",
+      "From a social-emotional standpoint, practicing in a group or ensemble teaches children to listen to others, adapt, and contribute to something larger than themselves. Concerts and recitals, though nerve-wracking, build performance confidence that is enormously valuable.",
+      "The ideal age to start music lessons is 4–6 years for instruments like piano and violin that develop fine motor coordination. However, it's never too late — children aged 8–10 are also highly responsive to music learning and often show faster progress due to more mature cognitive capacity.",
+    ],
   },
   {
     id: "a5",
     title: "Pilih Daycare yang Tepat: 7 Hal yang Harus Diperhatikan",
+    title_en: "Choosing the Right Daycare: 7 Things to Check",
     category: "Tips Orang Tua",
+    category_en: "Parenting Tips",
     date: "5 Apr 2026",
     summary: "Mempercayakan si kecil kepada daycare adalah keputusan besar. Berikut tujuh kriteria penting yang wajib dicek sebelum mendaftar.",
+    summary_en: "Entrusting your little one to a daycare is a major decision. Here are seven important criteria that must be checked before enrolling.",
     emoji: "🏠",
     readTime: "6 menit",
+    readTime_en: "6 min",
     photo: PH("daycare-toddler-play"),
     content: [
       "Memilih daycare adalah salah satu keputusan terpenting yang akan Anda buat sebagai orang tua bekerja. Anak menghabiskan 8–10 jam per hari di tempat ini — kualitas perawatan dan stimulasi yang mereka terima akan berdampak besar pada perkembangan mereka di usia emas ini.",
@@ -100,15 +170,28 @@ export const articles: Article[] = [
       "Kelima, cek kebijakan sakit dan komunikasi dengan orang tua. Daycare yang baik memiliki SOP yang jelas soal kapan anak harus dibawa pulang, bagaimana mereka mengkomunikasikan insiden kecil, dan seberapa sering mereka memberikan update harian kepada orang tua — idealnya melalui aplikasi atau grup WhatsApp.",
       "Keenam dan ketujuh: kepercayaan instingtual Anda dan kesehatan anak secara keseluruhan setelah beberapa minggu di daycare. Anak yang senang pergi ke daycare, tidur nyenyak, dan jarang sakit adalah indikator terbaik bahwa Anda telah membuat pilihan yang tepat.",
     ],
+    content_en: [
+      "Choosing a daycare is one of the most important decisions you'll make as a working parent. Your child spends 8–10 hours a day there — the quality of care and stimulation they receive will greatly impact their development during this golden age.",
+      "First, pay attention to the caregiver-to-child ratio. For babies (0–1 year), the ideal standard is 1:3 or a maximum of 1:4. For toddlers (1–2 years), 1:4 to 1:5. The smaller the ratio, the more individual attention can be given to your child.",
+      "Second, check the qualifications and turnover of caregivers. Caregivers trained in child development and first aid are a major bonus. Low staff turnover indicates a healthy work environment — and means your child won't constantly have to adapt to new faces.",
+      "Third, evaluate the physical safety of the environment. Non-slip floors, outlet covers, stair safety gates, separate sleeping and play areas, and a strict check-in/check-out system are minimum standards that should not be compromised.",
+      "Fourth, ask about the daily program. Quality daycares have structured schedules that balance free play, structured activities, mealtimes, and nap time. Children, even babies, develop better in predictable routines.",
+      "Fifth, check the sick policy and communication with parents. A good daycare has a clear SOP about when a child should be taken home, how they communicate minor incidents, and how often they provide daily updates to parents — ideally through an app or WhatsApp group.",
+      "Sixth and seventh: trust your gut instinct and monitor your child's overall health after a few weeks at daycare. A child who is happy to go, sleeps well, and rarely gets sick is the best indicator that you've made the right choice.",
+    ],
   },
   {
     id: "a6",
     title: "Kurikulum Merdeka: Apa yang Perlu Orang Tua Ketahui",
+    title_en: "Merdeka Curriculum: What Parents Need to Know",
     category: "Pendidikan",
+    category_en: "Education",
     date: "1 Apr 2026",
     summary: "Kurikulum Merdeka kini diterapkan di hampir seluruh sekolah negeri dan banyak sekolah swasta di Indonesia. Pahami prinsip-prinsipnya dan bagaimana orang tua bisa mendukung anak di rumah.",
+    summary_en: "The Merdeka Curriculum is now implemented in nearly all public schools and many private schools in Indonesia. Understand its principles and how parents can support their children at home.",
     emoji: "📚",
     readTime: "6 menit",
+    readTime_en: "6 min",
     photo: PH("students-learning-classroom"),
     content: [
       "Kurikulum Merdeka adalah respons pemerintah terhadap berbagai tantangan pendidikan yang terekspos selama pandemi COVID-19: learning loss, kurikulum yang terlalu padat, dan pendekatan pembelajaran yang terlalu berorientasi pada hafalan dan nilai ujian.",
@@ -117,15 +200,26 @@ export const articles: Article[] = [
       "Bagi orang tua, ada beberapa implikasi praktis. Pertama, rapor tidak lagi berisi angka semata, melainkan deskripsi naratif tentang perkembangan anak. Beberapa orang tua merasa ini kurang konkret, namun tujuannya adalah memberikan gambaran holistik yang lebih akurat. Kedua, ekspektasi PR dan ujian bisa berbeda signifikan antarsekolah karena keleluasaan implementasi yang diberikan kepada masing-masing satuan pendidikan.",
       "Yang paling bisa Anda lakukan sebagai orang tua adalah membangun komunikasi aktif dengan guru, mendukung anak dalam proyek-proyeknya (bukan mengerjakannya), dan membantu anak mengembangkan rasa ingin tahu serta kemampuan belajar mandiri — dua keterampilan yang menjadi inti dari semangat Kurikulum Merdeka.",
     ],
+    content_en: [
+      "The Merdeka Curriculum (Freedom Curriculum) is the government's response to the educational challenges exposed during the COVID-19 pandemic: learning loss, an overloaded curriculum, and a learning approach too focused on memorization and test scores.",
+      "The core principle of the Merdeka Curriculum is 'differentiated learning' — teachers are expected to adapt methods and materials to each student's learning style and pace, rather than teaching with a one-size-fits-all approach. This is a significant paradigm shift from previous curricula.",
+      "One of the most prominent elements is the Pancasila Student Profile Strengthening Project (P5), where students work on cross-subject projects rooted in real issues in their local environment. For many students, this is the first time they learn to solve real-world problems collaboratively.",
+      "For parents, there are several practical implications. First, report cards no longer contain just numbers, but narrative descriptions of the child's development. Some parents find this less concrete, but the goal is to provide a more accurate holistic picture. Second, homework and exam expectations can vary significantly between schools due to the flexibility given to each school in implementation.",
+      "The most you can do as a parent is build active communication with teachers, support your child in their projects (not do them for them), and help your child develop curiosity and self-directed learning skills — the two core competencies at the heart of the Merdeka Curriculum's spirit.",
+    ],
   },
   {
     id: "a7",
     title: "Playground Indoor vs Outdoor: Mana yang Lebih Baik?",
+    title_en: "Indoor vs Outdoor Playground: Which is Better?",
     category: "Aktivitas",
+    category_en: "Activities",
     date: "25 Mar 2026",
     summary: "Keduanya punya kelebihan dan kekurangan masing-masing. Kami membandingkan manfaat stimulasi fisik dan kognitif dari playground indoor dan outdoor.",
+    summary_en: "Both have their own advantages and disadvantages. We compare the physical and cognitive stimulation benefits of indoor and outdoor playgrounds.",
     emoji: "🛝",
     readTime: "4 menit",
+    readTime_en: "4 min",
     photo: PH("kids-playground-outdoor"),
     content: [
       "Perdebatan playground indoor vs outdoor seringkali diasumsikan memiliki jawaban yang jelas — tentu udara segar dan alam lebih baik, bukan? Namun kenyataannya, kedua jenis playground menawarkan manfaat yang berbeda dan saling melengkapi, bukan saling menggantikan.",
@@ -134,15 +228,26 @@ export const articles: Article[] = [
       "Di sisi lain, playground indoor memiliki keunggulan dalam iklim tropis seperti Indonesia. Bermain di siang hari tanpa terpapar terik matahari atau hujan memungkinkan anak tetap aktif sepanjang tahun. Playground indoor juga cenderung memiliki permainan yang lebih terstruktur dan aman untuk usia tertentu, dengan pengawasan yang lebih ketat.",
       "Rekomendasi praktis: usahakan anak mendapat minimal 60 menit aktivitas fisik di luar ruangan setiap hari (atau setidaknya beberapa kali seminggu), dan manfaatkan playground indoor sebagai suplemen — terutama saat cuaca tidak mendukung atau sebagai aktivitas sosial terstruktur bersama teman sebaya.",
     ],
+    content_en: [
+      "The indoor vs outdoor playground debate is often assumed to have a clear answer — surely fresh air and nature are better, right? In reality, both types of playgrounds offer different and complementary benefits, rather than competing with each other.",
+      "Outdoor playgrounds excel in unlimited physical stimulation. Running on uneven surfaces, climbing trees or natural rocks, digging in the ground, and directly interacting with natural elements trains proprioception (body awareness in space) and the courage to take calculated risks — two developmental aspects that are difficult to replicate indoors.",
+      "Research consistently shows that exposure to sunlight and nature reduces ADHD symptoms, lowers stress levels, and boosts creativity. Children who play outdoors regularly also show better physical fitness levels and sleep quality.",
+      "On the other hand, indoor playgrounds have advantages in tropical climates like Indonesia's. Playing during the day without exposure to intense sun or rain allows children to stay active year-round. Indoor playgrounds also tend to have more structured and age-appropriate activities with stricter supervision.",
+      "Practical recommendation: aim for at least 60 minutes of outdoor physical activity every day (or at least several times a week), and use indoor playgrounds as a supplement — especially when the weather doesn't cooperate or as a structured social activity with peers.",
+    ],
   },
   {
     id: "a8",
     title: "Nutrisi Penting untuk Anak Usia 1–5 Tahun",
+    title_en: "Essential Nutrition for Children Ages 1–5",
     category: "Kesehatan",
+    category_en: "Health",
     date: "18 Mar 2026",
     summary: "Masa emas pertumbuhan anak ada di periode 1–5 tahun. Dokter anak menjelaskan nutrisi-nutrisi kunci yang tidak boleh terlewat dan cara kreatif menyajikannya.",
+    summary_en: "The golden period of children's growth is from ages 1–5. A pediatrician explains the key nutrients that cannot be missed and creative ways to serve them.",
     emoji: "🥦",
     readTime: "5 menit",
+    readTime_en: "5 min",
     photo: PH("healthy-food-children"),
     content: [
       "Usia 1–5 tahun adalah periode pertumbuhan otak dan fisik yang paling pesat dalam kehidupan manusia. Selama masa ini, asupan nutrisi yang tepat bukan hanya mendukung pertumbuhan tubuh, tetapi secara harfiah membentuk arsitektur otak yang akan digunakan anak seumur hidupnya.",
@@ -151,15 +256,26 @@ export const articles: Article[] = [
       "Zinc sering dilupakan namun krusial untuk pertumbuhan sel, fungsi imun, dan perkembangan kognitif. Kekurangan zinc berdampak pada nafsu makan yang buruk dan pertumbuhan yang terhambat. Sumber terbaik: daging merah, unggas, kacang-kacangan, dan biji-bijian.",
       "Untuk anak yang sulit makan sayur, pendekatan yang terbukti efektif adalah 'food exposure' berulang — penelitian menunjukkan anak perlu terpapar makanan baru 8–15 kali sebelum menerimanya. Jangan menyerah setelah satu atau dua kali penolakan. Libatkan anak dalam proses memasak dan makan bersama sebagai keluarga tanpa tekanan adalah strategi jangka panjang yang paling konsisten berhasil.",
     ],
+    content_en: [
+      "Ages 1–5 are the most rapid period of brain and physical growth in a person's life. During this time, the right nutritional intake not only supports physical growth, but literally shapes the brain architecture that the child will use for the rest of their life.",
+      "Iron is the number one nutrient most often missed in children this age. Iron deficiency — even a mild one — impacts concentration ability, memory, and cognitive development. Best sources: red meat, chicken liver, fish, and legumes. Pair with vitamin C to boost absorption.",
+      "Omega-3 (particularly DHA) is the primary building block of the brain and retina. Children who get enough omega-3 show better language development and reading ability. Fatty fish like salmon and sardines are the best sources — aim for 2 servings per week.",
+      "Zinc is often overlooked but crucial for cell growth, immune function, and cognitive development. Zinc deficiency leads to poor appetite and stunted growth. Best sources: red meat, poultry, legumes, and seeds.",
+      "For children who struggle to eat vegetables, the proven effective approach is repeated 'food exposure' — research shows children need to be exposed to a new food 8–15 times before accepting it. Don't give up after one or two rejections. Involving children in the cooking process and eating together as a family without pressure is the most consistently successful long-term strategy.",
+    ],
   },
   {
     id: "a9",
     title: "Review: 5 Kolam Renang Terbaik untuk Anak di BSD",
+    title_en: "Review: 5 Best Kids' Swimming Pools in BSD",
     category: "Review",
+    category_en: "Review",
     date: "10 Mar 2026",
     summary: "Tim TangselKids mengunjungi dan menguji langsung lima kolam renang anak di area BSD. Kami nilai dari sisi keamanan, kebersihan, kedalaman kolam, fasilitas, dan keseruan.",
+    summary_en: "The TangselKids team visited and personally tested five children's swimming pools in the BSD area. We evaluated safety, cleanliness, pool depth, facilities, and fun factor.",
     emoji: "🏊",
     readTime: "6 menit",
+    readTime_en: "6 min",
     photo: PH("kids-swimming-pool"),
     content: [
       "Bagi keluarga yang tinggal di kawasan BSD dan sekitarnya, kolam renang bukan hanya fasilitas olahraga — ini adalah destinasi rekreasi mingguan yang wajib punya dalam daftar. Tim TangselKids menghabiskan empat akhir pekan untuk mengunjungi dan mengevaluasi lima kolam renang terbaik di area BSD secara langsung.",
@@ -168,15 +284,26 @@ export const articles: Article[] = [
       "Yang membedakan kolam renang yang benar-benar 'family-friendly' dari yang sekadar mengklaim dirinya demikian adalah ketersediaan wahana anak yang beragam: perosotan air, ember tumpah, jet air untuk diinjak, dan kolam arus kecil yang memungkinkan anak bermain air dengan cara yang lebih variatif dari sekadar berenang.",
       "Dari sisi harga, rentang tiket masuk di area BSD berkisar Rp 25.000 hingga Rp 75.000 per orang untuk hari kerja, dengan surcharge akhir pekan yang bervariasi. Beberapa kolam menawarkan membership bulanan atau tahunan yang jauh lebih ekonomis bagi keluarga yang rutin datang. Cek halaman masing-masing tempat di TangselKids untuk detail harga terkini.",
     ],
+    content_en: [
+      "For families living in the BSD area and surroundings, a swimming pool is not just a sports facility — it's a weekly recreational destination that every family needs on their list. The TangselKids team spent four weekends visiting and evaluating five of the best swimming pools in the BSD area firsthand.",
+      "The first pool we visited excelled in safety: licensed lifeguards were stationed at every corner, the children's pool depth was a maximum of 60 cm with a gradual transition, and sturdy barriers separated the children's area from the adult pool. The water was clear with chlorine levels that felt comfortable — not stinging to the eyes.",
+      "In terms of supporting facilities, the best pools we found had clean, spacious changing rooms with separate children's lockers, a nursing room, a café selling healthy snacks, and adequate shaded areas so parents don't overheat while waiting.",
+      "What distinguishes truly 'family-friendly' pools from those that merely claim to be is the availability of diverse children's amenities: water slides, tipping buckets, water jets to step on, and small lazy rivers that allow children to play in the water in more varied ways than just swimming.",
+      "In terms of pricing, admission tickets in the BSD area range from Rp 25,000 to Rp 75,000 per person on weekdays, with varying weekend surcharges. Some pools offer monthly or annual memberships that are far more economical for families who come regularly. Check each location's page on TangselKids for current pricing details.",
+    ],
   },
   {
     id: "a10",
     title: "Cara Mendampingi Anak Belajar di Rumah",
+    title_en: "How to Support Your Child's Learning at Home",
     category: "Parenting",
+    category_en: "Parenting",
     date: "3 Mar 2026",
     summary: "Dengan pendekatan yang tepat, waktu belajar bisa menjadi momen bonding yang menyenangkan sekaligus membangun kebiasaan belajar mandiri yang akan bertahan seumur hidup.",
+    summary_en: "With the right approach, study time can become a bonding moment that is both enjoyable and builds the self-directed learning habits that will last a lifetime.",
     emoji: "📝",
     readTime: "5 menit",
+    readTime_en: "5 min",
     photo: PH("parent-child-studying"),
     content: [
       "Mendampingi anak belajar adalah salah satu tanggung jawab orang tua yang terasa simpel di permukaan namun penuh nuansa dalam praktiknya. Bagaimana Anda hadir saat anak belajar — seberapa banyak bantuan yang diberikan, nada suara yang digunakan, reaksi terhadap kesalahan — semua ini membentuk hubungan anak dengan belajar itu sendiri.",
@@ -184,6 +311,13 @@ export const articles: Article[] = [
       "Ciptakan lingkungan fisik yang kondusif. Meja belajar yang teratur, pencahayaan yang cukup, dan minimnya gangguan (ponsel, TV) berkontribusi signifikan pada kemampuan konsentrasi. Penelitian menunjukkan bahwa bahkan keberadaan ponsel di atas meja — meski dalam kondisi mati — menurunkan kapasitas kognitif yang tersedia untuk belajar.",
       "Jadwalkan sesi belajar pada waktu yang konsisten setiap hari. Otak anak (dan orang dewasa) bekerja paling baik dengan rutinitas yang dapat diprediksi. Mulai dengan sesi pendek (20–30 menit) diselingi istirahat aktif, dan secara bertahap tingkatkan durasinya sesuai usia dan kemampuan konsentrasi anak.",
       "Terakhir, rayakan proses, bukan hanya hasil. Pujian yang spesifik pada usaha ('Kamu mau coba berkali-kali sampai berhasil — itu yang bikin kamu berkembang') jauh lebih memotivasi dibanding pujian pada kecerdasan ('Kamu memang pintar'). Ini bukan sekadar kata-kata — penelitian Carol Dweck selama 30 tahun membuktikan bahwa growth mindset yang dibentuk sejak kecil adalah salah satu penentu terbesar kesuksesan jangka panjang.",
+    ],
+    content_en: [
+      "Supporting a child's learning is one of the parenting responsibilities that seems simple on the surface but is full of nuance in practice. How you show up when your child is studying — how much help you give, the tone of voice you use, your reaction to mistakes — all of this shapes the child's relationship with learning itself.",
+      "The most important principle: your goal is not to ensure homework is completed correctly, but to build learning confidence and independence. This means resisting the urge to immediately provide answers when your child gets stuck. Instead, ask guiding questions: 'Where do you think we should start?' or 'Which part do you already understand?'",
+      "Create a conducive physical environment. A tidy desk, adequate lighting, and minimal distractions (phones, TV) significantly contribute to concentration ability. Research shows that even having a phone on the desk — even turned off — reduces the cognitive capacity available for studying.",
+      "Schedule study sessions at a consistent time each day. A child's brain (and adults' too) works best with predictable routines. Start with short sessions (20–30 minutes) interspersed with active breaks, and gradually increase the duration according to the child's age and concentration ability.",
+      "Finally, celebrate the process, not just the results. Specific praise for effort ('You kept trying until you succeeded — that's what makes you grow') is far more motivating than praise for intelligence ('You're just so smart'). This isn't just words — Carol Dweck's 30 years of research proves that a growth mindset cultivated from childhood is one of the greatest determinants of long-term success.",
     ],
   },
 ];

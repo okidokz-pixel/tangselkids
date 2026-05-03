@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, HelpCircle, ChevronDown } from "lucide-react";
@@ -52,12 +52,12 @@ export default function HelpPage() {
   }
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 100 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8", paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{
         padding: "52px 20px 24px",
-        background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)",
+        background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)",
         borderRadius: "0 0 32px 32px",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -92,7 +92,7 @@ export default function HelpPage() {
             style={{
               background: "#fff",
               borderRadius: 16,
-              border: `1.5px solid ${open === i ? "#BFDBFE" : "#e2e8f0"}`,
+              border: `1.5px solid ${open === i ? "#a7d4bc" : "#e2e8f0"}`,
               overflow: "clip",
               boxShadow: open === i ? "0 4px 16px rgba(30,63,176,0.08)" : "0 1px 4px rgba(15,23,42,0.04)",
               transition: "border-color 0.2s ease, box-shadow 0.2s ease",
@@ -109,7 +109,7 @@ export default function HelpPage() {
                 textAlign: "left", touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               } as React.CSSProperties}
             >
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#1e3a5f", lineHeight: 1.4, fontFamily: "var(--font-jakarta), sans-serif", flex: 1 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#0e1d4f", lineHeight: 1.4, fontFamily: "var(--font-jakarta), sans-serif", flex: 1 }}>
                 {faq.q}
               </span>
               <ChevronDown
@@ -138,10 +138,10 @@ export default function HelpPage() {
         {/* Still need help */}
         <div style={{
           marginTop: 8, padding: "20px", borderRadius: 20,
-          background: "linear-gradient(135deg, #EFF6FF, #DBEAFE)",
-          border: "1.5px solid #BFDBFE", textAlign: "center",
+          background: "linear-gradient(135deg, #e6f4ed, #e6f4ed)",
+          border: "1.5px solid #a7d4bc", textAlign: "center",
         }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#1e3a5f", margin: "0 0 4px", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "#0e1d4f", margin: "0 0 4px", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             Masih ada pertanyaan?
           </p>
           <p style={{ fontSize: 12.5, color: "#475569", margin: "0 0 14px", lineHeight: 1.5, fontFamily: "var(--font-jakarta), sans-serif" }}>
@@ -151,7 +151,7 @@ export default function HelpPage() {
             href="/feedback"
             style={{
               display: "inline-block", padding: "10px 24px", borderRadius: 999,
-              background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
+              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
               fontSize: 13, fontWeight: 700, textDecoration: "none",
               fontFamily: "var(--font-jakarta), sans-serif",
             }}

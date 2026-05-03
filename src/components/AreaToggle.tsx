@@ -59,7 +59,7 @@ export function AreaToggle({ value, onChange }: Props) {
             fontSize: 12,
             fontWeight: 700,
             whiteSpace: "nowrap",
-            background: value === o.v ? "#1a3a6c" : "transparent",
+            background: value === o.v ? "var(--tk-accent, #2e8a5a)" : "transparent",
             color: value === o.v ? "#fff" : "#6b7280",
             boxShadow: value === o.v ? "0 1px 4px rgba(15,23,42,0.12)" : "none",
             transition: "background 0.15s, color 0.15s",

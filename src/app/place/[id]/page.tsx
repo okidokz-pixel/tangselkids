@@ -1,20 +1,22 @@
-"use client";
-import { useState, useEffect } from "react";
+﻿"use client";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import {
   ChevronLeft, ChevronRight, X, MapPin, Clock, Phone,
-  Heart, Pencil, Star, Globe, Play, Check, Lock,
+  Heart, Pencil, Star, Globe, Play, Check, Lock, MessageCircle,
 } from "lucide-react";
-import { places, formatPriceRange, getAreaGroup, formatPrice } from "@/lib/mockData";
+import { places, formatPriceRange, getAreaGroup, formatPrice, getPlaceCoords, haversineKm } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
+import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumGate } from "@/components/PremiumGate";
 import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 function InstagramIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
@@ -41,16 +43,35 @@ function TikTokIcon({ size = 20, color = "currentColor" }: { size?: number; colo
   );
 }
 
+// ── WhatsApp icon ─────────────────────────────────────────────────────────────
+function WhatsAppIcon({ size = 18, color = "#fff" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  );
+}
+
+/** Convert a local Indonesian phone number to WhatsApp-compatible E.164 format.
+ *  "0812-3456-7890" → "628123456789" */
+function toWaNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.startsWith("0") ? "62" + digits.slice(1) : digits;
+}
+
+// TODO: replace with real support/editorial WhatsApp number
+const SUGGEST_WA_NUMBER = "6281234567890";
+
 // ── Category colours ──────────────────────────────────────────────────────────
 const categoryColor: Record<string, { bg: string; text: string }> = {
-  school:            { bg: "#DBEAFE", text: "#1E3A5F" },
-  "learning-center": { bg: "#DBEAFE", text: "#1E40AF" },
+  school:            { bg: "#e6f4ed", text: "#1f6b43" },
+  "learning-center": { bg: "#e6f4ed", text: "#2e8a5a" },
   daycare:           { bg: "#FCE7F3", text: "#9D174D" },
   playground:        { bg: "#FEF3C7", text: "#92400E" },
   clinic:            { bg: "#D1FAE5", text: "#065F46" },
   cafe:              { bg: "#FEF3C7", text: "#92400E" },
   "mini-zoo":        { bg: "#D1FAE5", text: "#065F46" },
-  "swimming-pool":   { bg: "#DBEAFE", text: "#1E3A5F" },
+  "swimming-pool":   { bg: "#e6f4ed", text: "#1f6b43" },
   bookstore:         { bg: "#EDE9FE", text: "#5B21B6" },
 };
 
@@ -125,8 +146,8 @@ const relatedVideos = [
 export default function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }  = use(params);
   const router  = useRouter();
-  const { t }   = useLang();
-  const { tier, loaded } = useAuth();
+  const { t, lang } = useLang();
+  const { tier, loaded, user } = useAuth();
   const { openRegisterSheet } = useRegisterSheet();
   const place   = places.find((p) => p.id === id);
 
@@ -144,6 +165,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [showPsbGate,    setShowPsbGate]    = useState(false);
   const [showFaveGate,      setShowFaveGate]      = useState(false);
   const [showSaveLimitSheet, setShowSaveLimitSheet] = useState(false);
+  const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
+
+  // ── Suggest Edits form state ────────────────────────────────────────────────
+  const [suggestField,     setSuggestField]     = useState(0);
+  const [suggestDetails,   setSuggestDetails]   = useState("");
+  const [suggestSubmitted, setSuggestSubmitted] = useState(false);
+
+  // ── Favorites tooltip state ──────────────────────────────────────────────────
+  const [favTooltip, setFavTooltip] = useState<"add" | "remove" | null>(null);
+  const favTooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Notes expand state (compact single-line row → expanded textarea) ─────────
+  const [notesExpanded, setNotesExpanded] = useState(false);
+
+  // ── Personal note state ─────────────────────────────────────────────────────
+  const NOTE_MAX = 500;
+  const [noteText,    setNoteText]    = useState("");
+  const [noteUpdatedAt, setNoteUpdatedAt] = useState<string | null>(null);
+  const [noteFeedback,  setNoteFeedback]  = useState<"saved" | "deleted" | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
@@ -155,6 +196,17 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
     }
     loadUserReview();
     window.addEventListener("focus", loadUserReview);
+
+    // Load existing note
+    const existing = getNote(id);
+    if (existing) {
+      setNoteText(existing.noteText);
+      setNoteUpdatedAt(existing.updatedAt);
+    } else {
+      setNoteText("");
+      setNoteUpdatedAt(null);
+    }
+
     return () => window.removeEventListener("focus", loadUserReview);
   }, [id]);
 
@@ -179,9 +231,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       setShowSaveLimitSheet(true);
       return;
     }
-    const next = ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+    const adding = !ids.includes(id);
+    const next = adding ? [...ids, id] : ids.filter((x) => x !== id);
     localStorage.setItem("savedIds", JSON.stringify(next));
     setIsSaved(next.includes(id));
+    // Show tooltip
+    if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
+    setFavTooltip(adding ? "add" : "remove");
+    favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
   }
 
   const categoryLabel: Record<string, string> = {
@@ -203,7 +260,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
         <button
           onClick={() => router.back()}
           className="flex items-center gap-1 px-6 py-2 rounded-full text-white text-sm font-jakarta font-semibold"
-          style={{ background: "#1D4ED8" }}
+          style={{ background: "#2e8a5a" }}
         >
           <ChevronLeft size={16} /> {t.pdGoBack}
         </button>
@@ -211,8 +268,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const colors = categoryColor[place.category] ?? { bg: "#DBEAFE", text: "#1E3A5F" };
+  const colors = categoryColor[place.category] ?? { bg: "#e6f4ed", text: "#1f6b43" };
   const extraParas = aboutExtra[place.category] ?? [];
+
+  // ── Distance from home ────────────────────────────────────────────────────
+  const placeGps = getPlaceCoords(place.id);
+  const homeKm: number | null = (user?.addressLat && user?.addressLng && placeGps)
+    ? haversineKm(user.addressLat, user.addressLng, placeGps.lat, placeGps.lng)
+    : null;
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ paddingTop: 52 }}>
@@ -220,10 +283,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       {/* ── Sticky top bar — blue gradient ────────────────────────────────── */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, height: 52, zIndex: 50,
-        background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
       }}>
         <div style={{ maxWidth: 448, margin: "0 auto", height: "100%",
-          display: "flex", alignItems: "center", padding: "0 12px" }}>
+          display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
           <ActionButton onClick={() => router.back()} style={{
             display: "inline-flex", alignItems: "center", gap: 4,
             padding: "7px 12px", borderRadius: 999,
@@ -234,6 +297,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <ChevronLeft size={14} strokeWidth={2.5} color="#fff" />
             Back
           </ActionButton>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -297,7 +361,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 20px" }} />
             <p style={{
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 16, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 16, fontWeight: 700, color: "#0e1d4f",
               margin: "0 0 16px",
             }}>
               Open in Maps
@@ -320,7 +384,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 label: "Apple Maps",
                 emoji: "🍎",
                 href: `https://maps.apple.com/?q=${encodeURIComponent(place.address ?? "")}`,
-                color: "#1D4ED8",
+                color: "#2e8a5a",
               },
             ].map(({ label, emoji, href, color }) => (
               <a
@@ -332,7 +396,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 style={{
                   display: "flex", alignItems: "center", gap: 14,
                   padding: "14px 16px", borderRadius: 16, marginBottom: 8,
-                  background: "#f8fafc", border: "1px solid #e2e8f0",
+                  background: "#f6f1e8", border: "1px solid #e2e8f0",
                   textDecoration: "none",
                   touchAction: "manipulation",
                 }}
@@ -340,7 +404,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 <span style={{ fontSize: 22 }}>{emoji}</span>
                 <span style={{
                   fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: 14, fontWeight: 600, color: "#1E3A5F", flex: 1,
+                  fontSize: 14, fontWeight: 600, color: "#0e1d4f", flex: 1,
                 }}>
                   {label}
                 </span>
@@ -492,11 +556,11 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Name + category + rating */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
+          <div className="flex-1" style={{ minWidth: 0 }}>
             <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block mb-2" style={{ background: colors.bg, color: colors.text }}>
               {categoryLabel[place.category]}
             </span>
-            <h1 className="text-2xl font-bold text-[#1E3A5F] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
+            <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
             {place.address && (
               <ActionButton
                 onClick={() => setMapOpen(true)}
@@ -506,26 +570,93 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                   cursor: "pointer", textAlign: "left",
                 }}
               >
-                <MapPin size={12} style={{ color: "#1D4ED8", marginTop: 1, flexShrink: 0 }} />
-                <span className="font-jakarta text-xs leading-relaxed" style={{ color: "#1D4ED8", textDecoration: "underline", textDecorationColor: "rgba(29,78,216,0.35)", textUnderlineOffset: 2 }}>
+                <MapPin size={12} style={{ color: "#2e8a5a", marginTop: 1, flexShrink: 0 }} />
+                <span className="font-jakarta text-xs leading-relaxed" style={{ color: "#2e8a5a", textDecoration: "underline", textDecorationColor: "rgba(29,78,216,0.35)", textUnderlineOffset: 2 }}>
                   {place.address}
                 </span>
               </ActionButton>
+            )}
+            {/* Distance from home */}
+            {homeKm !== null ? (
+              <p style={{ margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#64748b" }}>
+                🏠 {t.distanceFromHome(homeKm)}
+              </p>
+            ) : tier !== "guest" && (
+              <p
+                style={{ margin: "3px 0 0", cursor: "pointer",
+                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8" }}
+                onClick={() => { /* navigate to profile to set address */ window.location.href = "/profile"; }}
+              >
+                🏠 {t.distanceNoHome}
+              </p>
             )}
             <div className="flex items-center gap-1 mt-0.5">
               <Clock size={12} className="text-gray-400 flex-shrink-0" />
               <p className="font-jakarta text-gray-400 text-xs">{place.hours}</p>
             </div>
-            {place.phone !== "-" && (
-              <a href={`tel:${place.phone}`} className="inline-flex items-center gap-1 mt-0.5">
-                <Phone size={12} style={{ color: "#1D4ED8" }} className="flex-shrink-0" />
-                <span className="font-jakarta text-xs text-[#1D4ED8] font-semibold">{place.phone}</span>
-              </a>
-            )}
+            {/* ── Direct-contact buttons (phone + WhatsApp) ─────── */}
+            {place.phone && place.phone !== "-" && (() => {
+              const isPremium = tier === "premium";
+              const waNum = toWaNumber(place.whatsapp ?? place.phone);
+              const locked = !isPremium;
+              return (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  {/* Phone call */}
+                  <ActionButton
+                    onClick={() => {
+                      if (locked) { setShowReviewGate(true); return; }
+                      window.location.href = `tel:${place.phone}`;
+                    }}
+                    ariaLabel={t.contactCallBtn}
+                    style={{
+                      flex: 1, minHeight: 44,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-jakarta),sans-serif",
+                      background: locked ? "#f1f5f9" : "#2e8a5a",
+                      color: locked ? "#94a3b8" : "#fff",
+                      border: locked ? "1.5px solid #e2e8f0" : "none",
+                      position: "relative",
+                    }}
+                    title={locked ? t.contactPremiumTooltip : place.phone}
+                  >
+                    {locked && <Lock size={11} strokeWidth={2.5} style={{ position: "absolute", top: 6, right: 7, opacity: 0.6 }} />}
+                    <Phone size={15} strokeWidth={2} />
+                    {t.contactCallBtn}
+                  </ActionButton>
+
+                  {/* WhatsApp */}
+                  <ActionButton
+                    onClick={() => {
+                      if (locked) { setShowReviewGate(true); return; }
+                      window.open(`https://wa.me/${waNum}`, "_blank");
+                    }}
+                    ariaLabel={t.contactWhatsAppBtn}
+                    style={{
+                      flex: 1, minHeight: 44,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-jakarta),sans-serif",
+                      background: locked ? "#f1f5f9" : "#25D366",
+                      color: locked ? "#94a3b8" : "#fff",
+                      border: locked ? "1.5px solid #e2e8f0" : "none",
+                      position: "relative",
+                    }}
+                    title={locked ? t.contactPremiumTooltip : `WhatsApp ${place.phone}`}
+                  >
+                    {locked && <Lock size={11} strokeWidth={2.5} style={{ position: "absolute", top: 6, right: 7, opacity: 0.6 }} />}
+                    <WhatsAppIcon size={15} color={locked ? "#94a3b8" : "#fff"} />
+                    {t.contactWhatsAppBtn}
+                  </ActionButton>
+                </div>
+              );
+            })()}
 
           </div>
 
-          <div className="flex flex-col items-end flex-shrink-0 mt-7 gap-2">
+          {/* ── Rating + heart with favorites tooltip ─────────────────────── */}
+          <div className="flex flex-col items-end flex-shrink-0 mt-7 gap-2" style={{ position: "relative" }}>
             <div className="flex items-center gap-0.5">
               <Star size={14} fill="#FBBF24" stroke="none" />
               <span className="font-jakarta font-bold text-gray-800">{place.rating}</span>
@@ -539,62 +670,170 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             }}>
               <Heart size={16} fill={isSaved ? "#EF4444" : "none"} stroke={isSaved ? "#EF4444" : "#94A3B8"} strokeWidth={2} />
             </ActionButton>
+            {favTooltip && (
+              <div style={{
+                position: "absolute", right: 0, bottom: "calc(100% + 6px)",
+                background: "#1e293b", borderRadius: 8, padding: "5px 10px",
+                whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.22)",
+                animation: "fadein 0.18s ease",
+              }}>
+                <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 600, color: "#fff" }}>
+                  {favTooltip === "add" ? t.favTooltipAdd : t.favTooltipRemove}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Enrollment dates + PSB alert — schools only */}
-        {place.category === "school" && (
-          <>
-            <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "#DBEAFE" }}>
-              <div>
-                <p className="text-xs font-jakarta text-[#3B82F6] font-semibold uppercase tracking-wide mb-0.5">
-                  {t.pdEnrollTitle}
-                </p>
-                <p className="text-base font-bold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                  {t.pdEnrollSoon}
-                </p>
-                <p className="text-xs font-jakarta text-[#3B82F6] mt-0.5">
-                  {t.pdEnrollContact}
-                </p>
-              </div>
-              <span style={{ fontSize: 30 }}>📅</span>
-            </div>
-
-            {/* PSB Alert placeholder */}
+        {/* ── Compact Notes row ────────────────────────────────────────────── */}
+        {tier === "premium" ? (
+          <div style={{ marginTop: 10 }}>
             <ActionButton
-              onClick={() => {
-                if (tier === "premium") {
-                  alert(t.pdPsbAlert);
-                } else if (tier === "free") {
-                  setShowPsbGate(true);
-                } else {
-                  setShowPsbSheet(true);
-                }
-              }}
+              onClick={() => setNotesExpanded((v) => !v)}
               style={{
-                width: "100%", padding: "13px 16px",
-                borderRadius: 14, border: "none",
-                background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
-                color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 12,
+                background: noteText.trim() ? "#F0FDF4" : "#f6f1e8",
+                border: `1.5px solid ${noteText.trim() ? "#BBF7D0" : "#E2E8F0"}`,
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              🔔 {t.pdPsbBtn}
-              {tier !== "premium" && (
-                <div style={{
-                  width: 20, height: 20, borderRadius: 999,
-                  background: tier === "guest" ? "#ef4444" : "#d97706",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0, marginLeft: 2,
-                }}>
-                  <Lock size={11} strokeWidth={3} color="#fff" />
-                </div>
-              )}
+              <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📝</span>
+              <span style={{
+                flex: 1, fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 12, color: noteText.trim() ? "#166534" : "#94a3b8",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                textAlign: "left",
+              }}>
+                {noteText.trim() || t.notesSectionTitle}
+              </span>
+              <Pencil size={12} color={noteText.trim() ? "#16a34a" : "#94a3b8"} style={{ flexShrink: 0 }} />
             </ActionButton>
-          </>
+
+            {notesExpanded && (
+              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                <textarea
+                  value={noteText}
+                  onChange={(e) => {
+                    const val = e.target.value.slice(0, NOTE_MAX);
+                    setNoteText(val);
+                    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+                    saveTimerRef.current = setTimeout(() => {
+                      const now = new Date().toISOString();
+                      if (val.trim()) {
+                        saveNote({ placeId: id, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText: val, updatedAt: now });
+                        setNoteUpdatedAt(now);
+                      } else {
+                        deleteNote(id);
+                        setNoteUpdatedAt(null);
+                      }
+                      setNoteFeedback("saved");
+                      setTimeout(() => setNoteFeedback(null), 2500);
+                      saveTimerRef.current = null;
+                    }, 1500);
+                  }}
+                  placeholder={t.notesPlaceholder}
+                  maxLength={NOTE_MAX}
+                  rows={4}
+                  autoFocus
+                  style={{
+                    width: "100%", padding: "12px 14px", borderRadius: 12,
+                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13,
+                    border: "1.5px solid #E2E8F0", outline: "none", resize: "vertical",
+                    color: "#1E293B", background: "#f6f1e8", boxSizing: "border-box",
+                    lineHeight: 1.6,
+                  }}
+                />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: noteText.length >= NOTE_MAX ? "#ef4444" : "#9CA3AF", margin: 0 }}>
+                    {t.notesCharsLeft(NOTE_MAX - noteText.length)}
+                  </p>
+                  {noteUpdatedAt && (
+                    <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#9CA3AF", margin: 0 }}>
+                      {t.notesLastEdited(new Date(noteUpdatedAt).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID", { day: "numeric", month: "short" }))}
+                    </p>
+                  )}
+                </div>
+                {noteFeedback && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: "7px 12px", borderRadius: 10,
+                    background: noteFeedback === "saved" ? "#F0FDF4" : "#FEF2F2",
+                    border: `1px solid ${noteFeedback === "saved" ? "#BBF7D0" : "#FECACA"}`,
+                  }}>
+                    <Check size={13} color={noteFeedback === "saved" ? "#16a34a" : "#ef4444"} />
+                    <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, fontWeight: 600, color: noteFeedback === "saved" ? "#16a34a" : "#ef4444" }}>
+                      {noteFeedback === "saved" ? t.notesSaved : t.notesDeleted}
+                    </span>
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <ActionButton
+                    onClick={() => {
+                      if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+                      if (!noteText.trim()) return;
+                      const now = new Date().toISOString();
+                      saveNote({ placeId: id, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now });
+                      setNoteUpdatedAt(now);
+                      setNoteFeedback("saved");
+                      setNotesExpanded(false);
+                      setTimeout(() => setNoteFeedback(null), 2500);
+                    }}
+                    style={{
+                      flex: 1, padding: "10px 0", borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      background: "#e6f4ed", color: "#2e8a5a",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                    }}
+                  >
+                    <Check size={14} /> {t.notesSaveBtn}
+                  </ActionButton>
+                  {(noteText.trim() || noteUpdatedAt) && (
+                    <ActionButton
+                      onClick={() => {
+                        if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+                        deleteNote(id);
+                        setNoteText(""); setNoteUpdatedAt(null);
+                        setNoteFeedback("deleted"); setNotesExpanded(false);
+                        setTimeout(() => setNoteFeedback(null), 2500);
+                      }}
+                      style={{
+                        padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
+                        background: "#FEF2F2", color: "#ef4444",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                        fontFamily: "var(--font-jakarta), sans-serif",
+                      }}
+                    >
+                      <X size={14} /> {t.notesClearBtn}
+                    </ActionButton>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <ActionButton
+            onClick={() => setShowReviewGate(true)}
+            style={{
+              marginTop: 10, width: "100%", display: "flex", alignItems: "center", gap: 8,
+              padding: "9px 12px", borderRadius: 12,
+              background: "#f6f1e8", border: "1.5px dashed #D1D5DB",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📝</span>
+            <span style={{
+              flex: 1, fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 12, color: "#94a3b8", textAlign: "left",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {t.notesLockMsg}
+            </span>
+            <Lock size={12} color="#d97706" style={{ flexShrink: 0 }} />
+          </ActionButton>
         )}
 
         {/* Info chips — aligned with category filters */}
@@ -724,10 +963,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             { key: "facilities",  label: t.tkFacilities,  score: tkr.facilities },
           ];
           return (
-            <div className="rounded-2xl p-5 border-2 border-dashed" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
+            <div className="rounded-2xl p-5 border-2 border-dashed" style={{ background: "#e6f4ed", borderColor: "#a7d4bc" }}>
               <div className="flex items-center gap-2 mb-4">
                 <Star size={20} fill="#FBBF24" stroke="none" />
-                <h2 className="text-xl font-bold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.tkRatingTitle}</h2>
+                <h2 className="text-xl font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.tkRatingTitle}</h2>
               </div>
               <div className="space-y-3 mb-4">
                 {cats.map((cat) => (
@@ -742,7 +981,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 ))}
               </div>
               <div className="border-t border-blue-100 pt-3">
-                <p className="font-jakarta text-sm font-bold text-[#1E3A5F] mb-1">{t.tkVerdict}</p>
+                <p className="font-jakarta text-sm font-bold text-[#0e1d4f] mb-1">{t.tkVerdict}</p>
                 <p className="font-jakarta text-sm text-gray-600 leading-relaxed">{tkr.verdict}</p>
               </div>
             </div>
@@ -751,7 +990,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* About */}
         <div>
-          <h2 className="text-lg font-semibold text-[#1E3A5F] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
+          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{place.description}</p>
             {extraParas.map((para, i) => (
@@ -760,9 +999,60 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
+        {/* Enrollment schedule box — schools only, now below About */}
+        {place.category === "school" && (
+          <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "#e6f4ed" }}>
+            <div>
+              <p className="text-xs font-jakarta text-[#3aab74] font-semibold uppercase tracking-wide mb-0.5">
+                {t.pdEnrollTitle}
+              </p>
+              <p className="text-base font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+                {t.pdEnrollSoon}
+              </p>
+            </div>
+            {/* PSB notification button */}
+            <ActionButton
+              onClick={() => {
+                if (tier === "premium") {
+                  alert(t.pdPsbAlert);
+                } else if (tier === "free") {
+                  setShowPsbGate(true);
+                } else {
+                  setShowPsbSheet(true);
+                }
+              }}
+              style={{
+                position: "relative", flexShrink: 0,
+                display: "inline-flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                gap: 3, padding: "8px 14px", borderRadius: 12,
+                background: tier === "premium" ? "#2e8a5a" : "rgba(255,255,255,0.85)",
+                color: tier === "premium" ? "#fff" : "#1f6b43",
+                border: "1.5px solid rgba(59,130,246,0.35)",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <span style={{ fontSize: 20, lineHeight: 1 }}>🔔</span>
+              <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1, whiteSpace: "nowrap" }}>
+                {t.pdPsbBtn.split(" ").slice(0, 2).join(" ")}
+              </span>
+              {tier !== "premium" && (
+                <div style={{
+                  position: "absolute", top: -5, right: -5,
+                  width: 16, height: 16, borderRadius: 999,
+                  background: tier === "guest" ? "#ef4444" : "#d97706",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Lock size={8} strokeWidth={3} color="#fff" />
+                </div>
+              )}
+            </ActionButton>
+          </div>
+        )}
+
         {/* Social Media */}
         <div>
-          <h2 className="text-lg font-semibold text-[#1E3A5F] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             Social Media
           </h2>
           <div style={{ display: "flex", gap: 10 }}>
@@ -770,7 +1060,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               { key: "instagram", url: place.instagram, label: "Instagram", color: "#E1306C",  Icon: InstagramIcon },
               { key: "facebook",  url: place.facebook,  label: "Facebook",  color: "#1877F2",  Icon: FacebookIcon  },
               { key: "tiktok",    url: place.tiktok,    label: "TikTok",    color: "#010101",  Icon: TikTokIcon    },
-              { key: "website",   url: place.website,   label: "Website",   color: "#1d4ed8",
+              { key: "website",   url: place.website,   label: "Website",   color: "#2e8a5a",
                 Icon: ({ size, color }: { size: number; color: string }) => <Globe size={size} color={color} strokeWidth={1.75} /> },
             ] as const).map(({ key, url, label, color, Icon }) => {
               const active = !!url;
@@ -806,7 +1096,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Related Videos */}
         <div>
-          <h2 className="text-lg font-semibold text-[#1E3A5F] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             Related Videos
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -834,19 +1124,19 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                       background: "rgba(255,255,255,0.92)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <Play size={16} fill="#1E3A5F" stroke="none" style={{ marginLeft: 2 }} />
+                      <Play size={16} fill="#1f6b43" stroke="none" style={{ marginLeft: 2 }} />
                     </div>
                   </div>
                 </div>
                 {/* Title */}
                 <div style={{
                   padding: "8px 10px 10px",
-                  background: "#f8fafc",
+                  background: "#f6f1e8",
                   borderRadius: "0 0 14px 14px",
                   border: "1px solid #e2e8f0", borderTop: "none",
                 }}>
                   <p style={{
-                    fontSize: 11, fontWeight: 600, color: "#1e3a5f", lineHeight: 1.4,
+                    fontSize: 11, fontWeight: 600, color: "#0e1d4f", lineHeight: 1.4,
                     fontFamily: "var(--font-jakarta), sans-serif",
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
                     overflow: "hidden",
@@ -866,7 +1156,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           if (totalCount === 0) return null;
           return (
             <div>
-              <h2 className="text-lg font-semibold text-[#1E3A5F] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                 {t.pdReviewsTitle} ({totalCount})
               </h2>
               <div className="space-y-3">
@@ -876,7 +1166,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.name}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, background: "#1D4ED8", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, background: "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
                           Ulasanmu
                         </span>
                       </div>
@@ -937,8 +1227,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             }}
             style={{
               width: "100%", padding: "12px 16px",
-              borderRadius: 14, border: "2px solid #1D4ED8",
-              background: "#EFF6FF", color: "#1D4ED8",
+              borderRadius: 14, border: "2px solid #2e8a5a",
+              background: "#e6f4ed", color: "#2e8a5a",
               fontFamily: "var(--font-jakarta), sans-serif",
               fontSize: 14, fontWeight: 700,
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -959,7 +1249,201 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           </ActionButton>
         )}
 
+        {/* ── Suggest Edits trigger ──────────────────────────────────────── */}
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
+          <ActionButton
+            onClick={() => {
+              if (tier !== "premium") { setShowReviewGate(true); return; }
+              setSuggestSubmitted(false); setShowSuggestSheet(true);
+            }}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 5,
+              padding: "7px 14px", borderRadius: 999,
+              background: "transparent", border: "1px solid #E2E8F0",
+              color: "#64748B", fontSize: 12, fontWeight: 600,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <Pencil size={12} strokeWidth={2} />
+            {t.suggestEditBtn}
+          </ActionButton>
+        </div>
+
       </div>
+
+      {/* ── Suggest Edits Bottom Sheet ───────────────────────────────────── */}
+      {showSuggestSheet && (
+        <>
+          <div
+            onClick={() => setShowSuggestSheet(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 70,
+              background: "rgba(0,0,0,0.45)",
+              animation: "sheet-fade-in 0.25s ease both",
+            }}
+          />
+          <div
+            style={{
+              position: "fixed", bottom: 0, left: 0, right: 0,
+              maxWidth: 448, margin: "0 auto",
+              background: "#fff", borderRadius: "24px 24px 0 0",
+              padding: "20px 20px 40px", zIndex: 71,
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
+              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 20px" }} />
+
+            {tier !== "premium" ? (
+              /* Locked state */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 12px", textAlign: "center" }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 999,
+                  background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
+                }}>✏️</div>
+                <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#1E293B", margin: 0 }}>
+                  {t.suggestEditTitle}
+                </p>
+                <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#64748B", margin: 0, lineHeight: 1.55 }}>
+                  {t.suggestEditLockMsg}
+                </p>
+                <ActionButton
+                  onClick={() => { setShowSuggestSheet(false); router.push("/upgrade"); }}
+                  style={{
+                    marginTop: 4, padding: "12px 28px", borderRadius: 999, fontSize: 14, fontWeight: 700,
+                    background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
+                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                  }}
+                >
+                  Upgrade Premium
+                </ActionButton>
+              </div>
+            ) : suggestSubmitted ? (
+              /* Success state */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 12px", textAlign: "center" }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 999,
+                  background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Check size={28} color="#16a34a" strokeWidth={2.5} />
+                </div>
+                <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#1E293B", margin: 0 }}>
+                  {t.suggestEditSuccess}
+                </p>
+                <ActionButton
+                  onClick={() => setShowSuggestSheet(false)}
+                  style={{
+                    marginTop: 8, padding: "12px 28px", borderRadius: 999, fontSize: 14, fontWeight: 700,
+                    background: "#e6f4ed", color: "#2e8a5a",
+                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                  }}
+                >
+                  Tutup
+                </ActionButton>
+              </div>
+            ) : (
+              /* Form */
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#1E293B", margin: "0 0 4px" }}>
+                    {t.suggestEditTitle}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748B", margin: 0, lineHeight: 1.5 }}>
+                    {t.suggestEditSubtitle}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#94A3B8", margin: "6px 0 0" }}>
+                    📍 {place.name}
+                  </p>
+                </div>
+
+                {/* Field selector */}
+                <div>
+                  <label style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 8 }}>
+                    {t.suggestEditFieldLabel}
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {t.suggestEditFieldOptions.map((opt, i) => (
+                      <label key={i} style={{ cursor: "pointer" }}>
+                        <input
+                          type="radio"
+                          name="suggest-field"
+                          checked={suggestField === i}
+                          onChange={() => setSuggestField(i)}
+                          style={{ position: "absolute", opacity: 0, width: 1, height: 1 }}
+                        />
+                        <span style={{
+                          display: "inline-block", padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                          fontFamily: "var(--font-jakarta), sans-serif",
+                          border: suggestField === i ? "2px solid #2e8a5a" : "1.5px solid #E2E8F0",
+                          background: suggestField === i ? "#e6f4ed" : "#f6f1e8",
+                          color: suggestField === i ? "#2e8a5a" : "#64748B",
+                        }}>
+                          {opt}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Details textarea */}
+                <div>
+                  <label style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, fontWeight: 700, color: "#374151", display: "block", marginBottom: 6 }}>
+                    {t.suggestEditDetailsLabel}
+                  </label>
+                  <textarea
+                    value={suggestDetails}
+                    onChange={(e) => setSuggestDetails(e.target.value.slice(0, 400))}
+                    placeholder={t.suggestEditDetailsPlaceholder}
+                    rows={4}
+                    style={{
+                      width: "100%", padding: "12px 14px", borderRadius: 12,
+                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13,
+                      border: "1.5px solid #E2E8F0", outline: "none", resize: "vertical",
+                      color: "#1E293B", background: "#f6f1e8", boxSizing: "border-box",
+                      lineHeight: 1.6,
+                    }}
+                  />
+                </div>
+
+                {/* Submit */}
+                <a
+                  href={suggestDetails.trim()
+                    ? `https://wa.me/${SUGGEST_WA_NUMBER}?text=${encodeURIComponent(
+                        `[TangselKids — Sarankan Perubahan]\nTempat: ${place.name}\nBidang: ${t.suggestEditFieldOptions[suggestField]}\nDetail: ${suggestDetails.trim()}`
+                      )}`
+                    : undefined}
+                  onClick={(e) => {
+                    if (!suggestDetails.trim()) { e.preventDefault(); return; }
+                    setSuggestSubmitted(true);
+                  }}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                    background: suggestDetails.trim()
+                      ? "linear-gradient(135deg, #128C7E 0%, #25D366 100%)"
+                      : "#E5E7EB",
+                    color: suggestDetails.trim() ? "#fff" : "#9CA3AF",
+                    textDecoration: "none",
+                    pointerEvents: suggestDetails.trim() ? "auto" : "none",
+                    boxShadow: suggestDetails.trim() ? "0 4px 14px rgba(37,211,102,0.30)" : "none",
+                  }}
+                >
+                  <WhatsAppIcon size={16} color={suggestDetails.trim() ? "#fff" : "#9CA3AF"} />
+                  {t.suggestEditSubmitBtn}
+                </a>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* ── Favourite Gate Sheet (unregistered) ─────────────────────────── */}
       <FilterGateSheet isOpen={showFaveGate} onClose={() => setShowFaveGate(false)} />
@@ -1002,7 +1486,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             {/* Title */}
             <p style={{
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
               textAlign: "center", margin: "0 0 8px",
             }}>
               {t.premiumGateTitle}
@@ -1094,7 +1578,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             {/* Title */}
             <p style={{
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
               textAlign: "center", margin: "0 0 8px",
             }}>
               {t.premiumGateTitle}
@@ -1183,7 +1667,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             {/* Text */}
             <p style={{
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#1E3A5F",
+              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
               textAlign: "center", margin: "0 0 8px",
             }}>
               {t.premiumGateTitle}

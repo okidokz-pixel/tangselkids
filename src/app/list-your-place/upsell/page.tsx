@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { Star, TrendingUp, Home, Search, MapPin, Zap } from "lucide-react";
@@ -7,8 +7,8 @@ import { useLang } from "@/context/LanguageContext";
 import Link from "next/link";
 
 const BENEFIT_ICONS  = [Star, TrendingUp, Home, Search, Zap, MapPin];
-const BENEFIT_COLORS = ["#f6b545","#16a34a","#2563eb","#9d80ff","#e26a4f","#49c4d2"];
-const BENEFIT_BGS    = ["#fffbeb","#f0fdf4","#eff6ff","#f5f3ff","#fff5f0","#f0fdfe"];
+const BENEFIT_COLORS = ["#f6b545","#16a34a","#2e8a5a","#9d80ff","#e26a4f","#49c4d2"];
+const BENEFIT_BGS    = ["#fffbeb","#f0fdf4","#e6f4ed","#f5f3ff","#fff5f0","#f0fdfe"];
 
 const ROW_ACCESS = [
   [true,  true ],
@@ -27,12 +27,12 @@ function UpsellContent() {
   const placeName    = searchParams.get("name") || "";
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 48 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8", paddingBottom: 48 }}>
 
       {/* ── Promo header ────────────────────────────────────────────────────── */}
       <div style={{
         padding: "48px 20px 28px",
-        background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
         borderRadius: "0 0 32px 32px",
         textAlign: "center",
       }}>
@@ -99,7 +99,7 @@ function UpsellContent() {
         {/* ── Upsell CTA card ───────────────────────────────────────────────── */}
         <div style={{
           borderRadius: 22,
-          background: "linear-gradient(145deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)",
+          background: "linear-gradient(145deg, #1f6b43 0%, #2e8a5a 60%, #3aab74 100%)",
           padding: "20px",
           boxShadow: "0 12px 32px rgba(30,63,176,0.28)",
           marginBottom: 24,
@@ -164,7 +164,7 @@ function UpsellContent() {
                     <Icon size={18} color={color} strokeWidth={1.75} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: "0 0 3px", fontSize: 13.5, fontWeight: 700, color: "#1e3a5f", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+                    <p style={{ margin: "0 0 3px", fontSize: 13.5, fontWeight: 700, color: "#0e1d4f", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                       {title}
                     </p>
                     <p style={{ margin: 0, fontSize: 12.5, color: "#64748b", lineHeight: 1.5, fontFamily: "var(--font-jakarta), sans-serif" }}>
@@ -184,7 +184,7 @@ function UpsellContent() {
             <div style={{ padding: "12px 8px", textAlign: "center", fontSize: 11, fontWeight: 800, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
               {t.listUpsellCompareFree}
             </div>
-            <div style={{ padding: "12px 8px", textAlign: "center", fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #1d4ed8, #3b82f6)", fontFamily: "var(--font-jakarta), sans-serif" }}>
+            <div style={{ padding: "12px 8px", textAlign: "center", fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #2e8a5a, #3aab74)", fontFamily: "var(--font-jakarta), sans-serif" }}>
               {t.listUpsellCompareFeat}
             </div>
           </div>
@@ -193,7 +193,7 @@ function UpsellContent() {
             return (
               <div key={i} style={{
                 display: "grid", gridTemplateColumns: "1fr 80px 80px",
-                borderBottom: i < t.listUpsellCompareRows.length - 1 ? "1px solid #f8fafc" : "none",
+                borderBottom: i < t.listUpsellCompareRows.length - 1 ? "1px solid #f6f1e8" : "none",
                 background: i % 2 === 0 ? "#fff" : "#fafbfc",
               }}>
                 <div style={{ padding: "11px 16px", fontSize: 12.5, fontWeight: 600, color: "#374151", fontFamily: "var(--font-jakarta), sans-serif" }}>

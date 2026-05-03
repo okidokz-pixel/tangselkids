@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { daycares, playgrounds, getAreaGroup } from "@/lib/mockData";
@@ -30,7 +30,7 @@ export default function DaycarePlaygroundsPage() {
       {/* Header */}
       <div
         className="px-5 pt-12 pb-5"
-        style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)", borderRadius: "0 0 32px 32px" }}
+        style={{ background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)", borderRadius: "0 0 32px 32px" }}
       >
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
@@ -47,12 +47,12 @@ export default function DaycarePlaygroundsPage() {
           <button
             onClick={() => setActiveTab("daycare")}
             className="flex-1 py-2.5 rounded-xl text-sm font-jakarta font-bold transition-all flex items-center justify-center gap-2"
-            style={activeTab === "daycare" ? { background: "white", color: "#1E3A5F" } : { color: "rgba(255,255,255,0.75)" }}
+            style={activeTab === "daycare" ? { background: "white", color: "#0e1d4f" } : { color: "rgba(255,255,255,0.75)" }}
           >
             🧸 {t.dpDaycareTab}
             <span
               className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={activeTab === "daycare" ? { background: "#DBEAFE", color: "#1E3A5F" } : { background: "rgba(255,255,255,0.2)", color: "white" }}
+              style={activeTab === "daycare" ? { background: "#e6f4ed", color: "#0e1d4f" } : { background: "rgba(255,255,255,0.2)", color: "white" }}
             >
               {daycares.length}
             </span>
@@ -60,12 +60,12 @@ export default function DaycarePlaygroundsPage() {
           <button
             onClick={() => setActiveTab("playground")}
             className="flex-1 py-2.5 rounded-xl text-sm font-jakarta font-bold transition-all flex items-center justify-center gap-2"
-            style={activeTab === "playground" ? { background: "white", color: "#1E3A5F" } : { color: "rgba(255,255,255,0.75)" }}
+            style={activeTab === "playground" ? { background: "white", color: "#0e1d4f" } : { color: "rgba(255,255,255,0.75)" }}
           >
             🎡 {t.dpPlaygroundTab}
             <span
               className="text-[10px] px-1.5 py-0.5 rounded-full"
-              style={activeTab === "playground" ? { background: "#DBEAFE", color: "#1E3A5F" } : { background: "rgba(255,255,255,0.2)", color: "white" }}
+              style={activeTab === "playground" ? { background: "#e6f4ed", color: "#0e1d4f" } : { background: "rgba(255,255,255,0.2)", color: "white" }}
             >
               {playgrounds.length}
             </span>
@@ -112,7 +112,7 @@ export default function DaycarePlaygroundsPage() {
                   className="px-3 py-1.5 rounded-full text-xs font-jakarta font-semibold border transition-all"
                   style={
                     playgroundFilter === f
-                      ? { background: "#1D4ED8", color: "white", borderColor: "#1D4ED8" }
+                      ? { background: "#2e8a5a", color: "white", borderColor: "#2e8a5a" }
                       : { background: "white", color: "#6B7280", borderColor: "#E5E7EB" }
                   }
                 >
@@ -122,7 +122,7 @@ export default function DaycarePlaygroundsPage() {
               <button
                 onClick={() => setFreeOnly(!freeOnly)}
                 className="ml-auto px-3 py-1.5 rounded-full text-xs font-jakarta font-semibold border transition-all"
-                style={freeOnly ? { background: "#1D4ED8", color: "white", borderColor: "#1D4ED8" } : { background: "white", color: "#6B7280", borderColor: "#E5E7EB" }}
+                style={freeOnly ? { background: "#2e8a5a", color: "white", borderColor: "#2e8a5a" } : { background: "white", color: "#6B7280", borderColor: "#E5E7EB" }}
               >
                 {t.dpFreeOnly}
               </button>

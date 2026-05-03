@@ -177,7 +177,7 @@ export function FilterSheet({
               padding: "13px 0",
               borderRadius: 14,
               border: "none",
-              background: "linear-gradient(135deg, #1A3A6C, #2563EB)",
+              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
               color: "#fff",
               fontFamily: "var(--font-jakarta), system-ui, sans-serif",
               fontSize: 14,

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Check, Shield } from "lucide-react";
@@ -39,7 +39,7 @@ function PaymentContent() {
 
     const COLORS = isLifetime
       ? ["#f59e0b","#fbbf24","#d97706","#78350f","#b45309","#fff8dc","#fff","#fde68a"]
-      : ["#f59e0b","#fbbf24","#d97706","#1d4ed8","#3b82f6","#a78bfa","#ec4899","#34d399","#fff"];
+      : ["#f59e0b","#fbbf24","#d97706","#2e8a5a","#3aab74","#a78bfa","#ec4899","#34d399","#fff"];
 
     type Piece = {
       x: number; y: number; vx: number; vy: number;
@@ -97,7 +97,7 @@ function PaymentContent() {
   const productSub  = isFeatured ? t.paymentFeaturedSub : isLifetime ? t.paymentLifetimeSub : t.paymentPremiumSub;
   const productIcon = isFeatured ? "✦" : isLifetime ? "👑" : "⭐";
   const productBg   = isFeatured
-    ? "linear-gradient(135deg, #1e3a5f, #2563eb)"
+    ? "linear-gradient(135deg, #1f6b43, #2e8a5a)"
     : isLifetime
     ? "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)"
     : "linear-gradient(135deg, #f59e0b, #d97706)";
@@ -115,20 +115,20 @@ function PaymentContent() {
     if (isFeatured) {
       return (
         <div style={{
-          maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc",
+          maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: "40px 28px", textAlign: "center",
         }}>
           <div style={{
             width: 96, height: 96, borderRadius: 999,
-            background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
+            background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
             display: "flex", alignItems: "center", justifyContent: "center",
             marginBottom: 24, fontSize: 42,
             boxShadow: "0 8px 28px rgba(30,63,176,0.35)",
           }}>
             ✦
           </div>
-          <h1 style={{ margin: "0 0 10px", fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#1e3a5f" }}>
+          <h1 style={{ margin: "0 0 10px", fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 26, fontWeight: 700, color: "#0e1d4f" }}>
             {t.paymentFeaturedSuccessTitle}
           </h1>
           <p style={{ margin: "0 0 8px", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b", lineHeight: 1.65 }}>
@@ -141,7 +141,7 @@ function PaymentContent() {
             onClick={() => router.replace("/")}
             style={{
               width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-              background: "linear-gradient(135deg, #1e3a5f, #2563eb)",
+              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
               color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
               fontSize: 15, fontWeight: 700,
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -191,7 +191,7 @@ function PaymentContent() {
         <div style={{
           position: "relative", zIndex: 10,
           maxWidth: 448, margin: "0 auto", minHeight: "100vh",
-          background: "linear-gradient(180deg, #fffbeb 0%, #f8fafc 55%)",
+          background: "linear-gradient(180deg, #fffbeb 0%, #f6f1e8 55%)",
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
           padding: "40px 28px", textAlign: "center",
         }}>
@@ -227,7 +227,7 @@ function PaymentContent() {
           <h1 style={{
             margin: "0 0 10px",
             fontFamily: "var(--font-fraunces), Georgia, serif",
-            fontSize: 28, fontWeight: 700, color: "#1e3a5f", lineHeight: 1.2,
+            fontSize: 28, fontWeight: 700, color: "#0e1d4f", lineHeight: 1.2,
             whiteSpace: "pre-line",
             animation: "float-up 0.5s ease 0.45s both",
           }}>
@@ -262,7 +262,7 @@ function PaymentContent() {
                 borderTop: i > 0 ? "1px solid #fef3c7" : "none",
               }}>
                 <span style={{ fontSize: 20, flexShrink: 0 }}>{f.emoji}</span>
-                <p style={{ margin: 0, flex: 1, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 600, color: "#1e3a5f", textAlign: "left" }}>
+                <p style={{ margin: 0, flex: 1, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 600, color: "#0e1d4f", textAlign: "left" }}>
                   {f.text}
                 </p>
                 <Check size={15} color="#22c55e" strokeWidth={2.5} style={{ flexShrink: 0 }} />
@@ -303,11 +303,11 @@ function PaymentContent() {
 
   // ── Payment form ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
 
       {/* Header */}
       <div style={{
-        background: "linear-gradient(150deg, #1e3a5f 0%, #1d4ed8 55%, #3b82f6 100%)",
+        background: "linear-gradient(150deg, #1f6b43 0%, #2e8a5a 55%, #3aab74 100%)",
         borderRadius: "0 0 28px 28px",
         padding: "44px 20px 24px",
       }}>
@@ -351,7 +351,7 @@ function PaymentContent() {
                 {productIcon}
               </div>
               <div>
-                <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700, color: "#1e3a5f" }}>
+                <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f" }}>
                   {productName}
                 </p>
                 <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8" }}>
@@ -359,13 +359,13 @@ function PaymentContent() {
                 </p>
               </div>
             </div>
-            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#1e3a5f" }}>
+            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#0e1d4f" }}>
               {price}
             </p>
           </div>
           <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 12, display: "flex", justifyContent: "space-between" }}>
             <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b" }}>{t.paymentTotal}</p>
-            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#1e3a5f" }}>
+            <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 800, color: "#0e1d4f" }}>
               {price}
             </p>
           </div>
@@ -379,14 +379,14 @@ function PaymentContent() {
           {t.paymentMethods.map((m) => {
             const isSelected = selectedMethod === m.id;
             return (
-              <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, background: "#fff", borderRadius: 14, padding: "14px 16px", border: `2px solid ${isSelected ? "#1d4ed8" : "#f1f5f9"}`, cursor: "pointer", transition: "border-color 0.15s" }}>
+              <label key={m.id} style={{ display: "flex", alignItems: "center", gap: 14, background: "#fff", borderRadius: 14, padding: "14px 16px", border: `2px solid ${isSelected ? "#2e8a5a" : "#f1f5f9"}`, cursor: "pointer", transition: "border-color 0.15s" }}>
                 <input type="radio" name="payment-method" value={m.id} checked={isSelected} onChange={() => setSelectedMethod(m.id)} style={{ position: "absolute", opacity: 0, width: 1, height: 1 }} />
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#1e3a5f" }}>{m.label}</p>
+                  <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#0e1d4f" }}>{m.label}</p>
                   <p style={{ margin: 0, fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{m.desc}</p>
                 </div>
-                <div style={{ width: 20, height: 20, borderRadius: 999, flexShrink: 0, border: `2px solid ${isSelected ? "#1d4ed8" : "#cbd5e1"}`, background: isSelected ? "#1d4ed8" : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 20, height: 20, borderRadius: 999, flexShrink: 0, border: `2px solid ${isSelected ? "#2e8a5a" : "#cbd5e1"}`, background: isSelected ? "#2e8a5a" : "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   {isSelected && <div style={{ width: 8, height: 8, borderRadius: 999, background: "#fff" }} />}
                 </div>
               </label>

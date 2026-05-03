@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, ArrowRight, ChevronLeft, Plus, X, Navigation, Loader } from "lucide-react";
@@ -15,7 +15,7 @@ type Step = "splash" | "phone" | "otp" | "verified" | "profile" | "done";
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "13px 14px", borderRadius: 14, fontSize: 15,
-  border: "1.5px solid #e2e8f0", background: "#f8fafc", outline: "none",
+  border: "1.5px solid #e2e8f0", background: "#f6f1e8", outline: "none",
   fontFamily: "var(--font-jakarta, sans-serif)", color: "#0f172a", boxSizing: "border-box",
 };
 
@@ -30,7 +30,7 @@ const errorStyle: React.CSSProperties = {
 
 const confettiDots = [
   { top: "12%", left: "12%",  size: 12, color: "#fbbf24", dur: 1.2, delay: 0.10 },
-  { top: "18%", left: "82%",  size: 8,  color: "#60a5fa", dur: 1.4, delay: 0.20 },
+  { top: "18%", left: "82%",  size: 8,  color: "#4ade80", dur: 1.4, delay: 0.20 },
   { top: "8%",  left: "50%",  size: 10, color: "#f472b6", dur: 1.1, delay: 0.15 },
   { top: "72%", left: "14%",  size: 8,  color: "#34d399", dur: 1.3, delay: 0.30 },
   { top: "68%", left: "82%",  size: 12, color: "#a78bfa", dur: 1.2, delay: 0.25 },
@@ -44,7 +44,7 @@ const confettiDots = [
 const bigConfetti = [
   { top: "8%",  left: "8%",   size: 14, color: "#fbbf24", dur: 1.6, delay: 0.05 },
   { top: "6%",  left: "30%",  size: 10, color: "#f472b6", dur: 1.4, delay: 0.12 },
-  { top: "5%",  left: "55%",  size: 12, color: "#60a5fa", dur: 1.5, delay: 0.08 },
+  { top: "5%",  left: "55%",  size: 12, color: "#4ade80", dur: 1.5, delay: 0.08 },
   { top: "7%",  left: "78%",  size: 9,  color: "#34d399", dur: 1.3, delay: 0.18 },
   { top: "4%",  left: "92%",  size: 11, color: "#a78bfa", dur: 1.6, delay: 0.22 },
   { top: "20%", left: "3%",   size: 8,  color: "#fb923c", dur: 1.4, delay: 0.30 },
@@ -53,7 +53,7 @@ const bigConfetti = [
   { top: "38%", left: "86%",  size: 9,  color: "#f87171", dur: 1.4, delay: 0.10 },
   { top: "50%", left: "5%",   size: 11, color: "#4ade80", dur: 1.6, delay: 0.35 },
   { top: "52%", left: "90%",  size: 8,  color: "#fbbf24", dur: 1.3, delay: 0.20 },
-  { top: "65%", left: "18%",  size: 13, color: "#60a5fa", dur: 1.5, delay: 0.08 },
+  { top: "65%", left: "18%",  size: 13, color: "#4ade80", dur: 1.5, delay: 0.08 },
   { top: "68%", left: "75%",  size: 10, color: "#f472b6", dur: 1.4, delay: 0.28 },
   { top: "78%", left: "8%",   size: 8,  color: "#a78bfa", dur: 1.6, delay: 0.16 },
   { top: "80%", left: "48%",  size: 12, color: "#34d399", dur: 1.3, delay: 0.32 },
@@ -234,7 +234,7 @@ export default function OnboardingPage() {
   return (
     <div style={{
       position: "relative", width: "100%", maxWidth: 448, margin: "0 auto",
-      height: "100dvh", minHeight: "100vh", overflow: "hidden", background: "#0a1628",
+      height: "100dvh", minHeight: "100vh", overflow: "hidden", background: "#0a2018",
     }}>
 
       {/* CSS keyframe animations */}
@@ -334,7 +334,7 @@ export default function OnboardingPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               width: 32, height: 32, borderRadius: 10,
-              background: "linear-gradient(135deg, #1e3fb0, #3a64ee)",
+              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
               display: "flex", alignItems: "center", justifyContent: "center",
               border: "1.5px solid rgba(255,255,255,0.25)",
             }}>
@@ -517,7 +517,7 @@ export default function OnboardingPage() {
       {showReveal && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 15,
-          background: "linear-gradient(160deg, #0a1628 0%, #1e3a5f 55%, #1d4ed8 100%)",
+          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 55%, #2e8a5a 100%)",
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
           padding: "0 40px",
@@ -680,8 +680,8 @@ export default function OnboardingPage() {
                     style={{
                       width: 44, height: 54, textAlign: "center", fontSize: 22, fontWeight: 700,
                       borderRadius: 12, outline: "none", boxSizing: "border-box",
-                      border: otp[i] ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-                      background: otp[i] ? "#eff6ff" : "#f8fafc", color: "#0f172a",
+                      border: otp[i] ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+                      background: otp[i] ? "#e6f4ed" : "#f6f1e8", color: "#0f172a",
                     }}
                   />
                 ))}
@@ -692,7 +692,7 @@ export default function OnboardingPage() {
                 <ActionButton onClick={handleVerifyOtp} style={{
                   display: "block", width: "100%", textAlign: "center",
                   padding: "16px 20px", borderRadius: 18,
-                  background: "linear-gradient(135deg, #1e3a5f, #1d4ed8)",
+                  background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                   color: "#fff", fontWeight: 700, fontSize: 15,
                   boxShadow: "0 8px 24px rgba(30,63,176,0.30)",
                 }}>
@@ -742,9 +742,9 @@ export default function OnboardingPage() {
                       flex: 1,
                       display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
                       padding: "8px 10px", borderRadius: 999,
-                      background: "#eff6ff", color: "#1d4ed8",
+                      background: "#e6f4ed", color: "#2e8a5a",
                       fontSize: 12.5, fontWeight: 700,
-                      border: "1.5px solid #bfdbfe",
+                      border: "1.5px solid #a7d4bc",
                     }}
                   >
                     {locLoading
@@ -823,7 +823,7 @@ export default function OnboardingPage() {
 
                 {kids.map((kid, i) => (
                   <div key={i} style={{
-                    background: "#f8fafc", borderRadius: 14, padding: "12px 14px",
+                    background: "#f6f1e8", borderRadius: 14, padding: "12px 14px",
                     marginBottom: 10, border: "1.5px solid #e2e8f0", position: "relative",
                   }}>
                     <ActionButton
@@ -870,9 +870,9 @@ export default function OnboardingPage() {
                           <div style={{
                             textAlign: "center", padding: "7px 4px", borderRadius: 10,
                             fontSize: 12, fontWeight: 700,
-                            border: kid.gender === g ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                            background: kid.gender === g ? "#eff6ff" : "#f8fafc",
-                            color: kid.gender === g ? "#1d4ed8" : "#64748b",
+                            border: kid.gender === g ? "2px solid #2e8a5a" : "1.5px solid #e2e8f0",
+                            background: kid.gender === g ? "#e6f4ed" : "#f6f1e8",
+                            color: kid.gender === g ? "#2e8a5a" : "#64748b",
                           }}>
                             {g === "male" ? `👦 ${t.obKidGenderMale}` : `👧 ${t.obKidGenderFemale}`}
                           </div>
@@ -897,7 +897,7 @@ export default function OnboardingPage() {
               <ActionButton onClick={handleSubmit} style={{
                 display: "block", width: "100%", textAlign: "center",
                 padding: "17px 20px", borderRadius: 18,
-                background: "linear-gradient(135deg, #1e3a5f, #1d4ed8)",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                 color: "#fff", fontWeight: 700, fontSize: 16,
                 boxShadow: "0 8px 24px rgba(30,63,176,0.35)",
                 fontFamily: "var(--font-fraunces), Georgia, serif",

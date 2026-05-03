@@ -1,24 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  /* legacy tokens (kept for other pages) */
+  /* legacy tokens (kept for backward compat) */
   --blue-dark:    #1E3A5F;
   --blue-primary: #1D4ED8;
   --blue-medium:  #3B82F6;
   --blue-light:   #60A5FA;
   --blue-pale:    #BFDBFE;
   --blue-faint:   #DBEAFE;
-  --cream:        #EFF6FF;
+  --cream:        #f6f1e8;
 
-  /* Variation B design tokens */
-  --tk-ink:       #0f172a;
-  --tk-muted:     #64748b;
-  --tk-blue-700:  #1e3fb0;
-  --tk-blue-50:   #eff6ff;
-  --tk-line:      #e2e8f0;
-  --tk-paper-bg:  #f3efe8;
-  --tk-amber:     #f6b545;
-  --tk-green:     #1f9b6a;
+  /* Design tokens */
+  --tk-ink:         #0e1d4f;   /* dark navy — primary text */
+  --tk-muted:       #64748b;   /* secondary text */
+  --tk-accent:      #2e8a5a;   /* emerald green — primary interactive */
+  --tk-accent-dark: #1f6b43;   /* emerald dark — pressed/hover states */
+  --tk-accent-pale: #e6f4ed;   /* emerald pale — backgrounds/chips */
+  --tk-amber:       #f6b545;   /* amber — star ratings, highlights */
+  --tk-green:       #1f9b6a;   /* teal-green — secondary accent */
+  --tk-line:        #e2e8f0;   /* border/divider */
+  --tk-paper-bg:    #f6f1e8;   /* warm cream page background */
+  --tk-blue-700:    #2e8a5a;   /* mapped to emerald for legacy usage */
+  --tk-blue-50:     #e6f4ed;   /* mapped to emerald pale for legacy usage */
 }
 
 @theme inline {
@@ -33,7 +36,7 @@ html {
 }
 
 body {
-  background-color: #EFF6FF;
+  background-color: #f6f1e8;
   /* Eliminate 300ms tap delay on mobile */
   touch-action: manipulation;
   /* Prevent text selection interfering with taps on iOS */
@@ -104,8 +107,8 @@ input[type="range"].tk-range::-webkit-slider-thumb {
   height: 22px; width: 22px;
   border-radius: 50%;
   background: #fff;
-  border: 2.5px solid #1d4ed8;
-  box-shadow: 0 1px 6px rgba(29, 78, 216, 0.22);
+  border: 2.5px solid #2e8a5a;
+  box-shadow: 0 1px 6px rgba(46, 138, 90, 0.22);
   cursor: grab;
   pointer-events: auto;
   touch-action: manipulation;
@@ -114,8 +117,8 @@ input[type="range"].tk-range::-moz-range-thumb {
   height: 22px; width: 22px;
   border-radius: 50%;
   background: #fff;
-  border: 2.5px solid #1d4ed8;
-  box-shadow: 0 1px 6px rgba(29, 78, 216, 0.22);
+  border: 2.5px solid #2e8a5a;
+  box-shadow: 0 1px 6px rgba(46, 138, 90, 0.22);
   cursor: grab;
   pointer-events: auto;
 }
@@ -133,11 +136,19 @@ input[type="range"].tk-range::-moz-range-track {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+@keyframes gold-shimmer {
+  0%        { transform: translateX(-150%); }
+  60%, 100% { transform: translateX(150%);  }
+}
 
 /* ─── Shared bottom-sheet animations ────────────────────────────────────────── */
 @keyframes sheet-fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes sheet-slide-up {
   from { transform: translateY(100%); }

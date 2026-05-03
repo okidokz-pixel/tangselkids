@@ -57,7 +57,7 @@ const INDEX_CATS = [
   { icon: "clinic",     name: "Klinik Tumbuh Kembang",     count: "4 tempat",     href: "/clinics"        },
   { icon: "cafe",       name: "Kafe Ramah Anak",           count: "7 tempat",     href: "/cafes"          },
   { icon: "animals",    name: "Bermain Dengan Binatang",   count: "3 tempat",     href: "/mini-zoo"       },
-  { icon: "pool",       name: "Kolam Renang & Waterparks", count: "5 tempat",     href: "/swimming-pools" },
+  { icon: "pool",       name: "Kolam Renang",              count: "5 tempat",     href: "/swimming-pools" },
   { icon: "books",      name: "Toko Buku & Alat Tulis",   count: "2 tempat",     href: "/bookstores"     },
   { icon: "more",       name: "Lainnya",                  count: "+ 4 kategori", href: "/others"         },
 ];

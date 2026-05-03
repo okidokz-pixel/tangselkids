@@ -1,70 +1,111 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Home, Search, Bookmark, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
-import { places } from "@/lib/mockData";
+import { PremiumBadge } from "@/components/PremiumBadge";
+import { BottomNav } from "@/components/BottomNav";
+import { places, getAreaGroup } from "@/lib/mockData";
+import { articles, localizeArticle } from "@/lib/articles";
 
 // ─── Photo URLs (replace before launch — see README) ─────────────────────────
 const P = {
-  cover:   "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80&auto=format&fit=crop",
   sekolah: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=700&q=80&auto=format&fit=crop",
   kursus:  "https://images.unsplash.com/photo-1588072432836-e10032774350?w=700&q=80&auto=format&fit=crop",
-  art1:    "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=400&q=80&auto=format&fit=crop",
-  art2:    "https://images.unsplash.com/photo-1588072432904-843af37f03ed?w=400&q=80&auto=format&fit=crop",
-  art3:    "https://images.unsplash.com/photo-1596464716127-f2a82984de30?w=400&q=80&auto=format&fit=crop",
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type AreaKey     = "Bintaro" | "BSD" | "Semua";
 type CategoryKey = "sekolah" | "kursus";
 
-// ─── Data ────────────────────────────────────────────────────────────────────
-const AREAS: { key: AreaKey; counts: Record<CategoryKey, number> }[] = [
-  { key: "Bintaro", counts: { sekolah: 5, kursus: 4 } },
-  { key: "BSD",     counts: { sekolah: 4, kursus: 2 } },
-  { key: "Semua",   counts: { sekolah: 9, kursus: 6 } },
-];
+// ─── Typewriter words per language ───────────────────────────────────────────
+const TYPE_WORDS: Record<"id" | "en", string[]> = {
+  id: ["sekolah", "tempat kursus", "daycare", "playground", "Klinik Anak", "kafe ramah anak", "kolam renang"],
+  en: ["school", "learning center", "daycare", "playground", "children's clinic", "family café", "swimming pool"],
+};
 
+// ─── Age-band data (bilingual) ────────────────────────────────────────────────
+// key = Grade value used by the schools page filter (grade= URL param)
+const SCHOOL_LEVELS_DATA: Record<"id" | "en", { key: string; label: string; sub: string; dot: string }[]> = {
+  id: [
+    { key: "Preschool", label: "Preschool", sub: "2–4 thn",   dot: "#f59e0b" },
+    { key: "TK",        label: "TK",        sub: "4–6 thn",   dot: "#ef6f6c" },
+    { key: "SD",        label: "SD",        sub: "6–12 thn",  dot: "#1f9b6a" },
+    { key: "SMP",       label: "SMP",       sub: "12–15 thn", dot: "#3a64ee" },
+    { key: "SMA",       label: "SMA",       sub: "15–18 thn", dot: "#9c5a7a" },
+  ],
+  en: [
+    { key: "Preschool", label: "Preschool",    sub: "2–4 yrs",   dot: "#f59e0b" },
+    { key: "TK",        label: "Kindergarten", sub: "4–6 yrs",   dot: "#ef6f6c" },
+    { key: "SD",        label: "Primary",      sub: "6–12 yrs",  dot: "#1f9b6a" },
+    { key: "SMP",       label: "Jr. High",     sub: "12–15 yrs", dot: "#3a64ee" },
+    { key: "SMA",       label: "Sr. High",     sub: "15–18 yrs", dot: "#9c5a7a" },
+  ],
+};
+
+// LC age bands match exactly the 4 groups used on the Learning Centers filter page.
+// Keys ("Toddler", "Kids", "Tween", "Teen") match the ageGroups field in mockData.
+const LC_AGE_BANDS: Record<"id" | "en", { key: string; label: string; sub: string; dot: string }[]> = {
+  id: [
+    { key: "Toddler", label: "Balita",    sub: "0–3 thn",  dot: "#f59e0b" },
+    { key: "Kids",    label: "Anak",      sub: "4–8 thn",  dot: "#ef6f6c" },
+    { key: "Tween",   label: "Praremaja", sub: "9–12 thn", dot: "#1f9b6a" },
+    { key: "Teen",    label: "Remaja",    sub: "13+ thn",  dot: "#3a64ee" },
+  ],
+  en: [
+    { key: "Toddler", label: "Toddler", sub: "0–3 yrs",  dot: "#f59e0b" },
+    { key: "Kids",    label: "Kids",    sub: "4–8 yrs",  dot: "#ef6f6c" },
+    { key: "Tween",   label: "Tween",   sub: "9–12 yrs", dot: "#1f9b6a" },
+    { key: "Teen",    label: "Teen",    sub: "13+ yrs",  dot: "#3a64ee" },
+  ],
+};
+
+// ─── Area multipliers ─────────────────────────────────────────────────────────
 const AREA_MULT: Record<AreaKey, number> = { Bintaro: 1.0, BSD: 0.78, Semua: 1.7 };
 
-const SCHOOL_LEVELS = [
-  { label: "Preschool", sub: "2–4 thn",   dot: "#f59e0b", count: 2 },
-  { label: "TK",        sub: "4–6 thn",   dot: "#ef6f6c", count: 3 },
-  { label: "SD",        sub: "6–12 thn",  dot: "#1f9b6a", count: 5 },
-  { label: "SMP",       sub: "12–15 thn", dot: "#3a64ee", count: 3 },
-  { label: "SMA",       sub: "15–18 thn", dot: "#9c5a7a", count: 2 },
-];
+// ─── Dynamic count helpers ────────────────────────────────────────────────────
+function countCat(cat: string): number {
+  return places.filter((p) => p.category === cat).length;
+}
+function countPlacesByCat(cat: "school" | "learning-center", areaKey: AreaKey): number {
+  return places.filter((p) => {
+    if (p.category !== cat) return false;
+    if (areaKey === "Semua") return true;
+    const g = getAreaGroup(p.area);
+    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
+  }).length;
+}
 
-const KURSUS_AGES = [
-  { label: "Bayi",        sub: "0–1 thn",  dot: "#f59e0b", count: 1 },
-  { label: "Toddler",     sub: "1–3 thn",  dot: "#ef6f6c", count: 2 },
-  { label: "Preschooler", sub: "3–6 thn",  dot: "#1f9b6a", count: 3 },
-  { label: "Pre-Teen",    sub: "6–12 thn", dot: "#3a64ee", count: 4 },
-  { label: "Teenager",    sub: "12+ thn",  dot: "#9c5a7a", count: 2 },
-];
+/** Count schools that offer a given grade level, filtered by area. */
+function countSchoolByGradeAndArea(gradeKey: string, areaKey: AreaKey): number {
+  return places.filter((p) => {
+    if (p.category !== "school") return false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!p.grades?.includes(gradeKey as any)) return false;
+    if (areaKey === "Semua") return true;
+    const g = getAreaGroup(p.area);
+    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
+  }).length;
+}
 
-const ARTICLES = [
-  { tag: "PARENTING", title: "5 Cara Mengajarkan Anak Mengelola Emosi",            meta: "3 Apr · 4 menit",  photo: P.art1 },
-  { tag: "SEKOLAH",   title: "Sekolah Terbaik di Bintaro: Panduan Lengkap 2026",  meta: "20 Apr · 7 menit", photo: P.art2 },
-  { tag: "AKTIVITAS", title: "Aktivitas Seru Akhir Pekan Bersama Anak di Tangsel", meta: "15 Apr · 5 menit", photo: P.art3 },
-];
+/** Count learning centers that serve a given age group key, filtered by area. */
+function countLCByAgeAndArea(ageKey: string, areaKey: AreaKey): number {
+  return places.filter((p) => {
+    if (p.category !== "learning-center") return false;
+    if (!p.ageGroups?.includes(ageKey)) return false;
+    if (areaKey === "Semua") return true;
+    const g = getAreaGroup(p.area);
+    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
+  }).length;
+}
 
-const INDEX_CATS = [
-  { icon: "daycare",    name: "Daycares",                  count: "11 tempat",    href: "/daycare"        },
-  { icon: "playground", name: "Playgrounds",               count: "8 tempat",     href: "/playgrounds"    },
-  { icon: "clinic",     name: "Klinik Tumbuh Kembang",     count: "4 tempat",     href: "/clinics"        },
-  { icon: "cafe",       name: "Kafe Ramah Anak",           count: "7 tempat",     href: "/cafes"          },
-  { icon: "animals",    name: "Bermain Dengan Binatang",   count: "3 tempat",     href: "/mini-zoo"       },
-  { icon: "pool",       name: "Kolam Renang & Waterparks", count: "5 tempat",     href: "/swimming-pools" },
-  { icon: "books",      name: "Toko Buku & Alat Tulis",   count: "2 tempat",     href: "/bookstores"     },
-  { icon: "more",       name: "Lainnya",                  count: "+ 4 kategori", href: "/others"         },
-];
-
-const TYPE_WORDS = [
-  "sekolah", "tempat kursus", "daycare", "playground",
-  "Klinik Anak", "kafe ramah anak", "kolam renang",
+// ─── Areas with dynamic counts ───────────────────────────────────────────────
+const AREAS: { key: AreaKey; counts: Record<CategoryKey, number> }[] = [
+  { key: "Bintaro", counts: { sekolah: countPlacesByCat("school", "Bintaro"), kursus: countPlacesByCat("learning-center", "Bintaro") } },
+  { key: "BSD",     counts: { sekolah: countPlacesByCat("school", "BSD"),     kursus: countPlacesByCat("learning-center", "BSD")     } },
+  { key: "Semua",   counts: { sekolah: countPlacesByCat("school", "Semua"),   kursus: countPlacesByCat("learning-center", "Semua")   } },
 ];
 
 // ─── Chev ─────────────────────────────────────────────────────────────────────
@@ -151,8 +192,6 @@ function Pressable({
 }
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
-// Custom 52×52 paper-square icon: tilted amber square, tape strip, sun rays,
-// deep-blue star face with eyes + smile. See README component spec.
 function Logo() {
   return (
     <div style={{ position: "relative", width: 52, height: 52, flexShrink: 0 }}>
@@ -182,13 +221,22 @@ function Logo() {
 }
 
 // ─── Typewriter ───────────────────────────────────────────────────────────────
-// Cream band: "Temukan " + italic dark cycling word + " yang tepat." + caret.
-// Matches the prototype visual (home-v1-polished.jsx).
+// Cream band: pre-text + italic dark cycling word + post-text + caret.
 function Typewriter() {
-  const [wordIdx, setWordIdx]   = useState(0);
-  const [text, setText]         = useState("");
-  const [phase, setPhase]       = useState<"typing" | "deleting">("typing");
-  const [caretOn, setCaretOn]   = useState(true);
+  const { lang, t } = useLang();
+  const words = TYPE_WORDS[lang];
+
+  const [wordIdx, setWordIdx] = useState(0);
+  const [text, setText]       = useState("");
+  const [phase, setPhase]     = useState<"typing" | "deleting">("typing");
+  const [caretOn, setCaretOn] = useState(true);
+
+  // reset when language changes
+  useEffect(() => {
+    setText("");
+    setPhase("typing");
+    setWordIdx(0);
+  }, [lang]);
 
   // caret blink every 500ms
   useEffect(() => {
@@ -198,28 +246,26 @@ function Typewriter() {
 
   // typewriter state machine
   useEffect(() => {
-    const word = TYPE_WORDS[wordIdx];
+    const word = words[wordIdx];
     let timer: ReturnType<typeof setTimeout>;
     if (phase === "typing") {
       if (text.length < word.length) {
         timer = setTimeout(() => setText(word.slice(0, text.length + 1)), 70);
       } else {
-        // fully typed — pause 1300ms then start deleting
         timer = setTimeout(() => setPhase("deleting"), 1300);
       }
     } else {
       if (text.length > 0) {
         timer = setTimeout(() => setText(word.slice(0, text.length - 1)), 40);
       } else {
-        // fully deleted — pause 260ms then advance to next word
         timer = setTimeout(() => {
-          setWordIdx((i) => (i + 1) % TYPE_WORDS.length);
+          setWordIdx((i) => (i + 1) % words.length);
           setPhase("typing");
         }, 260);
       }
     }
     return () => clearTimeout(timer);
-  }, [text, phase, wordIdx]);
+  }, [text, phase, wordIdx, words]);
 
   return (
     <div style={{
@@ -228,13 +274,11 @@ function Typewriter() {
       borderTop: "1px solid rgba(15,23,42,0.1)",
       borderBottom: "1px solid rgba(15,23,42,0.1)",
       padding: "14px 22px",
-      fontSize: 17,
-      color: "#475569",
-      lineHeight: 1.3,
+      fontSize: 17, color: "#475569", lineHeight: 1.3,
       fontFamily: "var(--font-fraunces), Georgia, serif",
       fontWeight: 500,
     }}>
-      Temukan{" "}
+      {t.homeAltTypewriterPre}{" "}
       <span style={{ color: "#0e1d4f", fontWeight: 700, fontStyle: "italic" }}>
         {text}
         <span style={{
@@ -245,14 +289,12 @@ function Typewriter() {
           transition: "opacity .08s linear",
         }} />
       </span>
-      {" "}yang tepat.
+      {" "}{t.homeAltTypewriterPost}
     </div>
   );
 }
 
 // ─── Ico ──────────────────────────────────────────────────────────────────────
-// 24px-viewBox SVG line icons for the Indeks list.
-// Paths verbatim from design handoff home-v1-polished.jsx Ico object.
 const Ico: Record<string, React.ReactNode> = {
   daycare: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -268,8 +310,7 @@ const Ico: Record<string, React.ReactNode> = {
   playground: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 20V8"/>
-      <path d="M5 8l11-3"/>
+      <path d="M5 20V8"/><path d="M5 8l11-3"/>
       <path d="M16 5v8c0 3-2 5-5 5H7"/>
       <path d="M3 20h18"/>
       <path d="M5 11h-2M5 14h-2M5 17h-2"/>
@@ -328,7 +369,6 @@ const Ico: Record<string, React.ReactNode> = {
 };
 
 // ─── StickyHeader ─────────────────────────────────────────────────────────────
-// Wordmark only — no location pill. Not tappable → backdrop-filter is safe.
 function StickyHeader({ visible }: { visible: boolean }) {
   return (
     <div style={{
@@ -341,7 +381,7 @@ function StickyHeader({ visible }: { visible: boolean }) {
       WebkitBackdropFilter: "blur(14px)",
       borderBottom: "1px solid rgba(15,23,42,0.1)",
       padding: "50px 22px 10px",
-      display: "flex", alignItems: "center",
+      display: "flex", alignItems: "center", justifyContent: "center",
     }}>
       <div style={{
         fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -357,9 +397,9 @@ function StickyHeader({ visible }: { visible: boolean }) {
 }
 
 // ─── Masthead ─────────────────────────────────────────────────────────────────
-// 3-col top row: Logo | wordmark stack | avatar + LangToggle
-// Followed immediately by the full-bleed Typewriter band.
 function Masthead({ userInitial }: { userInitial: string }) {
+  const { lang, t } = useLang();
+  const { tier } = useAuth();
   return (
     <>
       <div style={{ padding: "20px 22px 0" }}>
@@ -389,21 +429,25 @@ function Masthead({ userInitial }: { userInitial: string }) {
             </div>
           </div>
 
-          {/* right: avatar pill + lang toggle */}
+          {/* right: [avatar + badge] stacked above lang toggle */}
           <div style={{
             display: "flex", flexDirection: "column",
-            alignItems: "center", gap: 6, flexShrink: 0,
+            alignItems: "flex-end", gap: 6, flexShrink: 0,
           }}>
-            <Link href="/profile" style={{
-              width: 26, height: 26, borderRadius: 999, background: "#0e1d4f",
-              color: "#fff", display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 11, fontWeight: 700,
-              textDecoration: "none",
-              fontFamily: "var(--font-jakarta), sans-serif",
-              touchAction: "manipulation",
-            }}>
-              {userInitial}
-            </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <Link href="/profile" style={{
+                width: 26, height: 26, borderRadius: 999, background: "#0e1d4f",
+                color: "#fff", display: "flex", alignItems: "center",
+                justifyContent: "center", fontSize: 11, fontWeight: 700,
+                textDecoration: "none",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                touchAction: "manipulation",
+                flexShrink: 0,
+              }}>
+                {userInitial}
+              </Link>
+              {tier === "premium" && <PremiumBadge />}
+            </div>
             <LangToggle variant="dark" />
           </div>
         </div>
@@ -413,10 +457,12 @@ function Masthead({ userInitial }: { userInitial: string }) {
           marginTop: 14, fontSize: 12.5, lineHeight: 1.45,
           color: "#475569", maxWidth: 320,
         }}>
-          Direktori cerdas untuk orang tua di{" "}
-          <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>Bintaro</b> dan{" "}
+          {t.homeAltTagline}{" "}
+          <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>Bintaro</b>
+          {" "}{lang === "id" ? "dan" : "&"}{" "}
           <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>BSD</b>.
         </div>
+
       </div>
 
       {/* full-bleed typewriter band — outside the padded div */}
@@ -426,15 +472,14 @@ function Masthead({ userInitial }: { userInitial: string }) {
 }
 
 // ─── FeatureSquare ────────────────────────────────────────────────────────────
-// Photo card with content layer anchored to bottom. No badge, no number.
-// Expanded card gets accent border + shadow, photo zooms, sub text expands.
 function FeatureSquare({
   title, count, sub, photo, tone, accent, expanded, onToggle,
 }: {
-  title: string; count: string; sub: string;
+  title: string; count: number; sub: string;
   photo: string; tone: string; accent: string;
   expanded: boolean; onToggle: () => void;
 }) {
+  const { t } = useLang();
   return (
     <Pressable onClick={onToggle} scale={0.97} style={{
       aspectRatio: "1/1.1", borderRadius: 6, position: "relative",
@@ -472,7 +517,7 @@ function FeatureSquare({
       }}>
         <div style={{
           fontFamily: "var(--font-fraunces), Georgia, serif",
-          fontWeight: 700, fontSize: 24, letterSpacing: -0.5, lineHeight: 1,
+          fontWeight: 700, fontSize: 28, letterSpacing: -0.5, lineHeight: 1,
         }}>{title}</div>
         <div style={{
           fontSize: 10.5, opacity: 0.92, marginTop: 6, lineHeight: 1.35,
@@ -490,7 +535,7 @@ function FeatureSquare({
           }}>
             {count}
             <span style={{ fontSize: 10.5, opacity: 0.95, fontWeight: 700, marginLeft: 4 }}>
-              tempat
+              {t.homeAltTempatUnit}
             </span>
           </span>
           {/* chevron rotates 90° when expanded */}
@@ -509,8 +554,6 @@ function FeatureSquare({
 }
 
 // ─── AreaPills ────────────────────────────────────────────────────────────────
-// Horizontal row of 3 area selector pills (Bintaro / BSD / Semua).
-// Selected pill gets accent background.
 function AreaPills({
   category, value, onPick,
 }: {
@@ -518,16 +561,18 @@ function AreaPills({
   value: AreaKey | null;
   onPick: (k: AreaKey) => void;
 }) {
+  const { t } = useLang();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{
-        fontSize: 9.5, fontWeight: 800, letterSpacing: 1, color: "#94a3b8",
+        fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8",
       }}>
-        DI MANA?
+        {t.homeAltAreaWhere}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {AREAS.map((a) => {
           const active = value === a.key;
+          const displayLabel = a.key === "Semua" ? t.homeAltAreaAll : a.key;
           return (
             <Pressable
               key={a.key}
@@ -552,7 +597,7 @@ function AreaPills({
                 color: active ? "#fff" : "#0e1d4f",
                 whiteSpace: "nowrap",
               }}>
-                {a.key}
+                {displayLabel}
               </span>
               <span style={{
                 fontSize: 11, fontWeight: 700,
@@ -570,10 +615,6 @@ function AreaPills({
 }
 
 // ─── RailArrow ────────────────────────────────────────────────────────────────
-// Circular nav button on the left/right of the age-band rail.
-// Uses a plain <button> (not Pressable) so we can combine translateY(-50%)
-// with the press transform without conflicts. This is position:absolute inside
-// a position:relative container (not fixed), so iOS transform rule does not apply.
 function RailArrow({
   side, show, onClick,
 }: {
@@ -603,7 +644,7 @@ function RailArrow({
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
         padding: 0,
-        marginTop: -4, /* compensate for 8px rail padding-bottom */
+        marginTop: -4,
       } as React.CSSProperties}
     >
       <span style={{
@@ -617,14 +658,13 @@ function RailArrow({
 }
 
 // ─── AgeBands ─────────────────────────────────────────────────────────────────
-// Horizontally-scrollable rail of band pills. Edge-fades + arrow nudgers.
-// count per band = max(1, round(baseCount × areaMultiplier))
 function AgeBands({
   category, area,
 }: {
   category: CategoryKey;
   area: AreaKey;
 }) {
+  const { lang, t } = useLang();
   const railRef = useRef<HTMLDivElement>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(true);
@@ -647,20 +687,23 @@ function AgeBands({
     el.scrollBy({ left: dir * 140, behavior: "smooth" });
   };
 
-  const mult = AREA_MULT[area] ?? 1;
-  const data = category === "sekolah" ? SCHOOL_LEVELS : KURSUS_AGES;
-  const eyebrow = category === "sekolah" ? "JENJANG SEKOLAH" : "UNTUK USIA BERAPA?";
+  const isSchool  = category === "sekolah";
+  const eyebrow   = isSchool ? t.homeAltSchoolLevel : t.homeAltAgeQuestion;
+
+  // Both schools and LC now use real counts from mockData — no multiplier.
+  const schoolBands = SCHOOL_LEVELS_DATA[lang];
+  const lcBands     = LC_AGE_BANDS[lang];
 
   return (
     <div style={{ position: "relative" }}>
       <div style={{
-        fontSize: 9.5, fontWeight: 800, letterSpacing: 1,
+        fontSize: 13, fontWeight: 800, letterSpacing: 1,
         color: "#94a3b8", marginBottom: 8,
       }}>
         {eyebrow}
       </div>
       <div style={{ position: "relative" }}>
-        {/* scrollable rail — negative margin makes it full-bleed */}
+        {/* scrollable rail */}
         <div
           ref={railRef}
           onScroll={updateArrows}
@@ -674,48 +717,77 @@ function AgeBands({
             paddingLeft: 22, paddingRight: 22,
           } as React.CSSProperties}
         >
-          {data.map((b) => {
-            const n = Math.max(1, Math.round(b.count * mult));
-            return (
-              <Pressable
-                key={b.label}
-                scale={0.94}
-                style={{
-                  flexShrink: 0,
-                  display: "flex", flexDirection: "column", gap: 4,
-                  padding: "11px 14px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(15,23,42,0.14)",
-                  background: "#fff",
-                  minWidth: 96,
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{
-                    width: 8, height: 8, borderRadius: 999,
-                    background: b.dot,
-                    boxShadow: `0 0 0 3px ${b.dot}22`,
-                    flexShrink: 0,
-                  }} />
-                  <span style={{
-                    fontFamily: "var(--font-fraunces), Georgia, serif",
-                    fontSize: 14, fontWeight: 700, color: "#0e1d4f",
-                    letterSpacing: -0.2, whiteSpace: "nowrap",
-                  }}>
-                    {b.label}
-                  </span>
-                </div>
-                <div style={{
-                  fontSize: 10, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap",
-                }}>
-                  {b.sub} · <b style={{ color: "#475569", fontWeight: 700 }}>{n}</b> tempat
-                </div>
-              </Pressable>
-            );
-          })}
+          {isSchool
+            ? schoolBands.map((b) => {
+                const n = countSchoolByGradeAndArea(b.key, area);
+                return (
+                  <Link
+                    key={b.key}
+                    href={`/schools?grade=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
+                    style={{
+                      flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
+                      padding: "11px 14px", borderRadius: 12,
+                      border: "1px solid rgba(15,23,42,0.14)", background: "#fff", minWidth: 96,
+                      textDecoration: "none", color: "inherit",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span style={{
+                        width: 8, height: 8, borderRadius: 999, background: b.dot,
+                        boxShadow: `0 0 0 3px ${b.dot}22`, flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontFamily: "var(--font-fraunces), Georgia, serif",
+                        fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                        letterSpacing: -0.2, whiteSpace: "nowrap",
+                      }}>
+                        {b.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>
+                      {b.sub} · <b style={{ color: "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                    </div>
+                  </Link>
+                );
+              })
+            : lcBands.map((b) => {
+                const n = countLCByAgeAndArea(b.key, area);
+                return (
+                  <Link
+                    key={b.key}
+                    href={`/learning-centers?age=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
+                    style={{
+                      flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
+                      padding: "11px 14px", borderRadius: 12,
+                      border: "1px solid rgba(15,23,42,0.14)", background: "#fff", minWidth: 96,
+                      textDecoration: "none", color: "inherit",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span style={{
+                        width: 8, height: 8, borderRadius: 999, background: b.dot,
+                        boxShadow: `0 0 0 3px ${b.dot}22`, flexShrink: 0,
+                      }} />
+                      <span style={{
+                        fontFamily: "var(--font-fraunces), Georgia, serif",
+                        fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                        letterSpacing: -0.2, whiteSpace: "nowrap",
+                      }}>
+                        {b.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>
+                      {b.sub} · <b style={{ color: "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                    </div>
+                  </Link>
+                );
+              })
+          }
         </div>
 
-        {/* edge fade — left. Warm cream bg to match page background. */}
+        {/* edge fade — left. Warm cream bg. */}
         <div style={{
           position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
           background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
@@ -736,11 +808,12 @@ function AgeBands({
 }
 
 // ─── FeaturePair ──────────────────────────────────────────────────────────────
-// Two feature cards + two-tier peek-sheet (tier 1: area pills, tier 2: age bands).
-// Tap card → show area pills. Pick area → show age bands below.
 function FeaturePair() {
-  const [open, setOpen]   = useState<CategoryKey | null>(null);
-  const [area, setArea]   = useState<AreaKey | null>(null);
+  const { t } = useLang();
+  const { tier, loaded } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState<CategoryKey | null>(null);
+  const [area, setArea] = useState<AreaKey | null>(null);
 
   const toggleCard = (k: CategoryKey) => {
     if (open === k) {
@@ -748,42 +821,53 @@ function FeaturePair() {
       setArea(null);
     } else {
       setOpen(k);
-      setArea(null); // reset area when switching cards
+      setArea(null);
     }
   };
+
+  const schoolTotal = countCat("school");
+  const lcTotal     = countCat("learning-center");
 
   return (
     <div style={{ padding: "28px 22px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
-          FITUR UTAMA · KAMU CARI APA?
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
+          {t.homeAltFeatureKicker}
         </div>
         <Link href="/explore" style={{
-          fontSize: 10, fontWeight: 700, color: "var(--tk-accent, #c47a14)",
+          fontSize: 12, fontWeight: 700, color: "var(--tk-accent, #c47a14)",
           letterSpacing: 0.4, textDecoration: "none",
         }}>
-          Lihat semua →
+          {t.homeAltSeeAll}
         </Link>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
         <FeatureSquare
-          title="Sekolah" count="9"
-          sub="TK · SD · SMP · SMA — kurikulum nasional, internasional & alam."
+          title={t.catSchool}
+          count={schoolTotal}
+          sub={t.homeAltSchoolSub}
           photo={P.sekolah}
           tone="linear-gradient(165deg,rgba(58,100,238,0.85) 0%,rgba(30,63,176,0.92) 100%)"
           accent="#f6b545"
           expanded={open === "sekolah"}
-          onToggle={() => toggleCard("sekolah")}
+          onToggle={() => {
+            if (loaded && tier === "guest") { router.push("/schools?view=results"); return; }
+            toggleCard("sekolah");
+          }}
         />
         <FeatureSquare
-          title="Tempat Kursus" count="6"
-          sub="English · Math · Art · Music · Coding — kelas privat & grup."
+          title={t.lcTitle}
+          count={lcTotal}
+          sub={t.homeAltKursusSub}
           photo={P.kursus}
           tone="linear-gradient(165deg,rgba(42,125,98,0.85) 0%,rgba(31,155,106,0.92) 100%)"
           accent="#7af0b6"
           expanded={open === "kursus"}
-          onToggle={() => toggleCard("kursus")}
+          onToggle={() => {
+            if (loaded && tier === "guest") { router.push("/learning-centers?view=results"); return; }
+            toggleCard("kursus");
+          }}
         />
       </div>
 
@@ -819,16 +903,28 @@ function FeaturePair() {
 }
 
 // ─── IndexList ────────────────────────────────────────────────────────────────
-// Icon-driven list of remaining categories (replaces previous numbered list).
 function IndexList() {
+  const { lang, t } = useLang();
+
+  const INDEX_CATS = [
+    { icon: "daycare",    name: t.catDaycare,       count: countCat("daycare"),        href: "/daycare"        },
+    { icon: "playground", name: t.catPlayground,    count: countCat("playground"),     href: "/playgrounds"    },
+    { icon: "clinic",     name: t.catClinic,        count: countCat("clinic"),         href: "/clinics"        },
+    { icon: "cafe",       name: t.catCafe,          count: countCat("cafe"),           href: "/cafes"          },
+    { icon: "animals",    name: t.catMiniZoo,       count: countCat("mini-zoo"),       href: "/mini-zoo"       },
+    { icon: "pool",       name: t.catSwimmingPool,  count: countCat("swimming-pool"),  href: "/swimming-pools" },
+    { icon: "books",      name: t.catBookstore,     count: countCat("bookstore"),      href: "/bookstores"     },
+    { icon: "more",       name: t.homeOthers,       count: null,                       href: "/others"         },
+  ];
+
   return (
     <div style={{ padding: "28px 22px 0" }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
-        KATEGORI LAIN
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
+        {t.homeAltCatOther}
       </div>
       <div style={{ marginTop: 12, borderTop: "1px solid rgba(15,23,42,0.18)" }}>
         {INDEX_CATS.map(({ icon, name, count, href }) => (
-          <Link key={name} href={href} style={{
+          <Link key={href} href={href} style={{
             display: "flex", alignItems: "center", gap: 14, padding: "11px 0",
             borderBottom: "1px solid rgba(15,23,42,0.08)",
             textDecoration: "none", color: "inherit",
@@ -848,14 +944,14 @@ function IndexList() {
             <span style={{
               flex: 1,
               fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 16, fontWeight: 600, color: "#0e1d4f", letterSpacing: -0.3,
+              fontSize: 19, fontWeight: 600, color: "#0e1d4f", letterSpacing: -0.3,
               whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               minWidth: 0,
             }}>
               {name}
             </span>
             <span style={{ fontSize: 10.5, color: "#94a3b8", fontWeight: 600, flexShrink: 0 }}>
-              {count}
+              {count !== null ? `${count} ${t.homeAltTempatUnit}` : (lang === "id" ? "+ 4 kategori" : "+ 4 categories")}
             </span>
             <Chev size={14} color="#94a3b8" stroke={2} />
           </Link>
@@ -867,10 +963,9 @@ function IndexList() {
 
 // ─── CoverStoryCard ───────────────────────────────────────────────────────────
 function CoverStoryCard({
-  place, idx, saved, onToggleSave,
+  place, saved, onToggleSave,
 }: {
   place: { id: string; name: string; area: string; photo: string; rating: number; reviews: number };
-  idx: number;
   saved: boolean;
   onToggleSave: () => void;
 }) {
@@ -888,7 +983,7 @@ function CoverStoryCard({
     }}>
       {/* full-bleed photo — no white body below */}
       <div style={{ aspectRatio: "4/3", position: "relative", overflow: "clip" }}>
-        <Link href={`/place/${place.id}`} style={{ display: "block", textDecoration: "none" }}>
+        <Link href={`/place/${place.id}`} style={{ display: "block", height: "100%", textDecoration: "none" }}>
           <img src={place.photo} alt={place.name} style={{
             position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
           }} />
@@ -941,6 +1036,7 @@ function CoverStoryCard({
 
 // ─── CoverStory — 2×2 grid ────────────────────────────────────────────────────
 function CoverStory() {
+  const { t } = useLang();
   const featured = places.filter((p) => p.isFeatured).slice(0, 4);
   const cards = featured.length >= 4
     ? featured
@@ -952,14 +1048,14 @@ function CoverStory() {
   return (
     <div style={{ padding: "28px 22px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
-          EDITOR&apos;S PICK · TEMPAT UNGGULAN
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
+          {t.homeAltEditorPick}
         </div>
         <Link href="/explore" style={{
-          fontSize: 10, fontWeight: 700, color: "var(--tk-accent, #c47a14)",
+          fontSize: 12, fontWeight: 700, color: "var(--tk-accent, #c47a14)",
           letterSpacing: 0.4, textDecoration: "none",
         }}>
-          Lihat semua →
+          {t.homeAltSeeAll}
         </Link>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
@@ -967,7 +1063,6 @@ function CoverStory() {
           <CoverStoryCard
             key={place.id}
             place={place}
-            idx={i}
             saved={saved[i]}
             onToggleSave={() => toggle(i)}
           />
@@ -979,14 +1074,17 @@ function CoverStory() {
 
 // ─── ArticleList ──────────────────────────────────────────────────────────────
 function ArticleList() {
+  const { lang, t } = useLang();
+  const displayArticles = articles.slice(0, 3).map((a) => localizeArticle(a, lang));
+
   return (
     <div style={{ padding: "28px 22px 0" }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
-        BERITA &amp; ARTIKEL
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1.2, color: "#94a3b8" }}>
+        {t.homeAltNewsKicker}
       </div>
       <div style={{ marginTop: 14, borderTop: "1px solid rgba(15,23,42,0.18)" }}>
-        {ARTICLES.map(({ tag, title, meta, photo }) => (
-          <Link key={title} href="/berita" style={{
+        {displayArticles.map((article) => (
+          <Link key={article.id} href={`/berita/${article.id}`} style={{
             padding: "14px 0",
             borderBottom: "1px solid rgba(15,23,42,0.08)",
             display: "flex", gap: 12, alignItems: "flex-start",
@@ -999,30 +1097,52 @@ function ArticleList() {
                 fontSize: 9.5, fontWeight: 800,
                 color: "var(--tk-accent, #c47a14)", letterSpacing: 0.7,
               }}>
-                {tag}
+                {article.category.toUpperCase()}
               </div>
               <div style={{
                 fontFamily: "var(--font-fraunces), Georgia, serif",
                 fontSize: 16, fontWeight: 700, color: "#0e1d4f",
                 letterSpacing: -0.2, marginTop: 4, lineHeight: 1.2,
               }}>
-                {title}
+                {article.title}
               </div>
-              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>{meta}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>
+                {article.date} · {article.readTime}
+              </div>
             </div>
-            <img src={photo} alt="" style={{
+            <img src={article.photo} alt="" style={{
               width: 72, height: 72, objectFit: "cover", borderRadius: 4,
               border: "1px solid rgba(15,23,42,0.08)", flexShrink: 0,
             }} />
           </Link>
         ))}
       </div>
+
+      {/* See all articles link */}
+      <Link href="/berita" style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        marginTop: 16,
+        padding: "11px 0",
+        borderRadius: 8,
+        border: "1px solid rgba(15,23,42,0.14)",
+        background: "#fff",
+        fontSize: 13, fontWeight: 700,
+        color: "var(--tk-accent, #c47a14)",
+        textDecoration: "none",
+        touchAction: "manipulation",
+        WebkitTapHighlightColor: "transparent",
+        gap: 6,
+      }}>
+        {t.newsSeeAll}
+        <Chev size={13} color="var(--tk-accent, #c47a14)" stroke={2.5} />
+      </Link>
     </div>
   );
 }
 
 // ─── DaftarCard ───────────────────────────────────────────────────────────────
 function DaftarCard() {
+  const { t } = useLang();
   return (
     <div style={{ padding: "24px 22px 0" }}>
       <div style={{
@@ -1033,13 +1153,13 @@ function DaftarCard() {
           <div style={{
             fontSize: 9.5, fontWeight: 800, letterSpacing: 0.6, color: "#94a3b8",
           }}>
-            UNTUK PEMILIK TEMPAT
+            {t.homeOwnerKicker.toUpperCase()}
           </div>
           <div style={{
             fontFamily: "var(--font-fraunces), Georgia, serif",
             fontWeight: 700, fontSize: 18, color: "#0e1d4f", marginTop: 4, letterSpacing: -0.2,
           }}>
-            Daftarkan tempatmu.
+            {t.homeAltDaftarTitle}
           </div>
         </div>
         <Link href="/list-your-place" style={{
@@ -1049,7 +1169,7 @@ function DaftarCard() {
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
         }}>
-          Daftar →
+          {t.homeAltDaftarBtn}
         </Link>
       </div>
     </div>
@@ -1068,45 +1188,6 @@ function FooterMark() {
   );
 }
 
-// ─── TabBar ───────────────────────────────────────────────────────────────────
-// Pinned at bottom via left/right — NO transform centering (iOS WebKit rule #1)
-function TabBar() {
-  const tabs = [
-    { href: "/",         label: "Beranda",   Icon: Home,     active: true  },
-    { href: "/explore",  label: "Jelajah",   Icon: Search,   active: false },
-    { href: "/saved",    label: "Tersimpan", Icon: Bookmark, active: false },
-    { href: "/profile",  label: "Profil",    Icon: User,     active: false },
-  ];
-  return (
-    <nav style={{
-      position: "fixed",
-      bottom: 14, left: 14, right: 14,
-      margin: "0 auto", maxWidth: 420,
-      background: "#fff", borderRadius: 28, padding: 6,
-      border: "1px solid rgba(15,23,42,0.08)",
-      boxShadow: "0 18px 40px rgba(15,23,42,0.12)",
-      display: "flex", alignItems: "center",
-      zIndex: 50,
-    }}>
-      {tabs.map(({ href, label, Icon, active }) => (
-        <Link key={href} href={href} style={{
-          flex: 1, padding: "8px 6px", textAlign: "center", borderRadius: 22,
-          background: active ? "#0e1d4f" : "transparent",
-          color: active ? "#fff" : "#64748b",
-          fontSize: 11, fontWeight: 700,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-          textDecoration: "none",
-          transition: "background .25s ease, color .25s ease",
-          touchAction: "manipulation",
-          WebkitTapHighlightColor: "transparent",
-        }}>
-          <Icon size={14} strokeWidth={active ? 2.5 : 2} />
-          {label}
-        </Link>
-      ))}
-    </nav>
-  );
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function HomeAltPage() {
@@ -1124,11 +1205,8 @@ export default function HomeAltPage() {
 
   return (
     // Outer wrapper sets --tk-accent to emerald for this route only.
-    // CSS custom properties cascade through the DOM tree — fixed-position
-    // children (StickyHeader, TabBar) inherit the variable from here.
     <div style={{ "--tk-accent": "#2e8a5a" } as React.CSSProperties}>
       <style>{`
-        /* Entrance animation */
         @keyframes alt-home-enter {
           from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -1136,10 +1214,8 @@ export default function HomeAltPage() {
         .alt-home-content {
           animation: alt-home-enter 0.5s ease both;
         }
-        /* Press ripple for Link rows */
         .alt-press-row { transition: opacity .12s ease; }
         .alt-press-row:active { opacity: 0.7; }
-        /* Hide scrollbar on age-band rail */
         .tk-age-rail::-webkit-scrollbar { display: none; }
       `}</style>
 
@@ -1167,7 +1243,7 @@ export default function HomeAltPage() {
         <FooterMark />
       </div>
 
-      <TabBar />
+      <BottomNav active="home" />
     </div>
   );
 }

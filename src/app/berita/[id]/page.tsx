@@ -1,18 +1,22 @@
-"use client";
+﻿"use client";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { ChevronLeft, Clock } from "lucide-react";
-import { articles } from "@/lib/articles";
+import { articles, localizeArticle } from "@/lib/articles";
 import { BottomNav } from "@/components/BottomNav";
 import { ActionButton } from "@/components/ActionButton";
+import { useLang } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
+// Keyed by Indonesian category name (stable key)
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   "Parenting":       { bg: "#fde9c8", color: "#b45309" },
-  "Sekolah":         { bg: "#dbeafe", color: "#1d4ed8" },
+  "Sekolah":         { bg: "#e6f4ed", color: "#2e8a5a" },
   "Aktivitas":       { bg: "#d4ead7", color: "#15803d" },
   "Tumbuh Kembang":  { bg: "#fce7f3", color: "#be185d" },
   "Tips Orang Tua":  { bg: "#ede9fe", color: "#7c3aed" },
-  "Pendidikan":      { bg: "#dbeafe", color: "#1d4ed8" },
+  "Pendidikan":      { bg: "#e6f4ed", color: "#2e8a5a" },
   "Kesehatan":       { bg: "#d1fae5", color: "#065f46" },
   "Review":          { bg: "#f3dccb", color: "#c47a14" },
 };
@@ -20,42 +24,47 @@ const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
 export default function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const article = articles.find(a => a.id === id);
+  const { t, lang } = useLang();
+  useAuth(); // needed for PremiumBadge
 
-  if (!article) {
+  const raw = articles.find(a => a.id === id);
+
+  if (!raw) {
     return (
-      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc",
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         padding: "0 24px", gap: 16 }}>
         <span style={{ fontSize: 48 }}>📰</span>
         <p style={{ fontFamily: "var(--font-fraunces),Georgia,serif", fontSize: 20, fontWeight: 600,
-          color: "#1e3a5f", textAlign: "center", margin: 0 }}>
-          Artikel tidak ditemukan
+          color: "#0e1d4f", textAlign: "center", margin: 0 }}>
+          {t.articleNotFound}
         </p>
         <ActionButton
           onClick={() => router.back()}
           style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px",
-            borderRadius: 12, background: "#1d4ed8", color: "#fff",
+            borderRadius: 12, background: "#2e8a5a", color: "#fff",
             fontSize: 13, fontWeight: 700 }}>
           <ChevronLeft size={14} />
-          Kembali
+          {t.articleBackBtn}
         </ActionButton>
       </div>
     );
   }
 
-  const catStyle = CATEGORY_COLORS[article.category] ?? { bg: "#e8eaef", color: "#64748b" };
+  const article = localizeArticle(raw, lang);
+  // Color lookup always uses the Indonesian key (stable)
+  const catStyle = CATEGORY_COLORS[raw.category] ?? { bg: "#e8eaef", color: "#64748b" };
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc", paddingBottom: 110, paddingTop: 52 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8", paddingBottom: 110, paddingTop: 52 }}>
 
       {/* ── Sticky top bar — blue gradient ───────────────────────────── */}
       <div style={{
         position: "fixed", top: 0, left: 0, right: 0, height: 52, zIndex: 50,
-        background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
       }}>
         <div style={{ maxWidth: 448, margin: "0 auto", height: "100%",
-          display: "flex", alignItems: "center", padding: "0 12px" }}>
+          display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
           <ActionButton onClick={() => router.back()} style={{
             display: "inline-flex", alignItems: "center", gap: 4,
             padding: "7px 12px", borderRadius: 999,
@@ -64,8 +73,9 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
             border: "1px solid rgba(255,255,255,0.22)",
           }}>
             <ChevronLeft size={14} strokeWidth={2.5} color="#fff" />
-            Back
+            {t.articleBackBtn}
           </ActionButton>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -155,7 +165,7 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
         {/* Bottom category tag */}
         <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid #e2e8f0" }}>
           <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 600, letterSpacing: 0.4,
-            textTransform: "uppercase" }}>Topik</span>
+            textTransform: "uppercase" }}>{t.articleTopicLabel}</span>
           <div style={{ marginTop: 8 }}>
             <span style={{
               display: "inline-block", padding: "5px 12px", borderRadius: 999,

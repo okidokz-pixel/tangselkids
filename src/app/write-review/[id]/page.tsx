@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
@@ -17,7 +17,7 @@ const MAX_CHARS = 500;
 
 // ── Confetti ──────────────────────────────────────────────────────────────────
 function Confetti() {
-  const COLORS = ["#1D4ED8", "#FBBF24", "#EF4444", "#10B981", "#8B5CF6", "#F97316", "#EC4899"];
+  const COLORS = ["#2e8a5a", "#FBBF24", "#EF4444", "#10B981", "#8B5CF6", "#F97316", "#EC4899"];
   const particles = useMemo(() =>
     Array.from({ length: 90 }, (_, i) => ({
       id: i,
@@ -110,7 +110,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-md mx-auto flex flex-col items-center justify-center min-h-screen gap-4 px-8 text-center">
         <p className="text-4xl">😕</p>
         <p className="font-jakarta text-gray-500 text-sm">{t.pdNotFound}</p>
-        <button onClick={() => router.back()} className="px-6 py-2 rounded-full text-white text-sm font-jakarta font-semibold" style={{ background: "#1D4ED8" }}>
+        <button onClick={() => router.back()} className="px-6 py-2 rounded-full text-white text-sm font-jakarta font-semibold" style={{ background: "#2e8a5a" }}>
           {t.pdGoBack}
         </button>
       </div>
@@ -178,7 +178,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 <Star size={28} fill="#FBBF24" stroke="none" />
               </div>
             </div>
-            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 17, fontWeight: 700, color: "#1E3A5F", textAlign: "center", margin: "0 0 12px" }}>
+            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 17, fontWeight: 700, color: "#0e1d4f", textAlign: "center", margin: "0 0 12px" }}>
               Yakin dengan rating ini?
             </p>
             <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13.5, color: "#4B5563", lineHeight: 1.6, textAlign: "center", margin: "0 0 24px" }}>
@@ -189,7 +189,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               onClick={goToSuccess}
               style={{
                 width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700,
                 cursor: "pointer", marginBottom: 10, textAlign: "center",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
@@ -216,7 +216,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
       {/* ── Header ── */}
       <div
         className="px-5 pt-12 pb-6"
-        style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #1D4ED8 100%)", borderRadius: "0 0 32px 32px" }}
+        style={{ background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)", borderRadius: "0 0 32px 32px" }}
       >
         <div className="flex items-center gap-3">
           <button
@@ -243,12 +243,12 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
           <div className="space-y-5">
             <div>
               <p className="font-jakarta text-sm font-semibold text-gray-400 mb-1">Ulasanmu untuk</p>
-              <h2 className="text-2xl font-bold text-[#1E3A5F] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                 {place.name}
               </h2>
             </div>
 
-            <div className="rounded-2xl p-4 space-y-3" style={{ background: "#F0F9FF", border: "1.5px solid #BAE6FD" }}>
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "#e6f4ed", border: "1.5px solid #a7d4bc" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span className="font-jakarta font-semibold text-sm text-gray-800">{existingReview.name}</span>
                 <span className="font-jakarta text-xs text-gray-400">{existingReview.date}</span>
@@ -268,7 +268,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               onClick={startEdit}
               style={{
                 width: "100%", padding: "14px 0", borderRadius: 16,
-                background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)", color: "#fff",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700,
                 cursor: "pointer", textAlign: "center", border: "none",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
@@ -300,7 +300,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               <p className="font-jakarta text-sm font-semibold text-gray-400 mb-1">
                 {isEditing ? t.reviewEditTitle : t.reviewFormTitle}
               </p>
-              <h2 className="text-2xl font-bold text-[#1E3A5F] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                 {place.name}
               </h2>
             </div>
@@ -316,7 +316,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nama kamu"
                 className="w-full px-4 py-3 rounded-2xl border-2 font-jakarta text-sm text-gray-800 outline-none"
-                style={{ borderColor: name ? "#1D4ED8" : "#E5E7EB" }}
+                style={{ borderColor: name ? "#2e8a5a" : "#E5E7EB" }}
               />
             </div>
 
@@ -357,7 +357,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 rows={6}
                 maxLength={MAX_CHARS}
                 className="w-full px-4 py-3 rounded-2xl border-2 font-jakarta text-sm text-gray-800 outline-none resize-none"
-                style={{ borderColor: comment.length > 0 ? "#1D4ED8" : "#E5E7EB" }}
+                style={{ borderColor: comment.length > 0 ? "#2e8a5a" : "#E5E7EB" }}
               />
               <div className="flex items-center justify-between mt-1">
                 <p className="font-jakarta text-xs" style={{
@@ -384,7 +384,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               disabled={!canSubmit}
               className="w-full py-3.5 rounded-2xl text-white font-jakarta font-bold text-sm transition-opacity"
               style={{
-                background: "linear-gradient(135deg, #1E3A5F, #1D4ED8)",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                 opacity: canSubmit ? 1 : 0.4,
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               } as React.CSSProperties}
@@ -399,7 +399,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               <Link
                 href="/feedback"
                 className="font-jakarta text-xs font-semibold"
-                style={{ color: "#1D4ED8", textDecoration: "underline", textUnderlineOffset: 3 }}
+                style={{ color: "#2e8a5a", textDecoration: "underline", textUnderlineOffset: 3 }}
               >
                 Beritahu kami →
               </Link>
@@ -410,10 +410,10 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
         {/* ── Success ── */}
         {step === "success" && (
           <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 py-16">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-2" style={{ background: "#DBEAFE" }}>
-              <Check size={40} style={{ color: "#1D4ED8" }} strokeWidth={2.5} />
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-2" style={{ background: "#e6f4ed" }}>
+              <Check size={40} style={{ color: "#2e8a5a" }} strokeWidth={2.5} />
             </div>
-            <h2 className="text-2xl font-bold text-[#1E3A5F]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+            <h2 className="text-2xl font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
               {isEditing ? t.reviewUpdateSuccess : t.reviewSuccess}
             </h2>
             <p className="font-jakarta text-gray-500 text-sm leading-relaxed max-w-xs">{t.reviewSuccessDesc}</p>
@@ -421,7 +421,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               onClick={() => router.back()}
               style={{
                 marginTop: 16, padding: "12px 24px", borderRadius: 999,
-                background: "linear-gradient(135deg, #1A3A6C, #2563EB)",
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                 color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
                 fontSize: 14, fontWeight: 700,
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",

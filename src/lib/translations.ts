@@ -28,7 +28,7 @@ export const translations = {
     homeClinics: "Klinik Tumbuh Kembang",
     homeEvents: "Kafe Ramah Anak",
     homeCafes: "Bermain Dengan Binatang",
-    homeSwimmingPools: "Kolam Renang & Waterparks",
+    homeSwimmingPools: "Kolam Renang",
     homeBookstores: "Toko Buku & Alat Tulis",
     homeOthers: "Lainnya",
     homeListBanner: "Ingin Tempat Kamu Terdaftar?",
@@ -126,6 +126,9 @@ export const translations = {
     // ── FILTER UI (shared) ──────────────────────────────────
     filterChange: "Ubah",
     filterSort: "Urutkan",
+    sortAlpha: "Urut berdasar abjad",
+    sortRating: "Urut berdasar rating",
+    sortPrice: "Urut berdasar harga",
     filterClearAll: "Hapus semua",
     filterPrice: "Harga / Bulan",
     filterGrade: "Jenjang",
@@ -147,12 +150,27 @@ export const translations = {
     filterPoolFeature: "Fasilitas Kolam",
     filterBookCollection: "Koleksi",
     filterDaycareFeature: "Fasilitas",
+    filterUsia: "Usia",
+    filterBiaya: "Biaya",
+    filterHargaTiket: "Harga Tiket",
+    filterBudget: "Budget",
+
+    // ── FTAG PREFIXES ─────────────────────────────────────────
+    ftagCourse: "Kursus",
+    ftagAge: "Usia",
+    ftagPrice: "Harga",
 
     // ── AGE GROUPS ───────────────────────────────────────────
     ageGroupToddler: "Balita (0–3 thn)",
     ageGroupKids: "Anak (4–8 thn)",
     ageGroupTween: "Praremaja (9–12 thn)",
     ageGroupTeen: "Remaja (13+ thn)",
+
+    // ── DAYCARE AGE GROUPS ────────────────────────────────────
+    daycareAgeBaby: "Bayi (0–1 thn)",
+    daycareAgeToddler: "Toddler (1–2 thn)",
+    daycareAgeBalita: "Balita (2–4 thn)",
+    daycareAge4Plus: "Usia 4+ thn",
 
     // ── CARE HOURS ───────────────────────────────────────────
     careHoursFull: "Full-day",
@@ -163,6 +181,10 @@ export const translations = {
     svcTerapiWicara: "Terapi Wicara",
     svcTerapiFisik: "Terapi Fisik",
     svcTerapiOccupasi: "Terapi Occupasi",
+    svcTerapiOkupasi: "Terapi Okupasi",
+    svcFisioterapi: "Fisioterapi",
+    svcSensoriIntegrasi: "Sensori Integrasi (SI)",
+    svcPerilakuABA: "Perilaku / ABA",
     svcPsikologiAnak: "Psikologi Anak",
     svcNeurologiAnak: "Neurologi Anak",
     svcImunisasi: "Imunisasi",
@@ -176,10 +198,26 @@ export const translations = {
     cafeFeatureWifi: "Wifi",
     cafeFeatureAC: "AC",
 
+    // ── CAFE BUDGET ───────────────────────────────────────────
+    budgetMurahSekali: "Murah Sekali",
+    budgetMurah: "Murah",
+    budgetNormal: "Normal",
+    budgetAgakMahal: "Agak Mahal",
+    budgetMahal: "Mahal",
+
     // ── PRICE CATEGORY ───────────────────────────────────────
     priceCatBudget: "Budget (<100k)",
     priceCatMid: "Menengah (100–200k)",
     priceCatPremium: "Premium (200k+)",
+
+    // ── COURSE TYPES ─────────────────────────────────────────
+    courseTypeEnglish: "Bahasa Inggris",
+    courseTypeMath: "Matematika",
+    courseTypeArts: "Seni",
+    courseTypeMusic: "Musik",
+    courseTypeCoding: "Coding/Robotik",
+    courseTypeDance: "Tari & Balet",
+    courseTypeGymnastics: "Gimnastik",
 
     // ── POOL FEATURES ────────────────────────────────────────
     poolFeatureKolamAnak: "Kolam Anak",
@@ -241,6 +279,7 @@ export const translations = {
     bookFilterSub: "Pilih area untuk menemukan toko buku terdekat",
     bookShowResults: (n: number) => `Tampilkan ${n} toko buku →`,
     bookFilterAll: "Semua toko buku",
+    othersShowResults: (n: number) => `Tampilkan ${n} tempat →`,
 
     // ── PLACE DETAIL ────────────────────────────────────────
     pdMonthlyFee: "Biaya Bulanan",
@@ -315,7 +354,7 @@ export const translations = {
     catClinic: "Klinik Tumbuh Kembang",
     catCafe: "Kafe Ramah Anak",
     catMiniZoo: "Bermain Dengan Binatang",
-    catSwimmingPool: "Kolam Renang & Waterparks",
+    catSwimmingPool: "Kolam Renang",
     catBookstore: "Toko Buku & Alat Tulis",
 
     // ── EXPLORE ──────────────────────────────────────────────
@@ -331,7 +370,7 @@ export const translations = {
     exploreClinics: "Klinik Tumbuh Kembang",
     exploreCafes: "Kafe Ramah Anak",
     exploreMiniZoo: "Bermain Dengan Binatang",
-    exploreSwimmingPools: "Kolam Renang & Waterparks",
+    exploreSwimmingPools: "Kolam Renang",
     exploreBookstores: "Toko Buku & Alat Tulis",
     exploreResults: (n: number) => `${n} tempat ditemukan`,
     exploreNoResults: "Tidak ada tempat yang sesuai pencarian.",
@@ -519,6 +558,10 @@ export const translations = {
       { emoji: "⚖️", title: "Bandingkan Sekolah",            desc: "Bandingkan hingga 3 sekolah sekaligus: biaya, kurikulum, jenjang, dan rating." },
       { emoji: "✍️", title: "Tulis Ulasan",                  desc: "Bagikan pengalamanmu dan bantu ribuan orang tua lain membuat keputusan terbaik." },
       { emoji: "❤️", title: "Simpan Tanpa Batas",            desc: "Simpan sebanyak apapun tempat favoritmu. Akun gratis dibatasi 3 tempat." },
+      { emoji: "📞", title: "Kontak Langsung",               desc: "Akses nomor telepon & WhatsApp setiap tempat untuk menghubungi langsung." },
+      { emoji: "📝", title: "Catatan Pribadi",               desc: "Tambahkan catatan pribadimu di setiap tempat — hanya kamu yang bisa lihat." },
+      { emoji: "🎯", title: "Dukungan Prioritas",            desc: "Hubungi tim kami langsung via WhatsApp dan dapatkan respons lebih cepat." },
+      { emoji: "✏️", title: "Sarankan Perubahan Data",       desc: "Temukan data yang tidak akurat? Kamu bisa langsung melaporkannya ke kami." },
       { emoji: "🔔", title: "Notifikasi PSB (Segera Hadir)", desc: "Dapatkan notifikasi otomatis saat sekolah pilihanmu membuka pendaftaran siswa baru." },
     ],
     upgradeCompareGratis:   "Gratis",
@@ -530,6 +573,10 @@ export const translations = {
       ["Kurikulum sekolah",   "—", "✓"],
       ["Bandingkan sekolah",  "—", "✓"],
       ["Tulis ulasan",        "—", "✓"],
+      ["Kontak langsung",     "—", "✓"],
+      ["Catatan pribadi",     "—", "✓"],
+      ["Dukungan prioritas",  "—", "✓"],
+      ["Sarankan perubahan",  "—", "✓"],
       ["Notifikasi PSB",      "—", "✓"],
     ] as [string, string, string][],
     upgradeNoContract:      "Tanpa kontrak · Batalkan kapan saja",
@@ -659,6 +706,86 @@ export const translations = {
     reviewSuccessDesc: "Terima kasih! Ulasanmu akan ditampilkan setelah diverifikasi oleh tim kami.",
     reviewBackToPlace: "Kembali ke halaman tempat",
 
+    // ── CONTACT BUTTONS ──────────────────────────────────────
+    contactCallBtn: "Telepon",
+    contactWhatsAppBtn: "WhatsApp",
+    contactPremiumTooltip: "Fitur Premium — upgrade untuk menghubungi langsung",
+    contactPremiumTitle: "Hubungi Langsung",
+    contactPremiumDesc: "Upgrade ke Premium untuk menelepon atau menghubungi via WhatsApp langsung dari aplikasi.",
+
+    // ── PERSONAL NOTES ───────────────────────────────────────
+    notesSectionTitle: "Catatan Saya",
+    notesPlaceholder: "Tulis catatan pribadimu tentang tempat ini... (maks. 500 karakter)",
+    notesSaveBtn: "Simpan Catatan",
+    notesClearBtn: "Hapus Catatan",
+    notesLastEdited: (date: string) => `Terakhir diubah ${date}`,
+    notesCharsLeft: (n: number) => `${n} karakter tersisa`,
+    notesLockMsg: "Upgrade ke Premium untuk menambahkan catatan pribadi",
+    notesEmptyProfile: "Belum ada catatan. Tambahkan catatan pada tempat yang kamu minati.",
+    notesSaved: "Catatan disimpan!",
+    notesDeleted: "Catatan dihapus.",
+    notesProfileTitle: "Catatan Saya",
+    notesProfileSubtitle: (n: number) => `${n} catatan tersimpan`,
+    profileStatNotes: "Catatan",
+    myNotesPageTitle: "Catatan Saya",
+    myNotesEmpty: "Belum ada catatan. Buka halaman tempat dan tambahkan catatan pribadimu.",
+
+    // ── FAVORITES TOOLTIP ────────────────────────────────────
+    favTooltipAdd:    "Ditambahkan ke Favorit ❤",
+    favTooltipRemove: "Dihapus dari Favorit",
+
+    // ── DISTANCE FROM HOME ───────────────────────────────────
+    distanceFromHome: (km: number) => km < 0.1 ? "Di lokasimu 📍" : `~${km < 10 ? km.toFixed(1) : Math.round(km)} km dari rumahmu`,
+    distanceNoHome:   "Atur alamat rumah untuk lihat jarak →",
+
+    // ── PRIORITY SUPPORT ─────────────────────────────────────
+    supportSectionTitle: "Dukungan Premium",
+    supportWaBtn: "Hubungi via WhatsApp",
+    supportWaDesc: "Respons prioritas untuk member Premium",
+    supportWaMessage: "Halo, saya member Premium TangselKids dan butuh bantuan.",
+    supportLockedMsg: "Upgrade ke Premium untuk akses dukungan prioritas",
+
+    // ── SUGGEST EDITS ─────────────────────────────────────────
+    suggestEditBtn: "Sarankan Perubahan Data",
+    suggestEditTitle: "Sarankan Perubahan",
+    suggestEditSubtitle: "Temukan data yang tidak akurat? Beritahu kami dan kami akan segera cek.",
+    suggestEditFieldLabel: "Bidang yang ingin diperbaiki",
+    suggestEditFieldOptions: ["Nama Tempat", "Alamat", "Nomor Telepon", "Jam Operasional", "Rentang Harga", "Kategori", "Lainnya"],
+    suggestEditDetailsLabel: "Detail perubahan",
+    suggestEditDetailsPlaceholder: "Jelaskan data yang salah dan apa yang seharusnya benar...",
+    suggestEditSubmitBtn: "Kirim via WhatsApp",
+    suggestEditLockMsg: "Upgrade ke Premium untuk menyarankan perubahan data",
+    suggestEditSuccess: "Terima kasih! Saran kamu akan kami tinjau segera.",
+
+    // ── NEWS / ARTICLES ──────────────────────────────────────
+    newsKicker: "Dari Redaksi",
+    newsTitle: "Berita & Artikel",
+    newsSeeAll: "Lihat Semua Artikel",
+    newsPageTitle: "Berita & Artikel",
+    newsArticlesAvailable: (n: number) => `${n} artikel tersedia`,
+    articleNotFound: "Artikel tidak ditemukan",
+    articleBackBtn: "Kembali",
+    articleTopicLabel: "Topik",
+
+    // ── HOME-ALT PAGE ─────────────────────────────────────────
+    homeAltTagline:        "Direktori cerdas untuk orang tua di",
+    homeAltFeatureKicker:  "KAMU CARI APA?",
+    homeAltSchoolSub:      "TK · SD · SMP · SMA — kurikulum nasional, internasional & alam.",
+    homeAltKursusSub:      "English · Math · Art · Music · Coding — kelas privat & grup.",
+    homeAltAreaWhere:      "DI MANA?",
+    homeAltAreaAll:        "Semua",
+    homeAltSchoolLevel:    "JENJANG SEKOLAH",
+    homeAltAgeQuestion:    "UNTUK USIA BERAPA?",
+    homeAltCatOther:       "KATEGORI LAIN",
+    homeAltEditorPick:     "EDITOR'S PICK",
+    homeAltNewsKicker:     "BERITA & ARTIKEL",
+    homeAltDaftarTitle:    "Daftarkan tempatmu.",
+    homeAltDaftarBtn:      "Daftar →",
+    homeAltTempatUnit:     "tempat",
+    homeAltTypewriterPre:  "Temukan",
+    homeAltTypewriterPost: "yang tepat.",
+    homeAltSeeAll:         "Lihat semua →",
+
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Ulasan",
     reviews: "ulasan",
@@ -693,7 +820,7 @@ export const translations = {
     homeClinics: "Special Needs Clinics",
     homeEvents: "Kid-Friendly Cafes",
     homeCafes: "Animal Encounters",
-    homeSwimmingPools: "Swimming Pools & Water Parks",
+    homeSwimmingPools: "Swimming Pools",
     homeBookstores: "Bookstores & Stationery",
     homeOthers: "Others",
     homeListBanner: "Want Your Place Listed?",
@@ -791,6 +918,9 @@ export const translations = {
     // ── FILTER UI (shared) ──────────────────────────────────
     filterChange: "Change",
     filterSort: "Sort",
+    sortAlpha: "Sorted by A–Z",
+    sortRating: "Sorted by rating",
+    sortPrice: "Sorted by price",
     filterClearAll: "Clear all",
     filterPrice: "Price / Month",
     filterGrade: "Grade Level",
@@ -812,12 +942,27 @@ export const translations = {
     filterPoolFeature: "Pool Features",
     filterBookCollection: "Collection",
     filterDaycareFeature: "Features",
+    filterUsia: "Age",
+    filterBiaya: "Fee",
+    filterHargaTiket: "Ticket Price",
+    filterBudget: "Budget",
+
+    // ── FTAG PREFIXES ─────────────────────────────────────────
+    ftagCourse: "Course",
+    ftagAge: "Age",
+    ftagPrice: "Price",
 
     // ── AGE GROUPS ───────────────────────────────────────────
     ageGroupToddler: "Toddler (0–3 yrs)",
     ageGroupKids: "Kids (4–8 yrs)",
     ageGroupTween: "Tween (9–12 yrs)",
     ageGroupTeen: "Teen (13+ yrs)",
+
+    // ── DAYCARE AGE GROUPS ────────────────────────────────────
+    daycareAgeBaby: "Baby (0–1 yr)",
+    daycareAgeToddler: "Toddler (1–2 yrs)",
+    daycareAgeBalita: "Toddler (2–4 yrs)",
+    daycareAge4Plus: "Ages 4+ yrs",
 
     // ── CARE HOURS ───────────────────────────────────────────
     careHoursFull: "Full-day",
@@ -828,6 +973,10 @@ export const translations = {
     svcTerapiWicara: "Speech Therapy",
     svcTerapiFisik: "Physical Therapy",
     svcTerapiOccupasi: "Occupational Therapy",
+    svcTerapiOkupasi: "Occupational Therapy",
+    svcFisioterapi: "Physiotherapy",
+    svcSensoriIntegrasi: "Sensory Integration (SI)",
+    svcPerilakuABA: "Behavioral / ABA",
     svcPsikologiAnak: "Child Psychology",
     svcNeurologiAnak: "Pediatric Neurology",
     svcImunisasi: "Immunization",
@@ -841,10 +990,26 @@ export const translations = {
     cafeFeatureWifi: "Wifi",
     cafeFeatureAC: "Air Conditioning",
 
+    // ── CAFE BUDGET ───────────────────────────────────────────
+    budgetMurahSekali: "Very Budget",
+    budgetMurah: "Budget",
+    budgetNormal: "Moderate",
+    budgetAgakMahal: "Pricier",
+    budgetMahal: "Expensive",
+
     // ── PRICE CATEGORY ───────────────────────────────────────
     priceCatBudget: "Budget (<100k)",
     priceCatMid: "Mid (100–200k)",
     priceCatPremium: "Premium (200k+)",
+
+    // ── COURSE TYPES ─────────────────────────────────────────
+    courseTypeEnglish: "English",
+    courseTypeMath: "Math",
+    courseTypeArts: "Arts",
+    courseTypeMusic: "Music",
+    courseTypeCoding: "Coding/Robotics",
+    courseTypeDance: "Dance & Ballet",
+    courseTypeGymnastics: "Gymnastics",
 
     // ── POOL FEATURES ────────────────────────────────────────
     poolFeatureKolamAnak: "Kids Pool",
@@ -906,6 +1071,7 @@ export const translations = {
     bookFilterSub: "Choose an area to find the nearest bookstore",
     bookShowResults: (n: number) => `Show ${n} bookstores →`,
     bookFilterAll: "All bookstores",
+    othersShowResults: (n: number) => `Show ${n} places →`,
 
     // ── PLACE DETAIL ────────────────────────────────────────
     pdMonthlyFee: "Monthly Fee",
@@ -980,7 +1146,7 @@ export const translations = {
     catClinic: "Special Needs Clinics",
     catCafe: "Kid-Friendly Cafes",
     catMiniZoo: "Animal Encounters",
-    catSwimmingPool: "Swimming Pools & Water Parks",
+    catSwimmingPool: "Swimming Pools",
     catBookstore: "Bookstores & Stationery",
 
     // ── EXPLORE ──────────────────────────────────────────────
@@ -996,7 +1162,7 @@ export const translations = {
     exploreClinics: "Special Needs Clinics",
     exploreCafes: "Kid-Friendly Cafes",
     exploreMiniZoo: "Animal Encounters",
-    exploreSwimmingPools: "Swimming Pools & Water Parks",
+    exploreSwimmingPools: "Swimming Pools",
     exploreBookstores: "Bookstores & Stationery",
     exploreResults: (n: number) => `${n} places found`,
     exploreNoResults: "No places match your search.",
@@ -1184,6 +1350,10 @@ export const translations = {
       { emoji: "⚖️", title: "Compare Schools",               desc: "Compare up to 3 schools at once: cost, curriculum, grade level, and rating." },
       { emoji: "✍️", title: "Write Reviews",                 desc: "Share your experience and help thousands of other parents make the best decisions." },
       { emoji: "❤️", title: "Save Without Limits",           desc: "Save as many favourite places as you want. Free accounts are limited to 3 places." },
+      { emoji: "📞", title: "Direct Contact",                desc: "Access the phone number & WhatsApp of every place to contact them directly." },
+      { emoji: "📝", title: "Personal Notes",                desc: "Add private notes to any place — only visible to you." },
+      { emoji: "🎯", title: "Priority Support",              desc: "Reach our team directly via WhatsApp and get a faster response." },
+      { emoji: "✏️", title: "Suggest Data Edits",            desc: "Found inaccurate data? You can report it directly to us." },
       { emoji: "🔔", title: "PSB Notifications (Coming Soon)", desc: "Get automatic notifications when your chosen school opens its new student enrollment." },
     ],
     upgradeCompareGratis:   "Free",
@@ -1195,6 +1365,10 @@ export const translations = {
       ["School curriculum",  "—", "✓"],
       ["Compare schools",    "—", "✓"],
       ["Write reviews",      "—", "✓"],
+      ["Direct contact",     "—", "✓"],
+      ["Personal notes",     "—", "✓"],
+      ["Priority support",   "—", "✓"],
+      ["Suggest edits",      "—", "✓"],
       ["PSB notifications",  "—", "✓"],
     ] as [string, string, string][],
     upgradeNoContract:      "No contract · Cancel anytime",
@@ -1323,6 +1497,86 @@ export const translations = {
     reviewSuccess: "Review Submitted!",
     reviewSuccessDesc: "Thank you! Your review will appear after verification by our team.",
     reviewBackToPlace: "Back to place page",
+
+    // ── CONTACT BUTTONS ──────────────────────────────────────
+    contactCallBtn: "Call",
+    contactWhatsAppBtn: "WhatsApp",
+    contactPremiumTooltip: "Premium feature — upgrade to contact directly",
+    contactPremiumTitle: "Contact Directly",
+    contactPremiumDesc: "Upgrade to Premium to call or message via WhatsApp directly from the app.",
+
+    // ── PERSONAL NOTES ───────────────────────────────────────
+    notesSectionTitle: "My Notes",
+    notesPlaceholder: "Write your private notes about this place... (max. 500 characters)",
+    notesSaveBtn: "Save Note",
+    notesClearBtn: "Delete Note",
+    notesLastEdited: (date: string) => `Last edited ${date}`,
+    notesCharsLeft: (n: number) => `${n} characters left`,
+    notesLockMsg: "Upgrade to Premium to add private notes",
+    notesEmptyProfile: "No notes yet. Add notes to places you're interested in.",
+    notesSaved: "Note saved!",
+    notesDeleted: "Note deleted.",
+    notesProfileTitle: "My Notes",
+    notesProfileSubtitle: (n: number) => `${n} saved notes`,
+    profileStatNotes: "Notes",
+    myNotesPageTitle: "My Notes",
+    myNotesEmpty: "No notes yet. Open a place page and add your personal notes.",
+
+    // ── FAVORITES TOOLTIP ────────────────────────────────────
+    favTooltipAdd:    "Added to Favorites ❤",
+    favTooltipRemove: "Removed from Favorites",
+
+    // ── DISTANCE FROM HOME ───────────────────────────────────
+    distanceFromHome: (km: number) => km < 0.1 ? "At your location 📍" : `~${km < 10 ? km.toFixed(1) : Math.round(km)} km from your home`,
+    distanceNoHome:   "Set home address to see distance →",
+
+    // ── PRIORITY SUPPORT ─────────────────────────────────────
+    supportSectionTitle: "Premium Support",
+    supportWaBtn: "Contact via WhatsApp",
+    supportWaDesc: "Priority response for Premium members",
+    supportWaMessage: "Hello, I am a TangselKids Premium member and need assistance.",
+    supportLockedMsg: "Upgrade to Premium for priority support access",
+
+    // ── SUGGEST EDITS ─────────────────────────────────────────
+    suggestEditBtn: "Suggest a Data Edit",
+    suggestEditTitle: "Suggest an Edit",
+    suggestEditSubtitle: "Found inaccurate data? Let us know and we'll review it.",
+    suggestEditFieldLabel: "Field to correct",
+    suggestEditFieldOptions: ["Place Name", "Address", "Phone Number", "Opening Hours", "Price Range", "Category", "Other"],
+    suggestEditDetailsLabel: "Change details",
+    suggestEditDetailsPlaceholder: "Describe what's wrong and what the correct information should be...",
+    suggestEditSubmitBtn: "Send via WhatsApp",
+    suggestEditLockMsg: "Upgrade to Premium to suggest data edits",
+    suggestEditSuccess: "Thank you! We'll review your suggestion shortly.",
+
+    // ── NEWS / ARTICLES ──────────────────────────────────────
+    newsKicker: "From the Editors",
+    newsTitle: "News & Articles",
+    newsSeeAll: "See All Articles",
+    newsPageTitle: "News & Articles",
+    newsArticlesAvailable: (n: number) => `${n} articles available`,
+    articleNotFound: "Article not found",
+    articleBackBtn: "Back",
+    articleTopicLabel: "Topic",
+
+    // ── HOME-ALT PAGE ─────────────────────────────────────────
+    homeAltTagline:        "Smart directory for parents in",
+    homeAltFeatureKicker:  "WHAT ARE YOU LOOKING FOR?",
+    homeAltSchoolSub:      "Preschool to High School — national, international & nature-based.",
+    homeAltKursusSub:      "English · Math · Art · Music · Coding — private & group classes.",
+    homeAltAreaWhere:      "WHERE?",
+    homeAltAreaAll:        "All",
+    homeAltSchoolLevel:    "SCHOOL LEVEL",
+    homeAltAgeQuestion:    "FOR WHICH AGE?",
+    homeAltCatOther:       "OTHER CATEGORIES",
+    homeAltEditorPick:     "EDITOR'S PICK",
+    homeAltNewsKicker:     "NEWS & ARTICLES",
+    homeAltDaftarTitle:    "List your place.",
+    homeAltDaftarBtn:      "List →",
+    homeAltTempatUnit:     "places",
+    homeAltTypewriterPre:  "Find the",
+    homeAltTypewriterPost: "that's right for you.",
+    homeAltSeeAll:         "View all →",
 
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Reviews",

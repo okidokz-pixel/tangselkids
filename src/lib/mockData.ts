@@ -18,7 +18,7 @@ export type TangselKidsRating = {
 
 export type Place = {
   id: string;
-  category: "school" | "learning-center" | "daycare" | "playground" | "clinic" | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore";
+  category: "school" | "learning-center" | "daycare" | "playground" | "clinic" | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore" | "other";
   name: string;
   area: string;
   address?: string;
@@ -35,6 +35,7 @@ export type Place = {
   hours: string;
   description: string;
   phone: string;
+  whatsapp?: string;   // if omitted, falls back to phone for WA button
   tag?: string;
   isFeatured?: boolean;
   icon: string;
@@ -1629,6 +1630,649 @@ export const places: Place[] = [
       { name: "Dewi K.", rating: 4, comment: "Koleksi buku impor lengkap. Harga memang lebih mahal tapi worth it untuk kualitas.", date: "Jan 2025" },
     ],
   },
+
+  // ── DAYCARES (gap-fill) ──────────────────────────────────────────────────────
+  {
+    id: "d4",
+    category: "daycare",
+    name: "Pelangi Baby House",
+    area: "Bintaro Sektor 1",
+    address: "Jl. Bintaro Raya No. 33, Sektor 1, Bintaro, Tangerang Selatan",
+    priceMin: 750000,
+    priceMax: 950000,
+    careHours: "half-day",
+    daycareFeatures: ["WhatsApp Report"],
+    daycareAgeGroups: ["Bayi (0–1 thn)", "Toddler (1–2 thn)"],
+    rating: 4.3,
+    reviews: 18,
+    ageRange: "0 – 2 tahun",
+    hours: "07:00 – 13:00",
+    description: "Penitipan bayi dan toddler dengan biaya terjangkau, suasana rumahan, dan pengasuh bersertifikat. Laporan harian via WhatsApp setiap hari.",
+    phone: "0812-1010-2020",
+    icon: "🧸",
+    photo: PH("baby-daycare-home"),
+    photos: [PH("nursery-toddler"), PH("daycare-baby-cozy")],
+    reviewsList: [
+      { name: "Ari K.", rating: 4, comment: "Harga terjangkau, pengasuhnya sabar dan telaten sama bayi. Cocok untuk yang budget terbatas.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "d5",
+    category: "daycare",
+    name: "BSD Little Stars Daycare",
+    area: "BSD City",
+    address: "Ruko Tol Seroja BSD Blok B No. 9, BSD City, Tangerang Selatan",
+    priceMin: 1300000,
+    priceMax: 1800000,
+    careHours: "full-day",
+    daycareFeatures: ["CCTV", "Meals", "WhatsApp Report"],
+    daycareAgeGroups: ["Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)", "Usia 4+ thn"],
+    rating: 4.5,
+    reviews: 22,
+    ageRange: "6 bulan – 5 tahun",
+    hours: "07:00 – 17:00",
+    description: "Daycare full-day di BSD dengan pengasuh berpengalaman, CCTV, dan menu makan siang bergizi. Cocok untuk orang tua yang bekerja di kawasan BSD.",
+    phone: "0813-2020-3030",
+    icon: "🧸",
+    photo: PH("daycare-bsd-bright"),
+    photos: [PH("daycare-play-area"), PH("kids-lunch-daycare")],
+    reviewsList: [
+      { name: "Dewi N.", rating: 5, comment: "Lokasi strategis di BSD, pengasuhnya ramah. Anak saya betah dan mau ditinggal setiap hari.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "d6",
+    category: "daycare",
+    name: "Kinderland BSD Premium",
+    area: "BSD City",
+    address: "Jl. Pahlawan Seribu No. 45, BSD City, Tangerang Selatan",
+    priceMin: 2600000,
+    priceMax: 3500000,
+    careHours: "full-day",
+    daycareFeatures: ["CCTV", "Meals", "CCTV Live Streaming", "WhatsApp Report"],
+    daycareAgeGroups: ["Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)"],
+    rating: 4.7,
+    reviews: 14,
+    ageRange: "3 bulan – 4 tahun",
+    hours: "06:30 – 18:30",
+    description: "Daycare premium BSD dengan CCTV live streaming, rasio pengasuh 1:3, dan program stimulasi bayi terstruktur. Fasilitas modern di lingkungan bersih dan aman.",
+    phone: "0814-3030-4040",
+    icon: "🧸",
+    photo: PH("premium-daycare-bsd"),
+    photos: [PH("nursery-crib-modern"), PH("baby-stimulation-class")],
+    reviewsList: [
+      { name: "Rani P.", rating: 5, comment: "Premium tapi worth it. CCTV bisa dipantau real-time, rasio pengasuh benar-benar terjaga.", date: "Apr 2025" },
+    ],
+  },
+  {
+    id: "d7",
+    category: "daycare",
+    name: "The Cradle Bintaro Premium",
+    area: "Bintaro Sektor 7",
+    address: "Jl. Bintaro Utama VII No. 120, Sektor 7, Tangerang Selatan",
+    priceMin: 3800000,
+    priceMax: 5000000,
+    careHours: "full-day",
+    daycareFeatures: ["CCTV", "Meals", "CCTV Live Streaming", "WhatsApp Report"],
+    daycareAgeGroups: ["Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)", "Usia 4+ thn"],
+    rating: 4.9,
+    reviews: 11,
+    ageRange: "3 bulan – 5 tahun",
+    hours: "06:00 – 19:00",
+    description: "Nursery ultra-premium di Bintaro Sektor 7 dengan rasio pengasuh 1:2 untuk bayi, chef pribadi, kelas stimulasi harian, dan konsultasi psikolog tumbuh kembang bulanan.",
+    phone: "0815-4040-5050",
+    tag: "Premium",
+    icon: "🧸",
+    photo: PH("luxury-nursery"),
+    photos: [PH("premium-baby-room"), PH("daycare-chef-kitchen")],
+    reviewsList: [
+      { name: "Vera S.", rating: 5, comment: "Satu-satunya daycare di Bintaro yang beneran premium. Chef sendiri, pengasuh lulusan terbaik. Harga sebanding!", date: "Mar 2025" },
+    ],
+  },
+
+  // ── PLAYGROUNDS (gap-fill) ───────────────────────────────────────────────────
+  {
+    id: "pg7",
+    category: "playground",
+    name: "Taman Bermain Ciputat",
+    area: "Ciputat",
+    address: "Jl. Ciputat Raya No. 55, Ciputat, Tangerang Selatan",
+    playgroundType: "outdoor",
+    isFree: false,
+    priceMin: 15000,
+    priceMax: 25000,
+    rating: 4.0,
+    reviews: 19,
+    ageRange: "2 – 10 tahun",
+    hours: "07:00 – 18:00",
+    description: "Area bermain outdoor terjangkau di Ciputat. Ayunan, perosotan, dan area pasir cocok untuk anak usia dini.",
+    phone: "-",
+    tag: "Murah Meriah",
+    icon: "🎡",
+    photo: PH("outdoor-playground-budget"),
+    photos: [PH("kids-slide-outdoor"), PH("playground-swing-kids")],
+    reviewsList: [
+      { name: "Tono A.", rating: 4, comment: "Harga murah, cocok untuk main sore hari. Tempatnya cukup terawat.", date: "Jan 2025" },
+    ],
+  },
+  {
+    id: "pg8",
+    category: "playground",
+    name: "FunLand Indoor Bintaro",
+    area: "Bintaro Sektor 9",
+    address: "Jl. Sektor 9 Raya No. 77, Bintaro, Tangerang Selatan",
+    playgroundType: "indoor",
+    isFree: false,
+    priceMin: 220000,
+    priceMax: 300000,
+    rating: 4.5,
+    reviews: 26,
+    ageRange: "1 – 12 tahun",
+    hours: "Sab–Min 10:00–21:00, Sen–Jum 14:00–21:00",
+    description: "Playground indoor multi-zona premium di Bintaro Sektor 9 dengan climbing wall, trampolin, soft play area, dan zona bayi khusus. Cocok untuk ulang tahun anak.",
+    phone: "0816-5050-6060",
+    tag: "Premium",
+    icon: "🎡",
+    photo: PH("premium-indoor-playground"),
+    photos: [PH("indoor-play-premium"), PH("kids-climbing-wall")],
+    reviewsList: [
+      { name: "Lina W.", rating: 5, comment: "Wahana lengkap dan area bayi-nya sangat aman. Anak kami usia 1 tahun pun nyaman bermain.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "pg9",
+    category: "playground",
+    name: "PlayPark BSD Junction",
+    area: "BSD City",
+    address: "Ruko BSD Junction Blok A Lt. 2, BSD City, Tangerang Selatan",
+    playgroundType: "indoor",
+    isFree: false,
+    priceMin: 60000,
+    priceMax: 90000,
+    rating: 4.3,
+    reviews: 31,
+    ageRange: "2 – 10 tahun",
+    hours: "Sen–Min 10:00–21:00",
+    description: "Playground indoor seru di BSD Junction dengan soft play, bola warna-warni, dan mini slide. Pilihan bermain indoor terjangkau untuk keluarga BSD.",
+    phone: "0817-6060-7070",
+    icon: "🎡",
+    photo: PH("indoor-playground-colorful"),
+    photos: [PH("ball-pit-kids"), PH("kids-soft-play")],
+    reviewsList: [
+      { name: "Nia F.", rating: 4, comment: "Lokasi strategis di BSD Junction. Harga terjangkau dan cukup seru untuk anak-anak.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "pg10",
+    category: "playground",
+    name: "Jump Arena BSD",
+    area: "BSD City",
+    address: "Jl. Pahlawan Seribu No. 88, BSD City, Tangerang Selatan",
+    playgroundType: "indoor",
+    isFree: false,
+    priceMin: 130000,
+    priceMax: 180000,
+    rating: 4.4,
+    reviews: 37,
+    ageRange: "4 – 14 tahun",
+    hours: "Sab–Min 09:00–21:00, Sen–Jum 14:00–21:00",
+    description: "Arena trampolin indoor pertama di BSD. Zona lompat bebas, slam dunk, dodgeball trampolin, dan foam pit. Sesi berdurasi 60 menit dan 90 menit tersedia.",
+    phone: "0818-7070-8080",
+    tag: "Seru",
+    icon: "🎡",
+    photo: PH("trampoline-arena"),
+    photos: [PH("kids-trampoline"), PH("foam-pit-jump")],
+    reviewsList: [
+      { name: "Dodi K.", rating: 5, comment: "Konsep trampolin park-nya seru banget! Anak saya minta balik lagi setiap minggu.", date: "Feb 2025" },
+    ],
+  },
+
+  // ── CLINICS (gap-fill) ───────────────────────────────────────────────────────
+  {
+    id: "cl6",
+    category: "clinic",
+    name: "Klinik dr. Anak BSD",
+    area: "BSD City",
+    address: "Ruko Tol Seroja BSD Blok C No. 12, BSD City, Tangerang Selatan",
+    priceMin: 120000,
+    priceMax: 180000,
+    clinicServices: ["Terapi Wicara"],
+    bpjs: true,
+    rating: 4.4,
+    reviews: 29,
+    ageRange: "0 – 12 tahun",
+    hours: "Sen–Sab 08:00–17:00",
+    description: "Klinik anak terjangkau di BSD dengan dokter umum berpengalaman. Melayani imunisasi, konsultasi tumbuh kembang, dan terapi wicara dasar. Menerima BPJS.",
+    phone: "0819-8080-9090",
+    icon: "🏥",
+    photo: PH("pediatric-clinic-modern"),
+    photos: [PH("kids-doctor-check"), PH("clinic-waiting-room")],
+    reviewsList: [
+      { name: "Rini T.", rating: 4, comment: "Harga terjangkau dan menerima BPJS. Dokternya ramah dan tidak terburu-buru.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "cl7",
+    category: "clinic",
+    name: "Harmoni Tumbuh Kembang BSD",
+    area: "BSD City",
+    address: "Jl. BSD Raya No. 78, BSD City, Tangerang Selatan",
+    priceMin: 450000,
+    priceMax: 650000,
+    clinicServices: ["Terapi Okupasi", "Sensori Integrasi (SI)"],
+    bpjs: false,
+    rating: 4.6,
+    reviews: 17,
+    ageRange: "1 – 10 tahun",
+    hours: "Sen–Jum 08:00–17:00, Sab 08:00–13:00",
+    description: "Klinik tumbuh kembang spesialis di BSD dengan layanan terapi okupasi dan sensori integrasi. Tim terapis bersertifikat dengan pendekatan berbasis bukti.",
+    phone: "0820-9090-0101",
+    icon: "🏥",
+    photo: PH("child-therapy-clinic"),
+    photos: [PH("occupational-therapy"), PH("sensory-integration-therapy")],
+    reviewsList: [
+      { name: "Bram L.", rating: 5, comment: "Terapis SI-nya luar biasa sabar. Anak kami progresnya pesat sejak 2 bulan terapi.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "cl8",
+    category: "clinic",
+    name: "Klinik Terapi Premium Bintaro",
+    area: "Bintaro Sektor 7",
+    address: "Jl. Bintaro Utama VII No. 55, Sektor 7, Tangerang Selatan",
+    priceMin: 700000,
+    priceMax: 1000000,
+    clinicServices: ["Psikologi Anak", "Perilaku / ABA", "Sensori Integrasi (SI)"],
+    bpjs: false,
+    rating: 4.9,
+    reviews: 13,
+    ageRange: "1 – 18 tahun",
+    hours: "Sen–Sab 08:00–17:00",
+    description: "Pusat terapi anak premium di Bintaro dengan psikolog klinis dan terapis ABA berpengalaman. Program intervensi individual untuk anak berkebutuhan khusus dan persiapan inklusi sekolah.",
+    phone: "0821-0101-1212",
+    tag: "Premium",
+    icon: "🏥",
+    photo: PH("premium-therapy-center"),
+    photos: [PH("aba-therapy-kids"), PH("psychology-child")],
+    reviewsList: [
+      { name: "Sinta W.", rating: 5, comment: "Program ABA-nya terstruktur dan berbasis data. Anak kami berkembang pesat dalam 4 bulan.", date: "Apr 2025" },
+    ],
+  },
+
+  // ── CAFES (gap-fill) ─────────────────────────────────────────────────────────
+  {
+    id: "cf6",
+    category: "cafe",
+    name: "Kantin Keluarga BSD",
+    area: "BSD City",
+    address: "Jl. Ruko BSD Sektor 1 No. 3, BSD City, Tangerang Selatan",
+    priceMin: 30000,
+    priceMax: 60000,
+    cafeFeatures: ["Menu Khusus Anak"],
+    priceCategory: "Murah Sekali",
+    rating: 4.1,
+    reviews: 21,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 07:00–20:00",
+    description: "Kantin keluarga sederhana di BSD dengan menu rumahan super terjangkau. Menu anak tersedia dari nasi goreng hingga soto ayam dengan bahan alami.",
+    phone: "0822-1212-2323",
+    icon: "☕",
+    photo: PH("family-warung-kids"),
+    photos: [PH("kids-menu-warung"), PH("family-dining-simple")],
+    reviewsList: [
+      { name: "Yono P.", rating: 4, comment: "Murah banget dan porsinya cukup. Cocok untuk makan siang harian di BSD.", date: "Jan 2025" },
+    ],
+  },
+  {
+    id: "cf7",
+    category: "cafe",
+    name: "Kedai Makan Si Buah Hati BSD",
+    area: "BSD City",
+    address: "Ruko BSD Junction Blok B No. 2, BSD City, Tangerang Selatan",
+    priceMin: 50000,
+    priceMax: 100000,
+    cafeFeatures: ["Menu Khusus Anak", "Area Mewarnai"],
+    priceCategory: "Murah",
+    rating: 4.3,
+    reviews: 27,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 09:00–21:00",
+    description: "Kedai makan keluarga di BSD dengan menu sehat untuk anak, area mewarnai gratis, dan suasana nyaman. Harga bersahabat untuk aktivitas makan keluarga sehari-hari.",
+    phone: "0823-2323-3434",
+    icon: "☕",
+    photo: PH("kids-cafe-play"),
+    photos: [PH("cafe-kids-area"), PH("kids-menu-food")],
+    reviewsList: [
+      { name: "Nita S.", rating: 4, comment: "Harga murah dan ada area mewarnai untuk anak. Sering bawa anak ke sini setelah jemput dari sekolah.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "cf8",
+    category: "cafe",
+    name: "Harvest Family Cafe BSD",
+    area: "BSD City",
+    address: "Jl. BSD Raya Utama No. 55, BSD City, Tangerang Selatan",
+    priceMin: 110000,
+    priceMax: 220000,
+    cafeFeatures: ["Playground Indoor", "Menu Khusus Anak", "Wifi", "AC"],
+    priceCategory: "Normal",
+    rating: 4.6,
+    reviews: 34,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 10:00–22:00",
+    description: "Kafe keluarga nyaman di BSD dengan playground indoor, menu anak yang lengkap, dan pilihan kopi specialty. Tempat ideal untuk quality time keluarga di akhir pekan.",
+    phone: "0824-3434-4545",
+    tag: "Family Friendly",
+    icon: "☕",
+    photo: PH("family-cafe-cozy"),
+    photos: [PH("cafe-kids-area"), PH("cafe-food-kids")],
+    reviewsList: [
+      { name: "Mia R.", rating: 5, comment: "Playground indoor-nya aman dan bersih. Makanannya juga enak. Jadi favorit keluarga kami.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "cf9",
+    category: "cafe",
+    name: "Paprika Fine Family BSD",
+    area: "BSD City",
+    address: "Jl. Pahlawan Seribu No. 25, BSD City, Tangerang Selatan",
+    priceMin: 200000,
+    priceMax: 400000,
+    cafeFeatures: ["Playground Indoor", "Playground Outdoor", "Menu Khusus Anak", "Wifi", "AC"],
+    priceCategory: "Mahal",
+    rating: 4.8,
+    reviews: 28,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 11:00–22:00",
+    description: "Restoran keluarga premium di BSD dengan dua area bermain anak indoor dan outdoor, menu fine dining anak, dan private dining room. Pengalaman makan malam keluarga yang berkesan.",
+    phone: "0825-4545-5656",
+    tag: "Premium",
+    icon: "☕",
+    photo: PH("premium-family-restaurant"),
+    photos: [PH("fine-dining-kids"), PH("premium-indoor-play")],
+    reviewsList: [
+      { name: "Dian K.", rating: 5, comment: "Fine dining untuk keluarga di BSD. Makanannya luar biasa dan anak-anak happy di playground-nya.", date: "Apr 2025" },
+    ],
+  },
+  {
+    id: "cf10",
+    category: "cafe",
+    name: "Garden House Bintaro",
+    area: "Bintaro Sektor 9",
+    address: "Jl. Sektor 9 Raya No. 88, Bintaro, Tangerang Selatan",
+    priceMin: 130000,
+    priceMax: 260000,
+    cafeFeatures: ["Playground Outdoor", "Area Mewarnai", "Menu Khusus Anak", "Wifi"],
+    priceCategory: "Agak Mahal",
+    rating: 4.7,
+    reviews: 32,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 10:00–22:00",
+    description: "Kafe garden asri di Bintaro dengan taman bermain outdoor yang luas, area mewarnai untuk anak, dan menu Western-Asian fusion. Suasana semi-terbuka yang sejuk dan nyaman.",
+    phone: "0826-5656-6767",
+    tag: "Instagramable",
+    icon: "☕",
+    photo: PH("garden-cafe-kids"),
+    photos: [PH("cafe-outdoor-garden"), PH("kids-menu-food")],
+    reviewsList: [
+      { name: "Karin S.", rating: 5, comment: "Suasana garden-nya cantik banget dan anak bisa main outdoor. Menu Western-nya enak dan porsinya besar.", date: "Mar 2025" },
+    ],
+  },
+
+  // ── MINI ZOO (gap-fill) ──────────────────────────────────────────────────────
+  {
+    id: "mz5",
+    category: "mini-zoo",
+    name: "Pojok Hewan Taman BSD",
+    area: "BSD City",
+    address: "Taman Kota BSD City, Jl. BSD Raya, Tangerang Selatan",
+    priceMin: 0,
+    priceMax: 0,
+    rating: 4.0,
+    reviews: 24,
+    ageRange: "Semua usia",
+    hours: "Sab–Min 07:00–17:00",
+    tag: "Gratis",
+    description: "Area pengenalan satwa gratis di taman kota BSD. Anak-anak dapat berinteraksi dengan kelinci dan marmut jinak di udara terbuka.",
+    phone: "-",
+    icon: "🐰",
+    photo: PH("free-animal-corner"),
+    photos: [PH("kids-petting-free"), PH("rabbits-park")],
+    reviewsList: [
+      { name: "Budi L.", rating: 4, comment: "Gratis dan menyenangkan. Anak kami senang sekali lihat kelinci setiap akhir pekan.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "mz6",
+    category: "mini-zoo",
+    name: "Mini Farm BSD Raya",
+    area: "BSD City",
+    address: "Jl. BSD Raya No. 65, BSD City, Tangerang Selatan",
+    priceMin: 15000,
+    priceMax: 20000,
+    rating: 4.2,
+    reviews: 17,
+    ageRange: "2 – 12 tahun",
+    hours: "Sab–Min 09:00–17:00",
+    description: "Mini farm terjangkau di BSD dengan ayam, bebek, kambing, dan kelinci. Anak bisa memberi makan hewan langsung di area terbuka yang aman.",
+    phone: "0827-6767-7878",
+    tag: "Murah Meriah",
+    icon: "🐐",
+    photo: PH("mini-farm-kids"),
+    photos: [PH("kids-feeding-goats"), PH("farm-animals-kids")],
+    reviewsList: [
+      { name: "Eko H.", rating: 4, comment: "Harga murah untuk pengalaman langsung bersama hewan. Anak-anak senang kasih makan kambing.", date: "Jan 2025" },
+    ],
+  },
+  {
+    id: "mz7",
+    category: "mini-zoo",
+    name: "Safari Mini BSD",
+    area: "BSD City",
+    address: "Jl. Pahlawan Seribu No. 77, BSD City, Tangerang Selatan",
+    priceMin: 85000,
+    priceMax: 120000,
+    rating: 4.5,
+    reviews: 29,
+    ageRange: "2 – 12 tahun",
+    hours: "Sab–Min 09:00–17:00, Sel–Jum 13:00–17:00",
+    description: "Mini zoo terbaru di BSD dengan koleksi reptil, burung eksotis, mamalia kecil, dan area feeding session. Edukasi satwa interaktif dipandu ranger setiap jam.",
+    phone: "0828-7878-8989",
+    tag: "Edukatif",
+    icon: "🦜",
+    photo: PH("mini-zoo-kids"),
+    photos: [PH("reptile-exhibit-kids"), PH("kids-feeding-animals")],
+    reviewsList: [
+      { name: "Sari M.", rating: 5, comment: "Koleksi hewan beragam dan terawat. Ranger-nya sangat informatif menjelaskan setiap hewan.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "mz8",
+    category: "mini-zoo",
+    name: "Taman Hewan Ciputat",
+    area: "Ciputat",
+    address: "Jl. Ciputat Raya No. 88, Ciputat, Tangerang Selatan",
+    priceMin: 35000,
+    priceMax: 55000,
+    rating: 4.1,
+    reviews: 21,
+    ageRange: "Semua usia",
+    hours: "Sab–Min 08:00–17:00",
+    description: "Kebun binatang mini di kawasan Ciputat dengan koleksi hewan ternak, burung, dan ikan hias. Cocok untuk pengenalan hewan bagi anak-anak usia dini dengan tiket terjangkau.",
+    phone: "0829-8989-9090",
+    icon: "🐑",
+    photo: PH("petting-zoo-family"),
+    photos: [PH("zoo-animals-kids"), PH("kids-feeding-animals")],
+    reviewsList: [
+      { name: "Agus M.", rating: 4, comment: "Tiket terjangkau dan anak-anak senang lihat berbagai hewan. Lokasi mudah dijangkau dari Bintaro.", date: "Feb 2025" },
+    ],
+  },
+
+  // ── SWIMMING POOLS (gap-fill) ────────────────────────────────────────────────
+  {
+    id: "sw5",
+    category: "swimming-pool",
+    name: "Aqua Sport Premium Bintaro",
+    area: "Bintaro Sektor 9",
+    address: "Jl. Sektor 9 Raya No. 99, Bintaro, Tangerang Selatan",
+    priceMin: 80000,
+    priceMax: 130000,
+    poolFeatures: ["Kolam Anak", "Kelas Renang", "Seluncuran", "Kantin"],
+    rating: 4.5,
+    reviews: 44,
+    ageRange: "Semua usia",
+    hours: "Sab–Min 07:00–19:00, Sen–Jum 14:00–19:00",
+    description: "Kolam renang keluarga di Bintaro dengan seluncuran anak, kelas renang bersertifikat, dan kantin. Pilihan seru untuk berenang akhir pekan bersama keluarga.",
+    phone: "0830-9090-0101",
+    tag: "Weekend Fun",
+    icon: "🏊",
+    photo: PH("waterpark-kids"),
+    photos: [PH("water-slide-kids"), PH("kids-pool-splash")],
+    reviewsList: [
+      { name: "Hasan W.", rating: 5, comment: "Seluncurannya seru untuk anak-anak. Kelas renang-nya juga bagus dengan instruktur bersertifikat.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "sw6",
+    category: "swimming-pool",
+    name: "Kolam Renang Perumahan BSD",
+    area: "BSD City",
+    address: "Perumahan Grand BSD, Jl. Pahlawan Seribu, BSD City, Tangerang Selatan",
+    priceMin: 15000,
+    priceMax: 20000,
+    poolFeatures: ["Kolam Anak"],
+    rating: 3.9,
+    reviews: 21,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 06:00–18:00",
+    description: "Kolam renang umum perumahan di BSD dengan harga sangat terjangkau. Kolam anak berkedalaman 50 cm, cocok untuk latihan renang harian anak.",
+    phone: "0831-0101-1212",
+    tag: "Budget Friendly",
+    icon: "🏊",
+    photo: PH("public-pool-kids"),
+    photos: [PH("kids-swimming-pool"), PH("pool-outdoor")],
+    reviewsList: [
+      { name: "Hendra R.", rating: 4, comment: "Harga paling murah di BSD untuk berenang. Kolam anak dangkal dan aman untuk balita.", date: "Jan 2025" },
+    ],
+  },
+  {
+    id: "sw7",
+    category: "swimming-pool",
+    name: "Splash Kids BSD",
+    area: "BSD City",
+    address: "Ruko BSD Junction Blok A No. 20, BSD City, Tangerang Selatan",
+    priceMin: 35000,
+    priceMax: 45000,
+    poolFeatures: ["Kolam Anak", "Baby Swim", "Kelas Renang"],
+    rating: 4.3,
+    reviews: 35,
+    ageRange: "6 bulan – 12 tahun",
+    hours: "Sen–Min 07:00–19:00",
+    description: "Kolam renang anak khusus di BSD dengan kelas baby swim, air hangat, dan instruktur bersertifikat. Sangat cocok untuk memperkenalkan air pada bayi dan toddler.",
+    phone: "0832-1212-2323",
+    icon: "🏊",
+    photo: PH("baby-swimming-class"),
+    photos: [PH("kids-pool-warm"), PH("swimming-class-toddler")],
+    reviewsList: [
+      { name: "Rini K.", rating: 5, comment: "Baby swim class-nya sangat menyenangkan! Bayi kami langsung suka dan tidak takut air.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "sw8",
+    category: "swimming-pool",
+    name: "BSD Swim & Sports Club",
+    area: "BSD City",
+    address: "Jl. BSD Raya No. 90, BSD City, Tangerang Selatan",
+    priceMin: 55000,
+    priceMax: 90000,
+    poolFeatures: ["Kolam Anak", "Kelas Renang", "Loker", "Kantin", "Indoor"],
+    rating: 4.6,
+    reviews: 61,
+    ageRange: "Semua usia",
+    hours: "Sen–Min 06:00–21:00",
+    description: "Kolam renang indoor dan outdoor di BSD dengan program kelas renang anak tersertifikasi, kolam olimpik, dan fasilitas loker. Pilihan premium untuk atlet muda BSD.",
+    phone: "0833-2323-3434",
+    tag: "Kelas Renang",
+    icon: "🏊",
+    photo: PH("kids-swimming-pool"),
+    photos: [PH("swimming-lesson-kids"), PH("pool-olympic")],
+    reviewsList: [
+      { name: "Dino P.", rating: 5, comment: "Fasilitas terlengkap di BSD untuk renang. Instruktur kelas renang anak-nya sangat profesional.", date: "Mar 2025" },
+    ],
+  },
+
+  // ── Others ──────────────────────────────────────────────────────────────────
+  {
+    id: "ot1",
+    category: "other",
+    name: "Rumah Belajar Nusantara",
+    area: "Bintaro",
+    address: "Jl. Bintaro Utama 3A No. 12, Sektor 3, Bintaro, Tangerang Selatan",
+    priceMin: 1200000,
+    priceMax: 2500000,
+    rating: 4.8,
+    reviews: 34,
+    ageRange: "6–17 tahun",
+    hours: "Sen–Jum 08:00–15:00",
+    description: "Komunitas homeschool terstruktur dengan kurikulum Cambridge dan nasional. Kelompok belajar kecil (maks 8 anak), pendampingan guru berpengalaman, serta program ekstrakurikuler seni dan sains setiap minggu.",
+    phone: "0812-9900-1234",
+    whatsapp: "628129900123",
+    tag: "Top Rated",
+    icon: "🏡",
+    photo: PH("homeschool-classroom"),
+    photos: [PH("homeschool-kids-learning"), PH("homeschool-outdoor-activity")],
+    reviewsList: [
+      { name: "Ratna S.", rating: 5, comment: "Anak saya jauh lebih berkembang dibanding di sekolah konvensional. Guru-gurunya sabar dan kreatif.", date: "Apr 2025" },
+      { name: "Budi H.", rating: 5, comment: "Kurikulumnya terstruktur tapi fleksibel. Anak bisa belajar sesuai ritme masing-masing.", date: "Mar 2025" },
+    ],
+  },
+  {
+    id: "ot2",
+    category: "other",
+    name: "Cerdas Privat BSD",
+    area: "BSD City",
+    address: "Ruko BSD Junction Blok B No. 7, Jl. Pahlawan Seribu, BSD City, Tangerang Selatan",
+    priceMin: 250000,
+    priceMax: 600000,
+    rating: 4.6,
+    reviews: 58,
+    ageRange: "SD–SMA",
+    hours: "Sen–Min 09:00–20:00",
+    description: "Lembaga bimbingan belajar privat dan semi-privat untuk SD sampai SMA. Tersedia guru datang ke rumah maupun belajar di pusat. Mata pelajaran lengkap: Matematika, IPA, Bahasa Inggris, dan persiapan UTBK.",
+    phone: "0821-1234-5678",
+    whatsapp: "628211234567",
+    icon: "✏️",
+    photo: PH("private-tutoring-session"),
+    photos: [PH("tutoring-math-whiteboard"), PH("tutoring-group-study")],
+    reviewsList: [
+      { name: "Sari W.", rating: 5, comment: "Nilai Matematika anak saya naik drastis setelah les di sini. Guru-nya sabar dan metodenya mudah dipahami.", date: "Apr 2025" },
+      { name: "Hendra K.", rating: 4, comment: "Bimbel privat terbaik di BSD. Jadwal fleksibel, guru datang tepat waktu.", date: "Feb 2025" },
+    ],
+  },
+  {
+    id: "ot3",
+    category: "other",
+    name: "TokoMai Toy Rental",
+    area: "Bintaro",
+    address: "Jl. RC Veteran Raya No. 45, Bintaro, Pesanggrahan, Jakarta Selatan",
+    priceMin: 50000,
+    priceMax: 200000,
+    rating: 4.7,
+    reviews: 41,
+    ageRange: "0–10 tahun",
+    hours: "Sen–Min 09:00–19:00",
+    description: "Jasa sewa mainan anak premium dengan sistem mingguan dan bulanan. Koleksi 500+ mainan edukatif, LEGO, mainan bayi, ride-on, dan board game. Mainan diantar-jemput bersih dan sudah disterilisasi.",
+    phone: "0813-5678-9012",
+    whatsapp: "628135678901",
+    tag: "Budget Friendly",
+    icon: "🧸",
+    photo: PH("toy-rental-display"),
+    photos: [PH("educational-toys-shelf"), PH("toy-rental-lego")],
+    reviewsList: [
+      { name: "Mira A.", rating: 5, comment: "Konsepnya genius! Anak tidak bosan karena mainan bisa diganti setiap bulan. Lebih hemat dari beli baru terus.", date: "Mar 2025" },
+      { name: "Dian P.", rating: 5, comment: "Mainannya bersih dan terawat. Pilihan banyak banget, anak-anak semua senang!", date: "Feb 2025" },
+    ],
+  },
 ];
 
 export const schools        = places.filter((p) => p.category === "school");
@@ -1640,3 +2284,100 @@ export const cafes          = places.filter((p) => p.category === "cafe");
 export const miniZoos       = places.filter((p) => p.category === "mini-zoo");
 export const swimmingPools  = places.filter((p) => p.category === "swimming-pool");
 export const bookstores     = places.filter((p) => p.category === "bookstore");
+export const othersPlaces   = places.filter((p) => p.category === "other");
+
+// ── Approximate GPS coordinates for each place (lat/lng) ──────────────────────
+const placeCoords: Record<string, { lat: number; lng: number }> = {
+  // Schools
+  s1:  { lat: -6.2716, lng: 106.7297 }, // Bintaro Sektor 7
+  s2:  { lat: -6.2893, lng: 106.7218 }, // Bintaro Sektor 9
+  s3:  { lat: -6.2541, lng: 106.7312 }, // Pesanggrahan/Bintaro
+  s4:  { lat: -6.2421, lng: 106.7186 }, // Pondok Betung
+  s5:  { lat: -6.2204, lng: 106.7624 }, // Bintaro Sektor 1
+  s6:  { lat: -6.2611, lng: 106.7048 }, // Pondok Jaya
+  s7:  { lat: -6.2531, lng: 106.7289 }, // Bintaro Sektor 3
+  s8:  { lat: -6.2875, lng: 106.7234 }, // Bintaro Sektor 9
+  s9:  { lat: -6.3019, lng: 106.6531 }, // BSD City
+  s10: { lat: -6.3032, lng: 106.6547 }, // BSD City
+  s11: { lat: -6.3051, lng: 106.6512 }, // BSD City
+  s12: { lat: -6.2313, lng: 106.7021 }, // Pondok Aren
+  s13: { lat: -6.2725, lng: 106.7312 }, // Bintaro Sektor 7
+  s14: { lat: -6.2901, lng: 106.7198 }, // Bintaro Sektor 9
+  s15: { lat: -6.3038, lng: 106.6521 }, // BSD City
+  // Learning Centers
+  lc1:  { lat: -6.2598, lng: 106.7054 }, // Pondok Jaya
+  lc2:  { lat: -6.2731, lng: 106.7308 }, // Bintaro Sektor 7
+  lc3:  { lat: -6.2523, lng: 106.7276 }, // Bintaro Sektor 3
+  lc4:  { lat: -6.2883, lng: 106.7227 }, // Bintaro Sektor 9
+  lc5:  { lat: -6.3008, lng: 106.6543 }, // BSD City
+  lc6:  { lat: -6.2742, lng: 106.7321 }, // Bintaro Sektor 7
+  lc7:  { lat: -6.2718, lng: 106.7289 }, // Bintaro Sektor 7
+  lc8:  { lat: -6.3025, lng: 106.6518 }, // BSD City
+  lc9:  { lat: -6.3012, lng: 106.6534 }, // BSD City
+  lc10: { lat: -6.3021, lng: 106.6526 }, // BSD City
+  lc11: { lat: -6.2201, lng: 106.7637 }, // Bintaro Sektor 1
+  lc12: { lat: -6.2872, lng: 106.7244 }, // Bintaro Sektor 9
+  lc13: { lat: -6.3029, lng: 106.6508 }, // BSD City
+  // Daycares
+  d1:  { lat: -6.2534, lng: 106.7295 }, // Bintaro Sektor 3
+  d2:  { lat: -6.2709, lng: 106.7281 }, // Bintaro Sektor 7
+  d3:  { lat: -6.2318, lng: 106.7014 }, // Pondok Aren
+  // Playgrounds
+  pg1: { lat: -6.2722, lng: 106.7301 }, // Bintaro Sektor 7 (mall)
+  pg2: { lat: -6.2752, lng: 106.7284 }, // Bintaro Jaya Xchange
+  pg3: { lat: -6.3015, lng: 106.6538 }, // BSD City
+  pg4: { lat: -6.2645, lng: 106.7271 }, // Bintaro
+  pg5: { lat: -6.3008, lng: 106.6519 }, // BSD City
+  pg6: { lat: -6.3061, lng: 106.6544 }, // BSD City
+  // Clinics
+  cl1: { lat: -6.2714, lng: 106.7303 }, // Bintaro Sektor 7
+  cl2: { lat: -6.2728, lng: 106.7295 }, // Bintaro Sektor 7
+  cl3: { lat: -6.3018, lng: 106.6531 }, // BSD City
+  cl4: { lat: -6.2889, lng: 106.7221 }, // Bintaro Sektor 9
+  cl5: { lat: -6.3009, lng: 106.6527 }, // BSD City
+  // Cafes
+  cf1: { lat: -6.2528, lng: 106.7282 }, // Bintaro Sektor 3
+  cf2: { lat: -6.2891, lng: 106.7229 }, // Bintaro Sektor 9
+  cf3: { lat: -6.3011, lng: 106.6541 }, // BSD City
+  cf4: { lat: -6.2321, lng: 106.7018 }, // Pondok Aren
+  cf5: { lat: -6.2735, lng: 106.7316 }, // Bintaro Sektor 7
+  // Mini-zoos
+  mz1: { lat: -6.2718, lng: 106.7308 }, // Bintaro Sektor 7
+  mz2: { lat: -6.3022, lng: 106.6528 }, // BSD City
+  mz3: { lat: -6.2528, lng: 106.7289 }, // Bintaro Sektor 3
+  mz4: { lat: -6.2897, lng: 106.7214 }, // Bintaro Sektor 9
+  // Swimming pools
+  sw1: { lat: -6.2721, lng: 106.7297 }, // Bintaro Sektor 7
+  sw2: { lat: -6.3016, lng: 106.6532 }, // BSD City
+  sw3: { lat: -6.2887, lng: 106.7225 }, // Bintaro Sektor 9
+  sw4: { lat: -6.2199, lng: 106.7634 }, // Bintaro Sektor 1
+  // Bookstores
+  bk1: { lat: -6.2724, lng: 106.7299 }, // Bintaro Sektor 7 (mall)
+  bk2: { lat: -6.3014, lng: 106.6541 }, // BSD City (Aeon Mall)
+  // Others
+  ot1: { lat: -6.2581, lng: 106.7241 }, // Bintaro Sektor 3
+  ot2: { lat: -6.3027, lng: 106.6558 }, // BSD City (Ruko BSD Junction)
+  ot3: { lat: -6.2490, lng: 106.7631 }, // RC Veteran Raya, Bintaro
+};
+
+/** Returns GPS coordinates for a place, or null if not available. */
+export function getPlaceCoords(id: string): { lat: number; lng: number } | null {
+  return placeCoords[id] ?? null;
+}
+
+/** Haversine formula — returns distance in km between two lat/lng points. */
+export function haversineKm(
+  lat1: number, lng1: number,
+  lat2: number, lng2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}

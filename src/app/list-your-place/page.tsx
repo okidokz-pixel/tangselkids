@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
@@ -23,7 +23,7 @@ const INPUT: React.CSSProperties = {
   width: "100%", padding: "12px 14px", borderRadius: 12, fontSize: 14,
   fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500,
   outline: "none", border: "1.5px solid #e2e8f0",
-  color: "#1e3a5f", background: "#f8fafc",
+  color: "#0e1d4f", background: "#f6f1e8",
   boxSizing: "border-box",
 };
 const LABEL: React.CSSProperties = {
@@ -49,9 +49,9 @@ function CheckChip({
       <span style={{
         display: "inline-flex", alignItems: "center", gap: 5,
         padding: "7px 12px", borderRadius: 999, fontSize: 12.5, fontWeight: 600,
-        border: checked ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-        background: checked ? "#eff6ff" : "#fff",
-        color: checked ? "#1d4ed8" : "#374151",
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#e6f4ed" : "#fff",
+        color: checked ? "#2e8a5a" : "#374151",
         transition: "all 0.15s",
         whiteSpace: "nowrap",
       }}>
@@ -72,8 +72,8 @@ function RadioChip({
       <span style={{
         display: "inline-block", padding: "7px 14px", borderRadius: 999,
         fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap",
-        border: checked ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-        background: checked ? "#1d4ed8" : "#fff",
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#2e8a5a" : "#fff",
         color: checked ? "#fff" : "#374151",
         transition: "all 0.15s",
       }}>
@@ -96,9 +96,9 @@ function FieldSelect({
         style={{
           ...INPUT,
           padding: "12px 40px 12px 14px",
-          color: active ? "#1e3a5f" : "#94a3b8",
-          border: `1.5px solid ${active ? "#1d4ed8" : "#e2e8f0"}`,
-          background: active ? "#eff6ff" : "#f8fafc",
+          color: active ? "#1f6b43" : "#94a3b8",
+          border: `1.5px solid ${active ? "#2e8a5a" : "#e2e8f0"}`,
+          background: active ? "#e6f4ed" : "#f6f1e8",
           appearance: "none", WebkitAppearance: "none", cursor: "pointer",
         } as React.CSSProperties}
       >
@@ -107,7 +107,7 @@ function FieldSelect({
       </select>
       <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#1d4ed8" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          stroke={active ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </div>
@@ -162,7 +162,7 @@ function TtIcon() {
 }
 function WebIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2e8a5a" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
       <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -314,7 +314,7 @@ export default function ListYourPlacePage() {
       <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
       <span style={{
         fontSize: 10, fontWeight: 800, letterSpacing: 1.4,
-        color: "#1d4ed8", textTransform: "uppercase",
+        color: "#2e8a5a", textTransform: "uppercase",
         whiteSpace: "nowrap",
       }}>{label}</span>
       <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
@@ -329,7 +329,7 @@ export default function ListYourPlacePage() {
         <div
           style={{
             padding: "48px 20px 28px",
-            background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+            background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
             borderRadius: "0 0 32px 32px",
           }}
         >
@@ -359,14 +359,14 @@ export default function ListYourPlacePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px", textAlign: "center", gap: 20 }}>
           <div style={{
             width: 88, height: 88, borderRadius: 999,
-            background: "#DBEAFE", display: "flex", alignItems: "center", justifyContent: "center",
+            background: "#e6f4ed", display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <span style={{ fontSize: 40 }}>🏪</span>
           </div>
           <div>
             <h2 style={{
               margin: "0 0 8px", fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 22, fontWeight: 700, color: "#1e3a5f",
+              fontSize: 22, fontWeight: 700, color: "#0e1d4f",
             }}>
               {t.listGuestTitle}
             </h2>
@@ -393,7 +393,7 @@ export default function ListYourPlacePage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignSelf: "stretch" }}>
             {t.listGuestBenefits.map(b => (
               <p key={b} style={{
-                margin: 0, fontSize: 13, fontWeight: 600, color: "#1e3a5f",
+                margin: 0, fontSize: 13, fontWeight: 600, color: "#0e1d4f",
                 fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.4, textAlign: "left",
               }}>{b}</p>
             ))}
@@ -421,7 +421,7 @@ export default function ListYourPlacePage() {
       <div
         style={{
           padding: "48px 20px 28px",
-          background: "linear-gradient(160deg, #0F1E3C 0%, #1A3A6C 60%, #2563EB 100%)",
+          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",
         }}
       >
@@ -458,7 +458,7 @@ export default function ListYourPlacePage() {
             value={name}
             onChange={e => { setName(e.target.value); setErrors(prev => ({ ...prev, name: false })); }}
             placeholder="mis. Happy Kids Cafe, Sekolah Bintaro Jaya..."
-            style={{ ...INPUT, border: `1.5px solid ${errors.name ? "#ef4444" : "#e2e8f0"}`, background: errors.name ? "#fff5f5" : "#f8fafc" }}
+            style={{ ...INPUT, border: `1.5px solid ${errors.name ? "#ef4444" : "#e2e8f0"}`, background: errors.name ? "#fff5f5" : "#f6f1e8" }}
           />
           {errors.name && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrName}</p>}
         </div>
@@ -485,7 +485,7 @@ export default function ListYourPlacePage() {
             onChange={e => { setAddress(e.target.value); setErrors(prev => ({ ...prev, address: false })); }}
             rows={3}
             placeholder="Jl. Contoh No. 123, Bintaro Sektor 7..."
-            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#f8fafc" }}
+            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#f6f1e8" }}
           />
           {errors.address && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrAddress}</p>}
         </div>
@@ -498,7 +498,7 @@ export default function ListYourPlacePage() {
             value={phone}
             onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
             placeholder="0812-3456-7890"
-            style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#f8fafc" }}
+            style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#f6f1e8" }}
           />
           {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
         </div>
@@ -513,9 +513,9 @@ export default function ListYourPlacePage() {
               style={{
                 ...INPUT,
                 padding: "12px 40px 12px 14px",
-                color: category ? "#1e3a5f" : "#94a3b8",
-                border: `1.5px solid ${errors.category ? "#ef4444" : category ? "#1d4ed8" : "#e2e8f0"}`,
-                background: category ? "#eff6ff" : errors.category ? "#fff5f5" : "#f8fafc",
+                color: category ? "#1f6b43" : "#94a3b8",
+                border: `1.5px solid ${errors.category ? "#ef4444" : category ? "#2e8a5a" : "#e2e8f0"}`,
+                background: category ? "#e6f4ed" : errors.category ? "#fff5f5" : "#f6f1e8",
                 appearance: "none", WebkitAppearance: "none", cursor: "pointer",
               } as React.CSSProperties}
             >
@@ -524,7 +524,7 @@ export default function ListYourPlacePage() {
             </select>
             <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke={category ? "#1d4ed8" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                stroke={category ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </div>
@@ -536,7 +536,7 @@ export default function ListYourPlacePage() {
 
         {/* SCHOOL */}
         {category === "school" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreSchools}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelCurriculum}</label>
@@ -567,7 +567,7 @@ export default function ListYourPlacePage() {
 
         {/* LEARNING CENTER */}
         {category === "learning-center" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreLCs}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelCourseType}</label>
@@ -590,7 +590,7 @@ export default function ListYourPlacePage() {
 
         {/* DAYCARE */}
         {category === "daycare" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreDaycare}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelAgeServed}</label>
@@ -609,7 +609,7 @@ export default function ListYourPlacePage() {
 
         {/* PLAYGROUND */}
         {category === "playground" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.explorePlaygrounds}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelPgType}</label>
@@ -633,7 +633,7 @@ export default function ListYourPlacePage() {
 
         {/* CLINIC */}
         {category === "clinic" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreClinics}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelServices}</label>
@@ -652,7 +652,7 @@ export default function ListYourPlacePage() {
 
         {/* CAFE */}
         {category === "cafe" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreCafes}`} />
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelBudget}</label>
@@ -667,7 +667,7 @@ export default function ListYourPlacePage() {
 
         {/* MINI ZOO */}
         {category === "mini-zoo" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreMiniZoo}`} />
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMiniZooTicket}</label>
@@ -678,7 +678,7 @@ export default function ListYourPlacePage() {
 
         {/* SWIMMING POOL */}
         {category === "swimming-pool" && (
-          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #BFDBFE", marginBottom: 18 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreSwimmingPools}`} />
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelPoolPrice}</label>
@@ -703,7 +703,7 @@ export default function ListYourPlacePage() {
         </div>
 
         {/* ── 8. Social Media ─────────────────────────────────────────────────── */}
-        <div style={{ ...FIELD, background: "#f8fafc", borderRadius: 16, padding: "14px 14px 4px", border: "1.5px solid #e2e8f0" }}>
+        <div style={{ ...FIELD, background: "#f6f1e8", borderRadius: 16, padding: "14px 14px 4px", border: "1.5px solid #e2e8f0" }}>
           <label style={{ ...LABEL, marginBottom: 12 }}>
             {t.listLabelSocial}{" "}
             <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
@@ -772,7 +772,7 @@ export default function ListYourPlacePage() {
                 onClick={() => photoInputRef.current?.click()}
                 style={{
                   aspectRatio: "1 / 1", borderRadius: 12,
-                  border: "2px dashed #cbd5e1", background: "#f8fafc",
+                  border: "2px dashed #cbd5e1", background: "#f6f1e8",
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 4,
                   touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
@@ -817,7 +817,7 @@ export default function ListYourPlacePage() {
           style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
             width: "100%", padding: "16px 0", borderRadius: 16, marginTop: 8,
-            background: "linear-gradient(135deg, #1A3A6C, #2563EB)",
+            background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
             color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
             fontSize: 15, fontWeight: 800, border: "none", cursor: "pointer",
             touchAction: "manipulation", WebkitTapHighlightColor: "transparent",

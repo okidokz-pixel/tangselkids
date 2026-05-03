@@ -1,15 +1,18 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Pencil, Star, ChevronRight } from "lucide-react";
 import { getReviews, type UserReview } from "@/lib/reviewsStorage";
 import { ActionButton } from "@/components/ActionButton";
 import { useLang } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 import Link from "next/link";
 
 export default function MyReviewsPage() {
   const router = useRouter();
   const { t } = useLang();
+  useAuth(); // needed for PremiumBadge
   const [reviews, setReviews] = useState<UserReview[]>([]);
 
   useEffect(() => {
@@ -17,37 +20,40 @@ export default function MyReviewsPage() {
   }, []);
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
 
       {/* Header */}
       <div style={{
-        background: "linear-gradient(150deg,#1e3a5f 0%,#1d4ed8 55%,#3b82f6 100%)",
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
         borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ActionButton
-            onClick={() => router.back()}
-            style={{
-              width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-              background: "rgba(255,255,255,0.18)", display: "inline-flex",
-              alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <ChevronLeft size={20} color="white" />
-          </ActionButton>
-          <div>
-            <h1 style={{
-              margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff",
-            }}>
-              Ulasan Saya
-            </h1>
-            {reviews.length > 0 && (
-              <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "var(--font-jakarta),sans-serif" }}>
-                {reviews.length} ulasan ditulis
-              </p>
-            )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ActionButton
+              onClick={() => router.back()}
+              style={{
+                width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+                background: "rgba(255,255,255,0.18)", display: "inline-flex",
+                alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <ChevronLeft size={20} color="white" />
+            </ActionButton>
+            <div>
+              <h1 style={{
+                margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
+                fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff",
+              }}>
+                Ulasan Saya
+              </h1>
+              {reviews.length > 0 && (
+                <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "var(--font-jakarta),sans-serif" }}>
+                  {reviews.length} ulasan ditulis
+                </p>
+              )}
+            </div>
           </div>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -59,7 +65,7 @@ export default function MyReviewsPage() {
             <p style={{ fontSize: 48, marginBottom: 12 }}>✍️</p>
             <p style={{
               fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 18, fontWeight: 700, color: "#1e3a5f", marginBottom: 8,
+              fontSize: 18, fontWeight: 700, color: "#0e1d4f", marginBottom: 8,
             }}>
               Belum Ada Ulasan
             </p>
@@ -95,7 +101,7 @@ export default function MyReviewsPage() {
                     <span style={{ fontSize: 22, flexShrink: 0 }}>{review.placeIcon}</span>
                     <span style={{
                       fontFamily: "var(--font-jakarta),sans-serif",
-                      fontWeight: 700, fontSize: 14, color: "#1e3a5f",
+                      fontWeight: 700, fontSize: 14, color: "#0e1d4f",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                     }}>
                       {review.placeName}
@@ -145,7 +151,7 @@ export default function MyReviewsPage() {
                     display: "flex", alignItems: "center", gap: 7,
                     width: "100%", padding: "11px 16px",
                     background: "transparent", border: "none",
-                    color: "#1d4ed8",
+                    color: "#2e8a5a",
                     fontFamily: "var(--font-jakarta),sans-serif",
                     fontSize: 13, fontWeight: 700,
                     cursor: "pointer",

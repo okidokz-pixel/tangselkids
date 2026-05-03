@@ -26,11 +26,13 @@ export function ActionButton({
   children,
   style,
   ariaLabel,
+  title,
 }: {
   onClick: () => void;
   children: React.ReactNode;
   style?: React.CSSProperties;
   ariaLabel?: string;
+  title?: string;
 }) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -54,6 +56,7 @@ export function ActionButton({
         onClick();
       }}
       aria-label={ariaLabel}
+      title={title}
       style={{
         background: "transparent", border: "none", padding: 0, margin: 0,
         font: "inherit", color: "inherit", textAlign: "inherit", cursor: "pointer",

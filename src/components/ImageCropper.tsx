@@ -216,7 +216,7 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
           {imgRef.current && (
             <div style={{
               position: "absolute", left: 0, top: 0, height: "100%", borderRadius: 999,
-              background: "#3b82f6",
+              background: "var(--tk-accent, #2e8a5a)",
               width: `${((scale - minScale(imgRef.current)) / (minScale(imgRef.current) * 3)) * 100}%`,
             }} />
           )}
@@ -253,7 +253,7 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
           onClick={handleConfirm}
           style={{
             flex: 1, padding: "13px 0", borderRadius: 14,
-            background: "linear-gradient(135deg, #1d4ed8, #3b82f6)",
+            background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
             border: "none",
             color: "#fff", fontSize: 14, fontWeight: 700,
             cursor: "pointer", touchAction: "manipulation",

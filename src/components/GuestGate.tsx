@@ -20,8 +20,8 @@ export function GuestGate({
   const { openRegisterSheet } = useRegisterSheet();
   const { t } = useLang();
 
-  // Light blue tint (Tailwind blue-100 = #DBEAFE → rgb 219,234,254)
-  const bg = "219,234,254";
+  // Warm cream tint matching the app background (#f6f1e8 → rgb 246,241,232)
+  const bg = "246,241,232";
 
   return (
     <div style={{
@@ -66,7 +66,7 @@ export function GuestGate({
         <p style={{
           fontSize: 21,
           fontWeight: 800,
-          color: "#1e3a5f",
+          color: "#0e1d4f",
           margin: "0 0 6px",
           textAlign: "center",
           fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -81,7 +81,7 @@ export function GuestGate({
           <p style={{
             fontSize: 14,
             fontWeight: 700,
-            color: "#2563eb",
+            color: "var(--tk-accent, #2e8a5a)",
             margin: "0 0 16px",
             textAlign: "center",
             fontFamily: "var(--font-jakarta), sans-serif",
@@ -133,7 +133,7 @@ export function GuestGate({
             <p key={benefit} style={{
               fontSize: 13,
               fontWeight: 600,
-              color: "#1e3a5f",
+              color: "#0e1d4f",
               margin: 0,
               fontFamily: "var(--font-jakarta), sans-serif",
               lineHeight: 1.4,

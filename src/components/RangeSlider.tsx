@@ -68,7 +68,7 @@ export function RangeSlider({
         fontFamily: "var(--font-jakarta), system-ui, sans-serif",
         fontSize: 13,
         fontWeight: 600,
-        color: "#1e3fb0",
+        color: "var(--tk-accent, #2e8a5a)",
       }}>
         <span>{fmt(lo)}</span>
         <span>{fmt(hi)}</span>
@@ -91,7 +91,7 @@ export function RangeSlider({
           left: `${loPct}%`,
           width: `${hiPct - loPct}%`,
           bottom: 0,
-          background: "#1d4ed8",
+          background: "var(--tk-accent, #2e8a5a)",
           borderRadius: 3,
         }} />
 
@@ -136,8 +136,8 @@ export function RangeSlider({
                   fontSize: 12,
                   fontWeight: 600,
                   fontFamily: "var(--font-jakarta), system-ui, sans-serif",
-                  border: active ? "1.5px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                  background: active ? "#1d4ed8" : "#fff",
+                  border: active ? "1.5px solid var(--tk-accent, #2e8a5a)" : "1.5px solid #e2e8f0",
+                  background: active ? "var(--tk-accent, #2e8a5a)" : "#fff",
                   color: active ? "#fff" : "#64748b",
                   cursor: "pointer",
                   touchAction: "manipulation",

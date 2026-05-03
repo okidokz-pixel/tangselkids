@@ -19,7 +19,7 @@ export function PlaceCard({
       background: "#fff",
       borderRadius: 18,
       border: "1px solid var(--tk-line)",
-      outline: selected ? "2.5px solid #1d4ed8" : undefined,
+      outline: selected ? "2.5px solid var(--tk-accent, #2e8a5a)" : undefined,
       outlineOffset: selected ? -1 : undefined,
       boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)",
       overflow: "clip",

@@ -266,7 +266,7 @@ export function RegisterSheet() {
       {showReveal && (
         <div style={{
           position: "fixed", inset: 0, zIndex: 1002,
-          background: "linear-gradient(160deg, #0a1628 0%, #1e3a5f 55%, #1d4ed8 100%)",
+          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 55%, #2e8a5a 100%)",
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
           padding: "0 40px",
@@ -322,7 +322,7 @@ export function RegisterSheet() {
         style={{
           position: "fixed", bottom: 0, left: 0, right: 0,
           maxWidth: 448, margin: "0 auto",
-          background: step === "done" ? "#0a1628" : "#fff",
+          background: step === "done" ? "#0a2018" : "#fff",
           borderRadius: "28px 28px 0 0",
           zIndex: 1001,
           boxShadow: "0 -8px 40px rgba(0,0,0,0.30)",
@@ -496,8 +496,8 @@ export function RegisterSheet() {
                       style={{
                         width: 44, height: 54, textAlign: "center", fontSize: 22, fontWeight: 700,
                         borderRadius: 12, outline: "none", boxSizing: "border-box",
-                        border: otp[i] ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-                        background: otp[i] ? "#eff6ff" : "#f8fafc", color: "#0f172a",
+                        border: otp[i] ? "2px solid var(--tk-accent, #2e8a5a)" : "2px solid #e2e8f0",
+                        background: otp[i] ? "var(--tk-accent-pale, #e6f4ed)" : "#f8fafc", color: "#0e1d4f",
                       }}
                     />
                   ))}
@@ -510,7 +510,7 @@ export function RegisterSheet() {
                     style={{
                       display: "block", width: "100%", textAlign: "center",
                       padding: "16px 20px", borderRadius: 18,
-                      background: "linear-gradient(135deg, #1e3a5f, #1d4ed8)",
+                      background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                       color: "#fff", fontWeight: 700, fontSize: 15,
                       boxShadow: "0 8px 24px rgba(30,63,176,0.30)",
                     }}
@@ -576,7 +576,7 @@ export function RegisterSheet() {
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 6,
                       marginTop: 8, padding: "8px 14px", borderRadius: 999,
-                      background: "#eff6ff", color: "#1d4ed8",
+                      background: "var(--tk-accent-pale, #e6f4ed)", color: "var(--tk-accent, #2e8a5a)",
                       fontSize: 12, fontWeight: 700, border: "1.5px solid #bfdbfe",
                     }}
                   >
@@ -668,9 +668,9 @@ export function RegisterSheet() {
                             <div style={{
                               textAlign: "center", padding: "7px 4px", borderRadius: 10,
                               fontSize: 12, fontWeight: 700,
-                              border: kid.gender === g ? "2px solid #1d4ed8" : "1.5px solid #e2e8f0",
-                              background: kid.gender === g ? "#eff6ff" : "#f8fafc",
-                              color: kid.gender === g ? "#1d4ed8" : "#64748b",
+                              border: kid.gender === g ? "2px solid var(--tk-accent, #2e8a5a)" : "1.5px solid #e2e8f0",
+                              background: kid.gender === g ? "var(--tk-accent-pale, #e6f4ed)" : "#f8fafc",
+                              color: kid.gender === g ? "var(--tk-accent, #2e8a5a)" : "#64748b",
                             }}>
                               {g === "male" ? `👦 ${t.obKidGenderMale}` : `👧 ${t.obKidGenderFemale}`}
                             </div>
@@ -700,9 +700,9 @@ export function RegisterSheet() {
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "17px 20px", borderRadius: 18,
-                    background: "linear-gradient(135deg, #1e3a5f, #1d4ed8)",
+                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                     color: "#fff", fontWeight: 700, fontSize: 16,
-                    boxShadow: "0 8px 24px rgba(30,63,176,0.35)",
+                    boxShadow: "0 8px 24px rgba(46,138,90,0.35)",
                     fontFamily: "var(--font-fraunces), Georgia, serif",
                     letterSpacing: -0.3,
                   }}

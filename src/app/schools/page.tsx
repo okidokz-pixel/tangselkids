@@ -11,6 +11,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { GuestGate } from "@/components/GuestGate";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
+import { PremiumBadge } from "@/components/PremiumBadge";
 
 // ── Hidden radio style ────────────────────────────────────────────────────────
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
@@ -25,8 +26,8 @@ function Chip({ name, value, checked, onChange, children }: {
       <input type="radio" name={name} value={value} checked={checked} onChange={onChange} style={HI} />
       <span style={{ display: "inline-block", padding: "6px 13px", borderRadius: 999,
         fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
-        border: checked ? "2px solid #1d4ed8" : "2px solid #e2e8f0",
-        background: checked ? "#1d4ed8" : "#fff", color: checked ? "#fff" : "#374151" }}>
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#2e8a5a" : "#fff", color: checked ? "#fff" : "#374151" }}>
         {children}
       </span>
     </label>
@@ -50,9 +51,9 @@ function FilterDropdown({ value, onChange, options }: {
           borderRadius: 12, fontSize: 13.5,
           fontFamily: "var(--font-jakarta), sans-serif",
           fontWeight: 600,
-          color: active ? "#1e3a5f" : "#94a3b8",
-          border: `2px solid ${active ? "#1d4ed8" : "#e2e8f0"}`,
-          background: active ? "#eff6ff" : "#fff",
+          color: active ? "#1f6b43" : "#94a3b8",
+          border: `2px solid ${active ? "#2e8a5a" : "#e2e8f0"}`,
+          background: active ? "#e6f4ed" : "#fff",
           outline: "none",
           appearance: "none" as const,
           WebkitAppearance: "none" as const,
@@ -68,7 +69,7 @@ function FilterDropdown({ value, onChange, options }: {
       <div style={{ position: "absolute", right: 12, top: 0, bottom: 0,
         display: "flex", alignItems: "center", pointerEvents: "none" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#1d4ed8" : "#94a3b8"} strokeWidth="2.5"
+          stroke={active ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5"
           strokeLinecap="round" strokeLinejoin="round">
           <polyline points="6 9 12 15 18 9" />
         </svg>
@@ -81,12 +82,12 @@ function FilterDropdown({ value, onChange, options }: {
 function FTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 4,
-      background: "#eff6ff", borderRadius: 999, padding: "4px 6px 4px 10px",
-      fontSize: 12, fontWeight: 600, color: "#1e3a5f" }}>
+      background: "#e6f4ed", borderRadius: 999, padding: "4px 6px 4px 10px",
+      fontSize: 12, fontWeight: 600, color: "#0e1d4f" }}>
       {label}
       <ActionButton onClick={onRemove} ariaLabel="Remove" style={{
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: "#1d4ed8", borderRadius: 999, width: 16, height: 16, flexShrink: 0 }}>
+        background: "#2e8a5a", borderRadius: 999, width: 16, height: 16, flexShrink: 0 }}>
         <X size={8} color="white" strokeWidth={3} />
       </ActionButton>
     </div>
@@ -124,7 +125,7 @@ const SPP_LABELS: Record<string, string> = {
 };
 
 const HEADER_STYLE = {
-  background: "linear-gradient(150deg,#1e3a5f 0%,#1d4ed8 55%,#3b82f6 100%)",
+  background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
 };
 
@@ -172,7 +173,7 @@ function SchoolsContent() {
   const [bahasa,     setBahasa]     = useState(searchParams.get("bhs") ?? "all");
   const [upBucket,   setUpBucket]   = useState(searchParams.get("up") ?? "all");
   const [sppBucket,  setSppBucket]  = useState(searchParams.get("spp") ?? "all");
-  const [sortBy,     setSortBy]     = useState<"rating"|"price">((searchParams.get("sort") as "rating"|"price") ?? "rating");
+  const [sortBy,     setSortBy]     = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
   const filtered = schools
@@ -185,7 +186,7 @@ function SchoolsContent() {
     .sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "price" ? a.priceMin - b.priceMin : b.rating - a.rating;
+    return sortBy === "price" ? a.priceMin - b.priceMin : sortBy === "rating" ? b.rating - a.rating : a.name.localeCompare(b.name);
   });
 
   const activeCount = [
@@ -206,7 +207,7 @@ function SchoolsContent() {
     if (bahasa !== "all") p.set("bhs", bahasa);
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
-    if (sortBy !== "rating") p.set("sort", sortBy);
+    if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
   function toFilter() {
@@ -217,7 +218,7 @@ function SchoolsContent() {
     if (bahasa !== "all") p.set("bhs", bahasa);
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
-    if (sortBy !== "rating") p.set("sort", sortBy);
+    if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
@@ -242,21 +243,24 @@ function SchoolsContent() {
   // ── Filter View ──────────────────────────────────────────────────────────────
   if (view === "filter") {
     return (
-      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f8fafc" }}>
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
         <div style={HEADER_STYLE}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton
-              onClick={() => router.back()}
-              ariaLabel="Back"
-              style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-                background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
-                justifyContent: "center" }}>
-              <ChevronLeft size={20} color="white" />
-            </ActionButton>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
-              {t.schoolsTitle}
-            </h1>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <ActionButton
+                onClick={() => router.back()}
+                ariaLabel="Back"
+                style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+                  background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center",
+                  justifyContent: "center" }}>
+                <ChevronLeft size={20} color="white" />
+              </ActionButton>
+              <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
+                fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
+                {t.schoolsTitle}
+              </h1>
+            </div>
+            <PremiumBadge />
           </div>
         </div>
 
@@ -304,7 +308,7 @@ function SchoolsContent() {
               onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toResults())}
               onTouchEnd={(e) => { e.preventDefault(); tier === "guest" ? setShowFilterGate(true) : router.replace(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg,#1e3a5f,#2563eb)", color: "#fff",
+                background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
@@ -318,24 +322,27 @@ function SchoolsContent() {
 
   // ── Results View ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f8fafc" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f6f1e8" }}>
       <div style={HEADER_STYLE}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
-            width: 36, height: 36, borderRadius: 999, flexShrink: 0,
-            background: "rgba(255,255,255,0.18)", display: "inline-flex",
-            alignItems: "center", justifyContent: "center" }}>
-            <ChevronLeft size={20} color="white" />
-          </ActionButton>
-          <div>
-            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
-              fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
-              {t.schoolsTitle}
-            </h1>
-            <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
-              {t.schoolsFound(filtered.length)}
-            </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ActionButton onClick={() => tier === "guest" ? router.back() : router.replace(toFilter())} ariaLabel="Back" style={{
+              width: 36, height: 36, borderRadius: 999, flexShrink: 0,
+              background: "rgba(255,255,255,0.18)", display: "inline-flex",
+              alignItems: "center", justifyContent: "center" }}>
+              <ChevronLeft size={20} color="white" />
+            </ActionButton>
+            <div>
+              <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces),Georgia,serif",
+                fontSize: 26, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1, color: "#fff" }}>
+                {t.schoolsTitle}
+              </h1>
+              <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+                {t.schoolsFound(filtered.length)}
+              </p>
+            </div>
           </div>
+          <PremiumBadge />
         </div>
       </div>
 
@@ -344,7 +351,7 @@ function SchoolsContent() {
         <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
-          background: "#0f172a", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
+          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
           <SlidersHorizontal size={14} strokeWidth={2.5} />
           Filter
           {activeCount > 0 && (
@@ -355,16 +362,13 @@ function SchoolsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "rating" ? "price" : "rating")} style={{
+        <ActionButton onClick={() => tier === "guest" ? setShowFilterGate(true) : setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
           border: "1.5px solid #e2e8f0" }}>
           <ArrowUpDown size={14} strokeWidth={2.5} />
-          {t.filterSort}
-          <span style={{ fontSize: 11, color: "#1d4ed8", fontWeight: 700 }}>
-            {sortBy === "rating" ? "★" : "↑Rp"}
-          </span>
+          {sortBy === "alpha" ? t.sortAlpha : sortBy === "rating" ? t.sortRating : t.sortPrice}
         </ActionButton>
       </div>
 
@@ -377,7 +381,7 @@ function SchoolsContent() {
           {bahasa !== "all"     && <FTag label={`Bahasa: ${bahasa}`}                             onRemove={() => setBahasa("all")} />}
           {upBucket !== "all"   && <FTag label={`UP: ${UP_LABELS[upBucket]}`}                   onRemove={() => setUpBucket("all")} />}
           {sppBucket !== "all"  && <FTag label={`SPP: ${SPP_LABELS[sppBucket]}`}                onRemove={() => setSppBucket("all")} />}
-          <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#1d4ed8" }}>
+          <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>
         </div>
@@ -389,13 +393,13 @@ function SchoolsContent() {
           <div style={{
             display: "flex", alignItems: "center", gap: 7,
             padding: "9px 13px", borderRadius: 10,
-            background: compareIds.length === 0 ? "#f1f5f9" : "#eff6ff",
-            border: `1.5px solid ${compareIds.length === 0 ? "#e2e8f0" : "#bfdbfe"}`,
+            background: compareIds.length === 0 ? "#f1f5f9" : "#e6f4ed",
+            border: `1.5px solid ${compareIds.length === 0 ? "#e2e8f0" : "#a7d4bc"}`,
           }}>
-            <Scale size={14} color={compareIds.length === 0 ? "#94a3b8" : "#1d4ed8"} />
+            <Scale size={14} color={compareIds.length === 0 ? "#94a3b8" : "#2e8a5a"} />
             <span style={{
               fontSize: 12, fontWeight: 600,
-              color: compareIds.length === 0 ? "#94a3b8" : "#1d4ed8",
+              color: compareIds.length === 0 ? "#94a3b8" : "#2e8a5a",
               fontFamily: "var(--font-jakarta), sans-serif",
             }}>
               {compareIds.length === 0
@@ -426,8 +430,8 @@ function SchoolsContent() {
                     <ActionButton onClick={() => toggleCompare(school.id)} ariaLabel="Toggle compare" style={{
                       display: "flex", alignItems: "center", justifyContent: "center",
                       width: 22, height: 22, borderRadius: 6,
-                      border: `2px solid ${isSelected ? "#1d4ed8" : "#cbd5e1"}`,
-                      background: isSelected ? "#1d4ed8" : "#fff" }}>
+                      border: `2px solid ${isSelected ? "#2e8a5a" : "#cbd5e1"}`,
+                      background: isSelected ? "#2e8a5a" : "#fff" }}>
                       {isSelected && <Check size={11} color="white" strokeWidth={3} />}
                     </ActionButton>
                   </div>
@@ -453,7 +457,7 @@ function SchoolsContent() {
           <ActionButton onClick={goCompare} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             width: "100%", padding: "16px 20px", borderRadius: 18,
-            background: "linear-gradient(135deg,#1e3a5f,#1d4ed8)", color: "#fff", fontWeight: 700, fontSize: 14,
+            background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff", fontWeight: 700, fontSize: 14,
             boxShadow: "0 8px 24px rgba(30,63,176,0.36)" }}>
             <Scale size={16} />{t.schoolsCompareBtn(compareIds.length)}
           </ActionButton>
