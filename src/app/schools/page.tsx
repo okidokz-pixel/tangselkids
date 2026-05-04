@@ -101,7 +101,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CURRICULA = ["Nasional","Nasional Plus","Merdeka","Cambridge","IB","Montessori","Islam Terpadu","Blended Learning","Others"];
-const BAHASA    = ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+MND)","Bilingual (ID+ARB)","Japanese","German"];
+const BAHASA    = ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+AR)","Bilingual (EN+CN)","Bilingual (DE+EN)","Japanese","Trilingual (ID+EN+CN)"];
 const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA"];
 
 const UP_LABELS: Record<string, string> = {
@@ -172,6 +172,7 @@ function SchoolsContent() {
   const [sppBucket,  setSppBucket]  = useState(searchParams.get("spp") ?? "all");
   const [sortBy,     setSortBy]     = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
   const [compareIds, setCompareIds] = useState<string[]>([]);
+
 
   const filtered = schools
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
@@ -286,12 +287,22 @@ function SchoolsContent() {
             </div>
           </div>
 
+          {/* Bahasa — free for all */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+              {t.filterBahasa}
+            </p>
+            <div style={{ flex: 1 }}>
+              <FilterDropdown value={bahasa} onChange={setBahasa} options={bahasaOptions} />
+            </div>
+          </div>
+
           {/* Premium-only filters */}
           {tier === "premium" ? (
             <>
               {([
                 { label: "Kurikulum",         value: curriculum, set: setCurriculum, opts: curriculumOpts },
-                { label: t.filterBahasa,       value: bahasa,     set: setBahasa,     opts: bahasaOptions },
                 { label: t.filterUangPangkal,  value: upBucket,   set: setUpBucket,   opts: upOptions     },
                 { label: "SPP / Bulan",        value: sppBucket,  set: setSppBucket,  opts: sppOptions    },
               ] as const).map(({ label, value, set, opts }) => (
@@ -308,7 +319,7 @@ function SchoolsContent() {
             </>
           ) : (
             <>
-              {(["Kurikulum", t.filterBahasa, t.filterUangPangkal, "SPP / Bulan"] as const).map((label) => (
+              {(["Kurikulum", t.filterUangPangkal, "SPP / Bulan"] as const).map((label) => (
                 <ActionButton
                   key={String(label)}
                   onClick={() => setShowFilterGate(true)}

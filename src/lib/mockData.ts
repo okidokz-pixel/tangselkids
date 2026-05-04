@@ -51,7 +51,7 @@ export type Place = {
   // ── School-specific ─────────────────────────────────────────
   uangPangkalMin?: number;   // one-time enrollment / admission fee (min)
   uangPangkalMax?: number;   // one-time enrollment / admission fee (max)
-  bahasa?: string[];         // ["Indonesia", "English", "Bilingual", "Arabic"]
+  bahasa?: string[];         // ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+AR)","Bilingual (EN+CN)","Trilingual (ID+EN+CN)","Bilingual (DE+EN)","Japanese"]
 
   // ── Learning-center-specific ─────────────────────────────────
   courseTypes?: string[];    // multi-valued, e.g. ["English", "Math"]
@@ -189,7 +189,7 @@ export const places: Place[] = [
     priceMax: 2500000,
     uangPangkalMin: 3000000,
     uangPangkalMax: 7000000,
-    bahasa: ["Bilingual (ID+ARB)"],
+    bahasa: ["Bilingual (ID+AR)"],
     rating: 4.8,
     reviews: 56,
     ageRange: "4 – 6 tahun",
@@ -467,7 +467,7 @@ export const places: Place[] = [
     priceMax: 5500000,
     uangPangkalMin: 10000000,
     uangPangkalMax: 20000000,
-    bahasa: ["Bilingual (ID+MND)"],
+    bahasa: ["Bilingual (EN+CN)"],
     rating: 4.7,
     reviews: 24,
     ageRange: "4 – 12 tahun",
@@ -523,7 +523,7 @@ export const places: Place[] = [
     priceMax: 9000000,
     uangPangkalMin: 20000000,
     uangPangkalMax: 45000000,
-    bahasa: ["German"],
+    bahasa: ["Bilingual (DE+EN)"],
     rating: 4.7,
     reviews: 12,
     ageRange: "4 – 18 tahun",

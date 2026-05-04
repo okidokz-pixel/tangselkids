@@ -676,12 +676,352 @@ function RailArrow({
   );
 }
 
+// ─── BAHASA list — internal keys match mockData values ───────────────────────
+const BAHASA_LIST = [
+  "Indonesian",
+  "English",
+  "Bilingual (ID+EN)",
+  "Bilingual (ID+AR)",
+  "Bilingual (EN+CN)",
+  "Bilingual (DE+EN)",
+  "Japanese",
+  "Trilingual (ID+EN+CN)",
+];
+
+// Display labels per UI language — short & readable on pills
+const BAHASA_PILL_LABELS: Record<"id" | "en", Record<string, string>> = {
+  id: {
+    "Indonesian":           "Indonesia",
+    "English":              "Inggris",
+    "Bilingual (ID+EN)":    "ID+Inggris",
+    "Bilingual (ID+AR)":    "ID+Arabic",
+    "Bilingual (EN+CN)":    "ID+Mandarin",
+    "Bilingual (DE+EN)":    "Jerman",
+    "Japanese":             "Jepang",
+    "Trilingual (ID+EN+CN)":"ID+EN+CN",
+  },
+  en: {
+    "Indonesian":           "Indonesian",
+    "English":              "English",
+    "Bilingual (ID+EN)":    "ID+EN",
+    "Bilingual (ID+AR)":    "ID+AR",
+    "Bilingual (EN+CN)":    "EN+CN",
+    "Bilingual (DE+EN)":    "DE+EN",
+    "Japanese":             "Japanese",
+    "Trilingual (ID+EN+CN)":"ID+EN+CN",
+  },
+};
+
+// ─── CourseTypePills ──────────────────────────────────────────────────────────
+function CourseTypePills({
+  ageKey, area,
+}: {
+  ageKey: string;
+  area: AreaKey;
+}) {
+  const { t } = useLang();
+  const areaParam = area === "Semua" ? "all" : area.toLowerCase();
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(true);
+
+  const updateArrows = () => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const id = requestAnimationFrame(updateArrows);
+    return () => cancelAnimationFrame(id);
+  }, [ageKey, area]);
+
+  const nudge = (dir: number) => {
+    railRef.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
+  };
+
+  const courseTypes: { value: string; label: string; color: string; icon: React.ReactNode }[] = [
+    {
+      value: "Bahasa Inggris", label: t.courseTypeEnglish, color: "#3b82f6",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Matematika", label: t.courseTypeMath, color: "#f97316",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
+          <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Seni", label: t.courseTypeArts, color: "#ec4899",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Musik", label: t.courseTypeMusic, color: "#a855f7",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Coding/Robotik", label: t.courseTypeCoding, color: "#10b981",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Tari & Balet", label: t.courseTypeDance, color: "#f43f5e",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4L8.2 14 2 9.4h7.6z"/>
+        </svg>
+      ),
+    },
+    {
+      value: "Gimnastik", label: t.courseTypeGymnastics, color: "#f59e0b",
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="4" r="2"/>
+          <path d="M4 13l4-4 3 3 3-3 4 4"/>
+          <path d="M7 21l2.5-5 2.5 2 2.5-2 2.5 5"/>
+        </svg>
+      ),
+    },
+  ];
+
+  function navigate(course: string | null) {
+    const q = course ? `&course=${encodeURIComponent(course)}` : "";
+    window.location.href = `/learning-centers?age=${ageKey}&area=${areaParam}${q}&view=results`;
+  }
+
+  const pillStyle: React.CSSProperties = {
+    flexShrink: 0,
+    padding: "11px 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(15,23,42,0.14)",
+    background: "#fff",
+    display: "flex", alignItems: "center", gap: 7, justifyContent: "center",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "var(--font-fraunces), Georgia, serif",
+    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    whiteSpace: "nowrap",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
+        {t.filterCourseType.toUpperCase()}
+      </div>
+      <div style={{ position: "relative" }}>
+        {/* Scrollable rail */}
+        <div
+          ref={railRef}
+          onScroll={updateArrows}
+          className="tk-age-rail"
+          style={{
+            display: "flex", gap: 8,
+            overflowX: "auto", overflowY: "hidden",
+            padding: "4px 2px 8px",
+            scrollbarWidth: "none",
+            margin: "0 -22px",
+            paddingLeft: 22, paddingRight: 22,
+          } as React.CSSProperties}
+        >
+          <Pressable scale={0.94} onClick={() => navigate(null)} style={pillStyle}>
+            <span style={{ color: "#64748b", display: "flex", alignItems: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+              </svg>
+            </span>
+            <span style={labelStyle}>{t.homeAltCourseTypeAll}</span>
+          </Pressable>
+          {courseTypes.map(({ value, label, color, icon }) => (
+            <Pressable key={value} scale={0.94} onClick={() => navigate(value)} style={pillStyle}>
+              <span style={{ color, display: "flex", alignItems: "center" }}>{icon}</span>
+              <span style={labelStyle}>{label}</span>
+            </Pressable>
+          ))}
+        </div>
+        {/* Edge fades */}
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
+          background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
+          opacity: canL ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
+          background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
+          opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+        }} />
+        <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
+        <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+      </div>
+    </div>
+  );
+}
+
+// ─── LangPills ────────────────────────────────────────────────────────────────
+function LangPills({
+  grade, area,
+}: {
+  grade: string;
+  area: AreaKey;
+}) {
+  const { lang, t } = useLang();
+  const areaParam = area === "Semua" ? "all" : area.toLowerCase();
+  const labelMap = BAHASA_PILL_LABELS[lang];
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(true);
+
+  const updateArrows = () => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const id = requestAnimationFrame(updateArrows);
+    return () => cancelAnimationFrame(id);
+  }, [grade, area]);
+
+  const nudge = (dir: number) => {
+    railRef.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
+  };
+
+  function navigate(bhs: string | null) {
+    const q = bhs ? `&bhs=${encodeURIComponent(bhs)}` : "";
+    window.location.href = `/schools?grade=${grade}&area=${areaParam}${q}&view=results`;
+  }
+
+  const bahasaIcons: Record<string, { code: string; color: string }> = {
+    "Indonesian":             { code: "ID", color: "#ef4444" },
+    "English":                { code: "EN", color: "#3b82f6" },
+    "Bilingual (ID+EN)":     { code: "ID+EN", color: "#8b5cf6" },
+    "Bilingual (ID+AR)":     { code: "ID+AR", color: "#10b981" },
+    "Bilingual (EN+CN)":     { code: "EN+CN", color: "#f97316" },
+    "Bilingual (DE+EN)":     { code: "DE+EN", color: "#64748b" },
+    "Japanese":               { code: "JP",   color: "#f43f5e" },
+    "Trilingual (ID+EN+CN)": { code: "3×",   color: "#f59e0b" },
+  };
+
+  const pillStyle: React.CSSProperties = {
+    flexShrink: 0,
+    padding: "11px 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(15,23,42,0.14)",
+    background: "#fff",
+    display: "flex", alignItems: "center", gap: 7, justifyContent: "center",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontFamily: "var(--font-fraunces), Georgia, serif",
+    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    whiteSpace: "nowrap",
+  };
+
+  function LangBadge({ langKey }: { langKey: string }) {
+    const info = bahasaIcons[langKey];
+    if (!info) return null;
+    return (
+      <span style={{
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        padding: "0 5px", height: 18, borderRadius: 5,
+        background: info.color, color: "#fff",
+        fontSize: 9, fontWeight: 800, letterSpacing: 0.4,
+        fontFamily: "var(--font-jakarta), sans-serif",
+        flexShrink: 0, lineHeight: 1,
+      }}>
+        {info.code}
+      </span>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
+        {t.homeAltSchoolLang}
+      </div>
+      <div style={{ position: "relative" }}>
+        {/* Scrollable rail */}
+        <div
+          ref={railRef}
+          onScroll={updateArrows}
+          className="tk-age-rail"
+          style={{
+            display: "flex", gap: 8,
+            overflowX: "auto", overflowY: "hidden",
+            padding: "4px 2px 8px",
+            scrollbarWidth: "none",
+            margin: "0 -22px",
+            paddingLeft: 22, paddingRight: 22,
+          } as React.CSSProperties}
+        >
+          <Pressable scale={0.94} onClick={() => navigate(null)} style={pillStyle}>
+            <span style={{ color: "#64748b", display: "flex", alignItems: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+                <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+              </svg>
+            </span>
+            <span style={labelStyle}>{t.homeAltSchoolLangAll}</span>
+          </Pressable>
+          {BAHASA_LIST.map((key) => (
+            <Pressable key={key} scale={0.94} onClick={() => navigate(key)} style={pillStyle}>
+              <LangBadge langKey={key} />
+              <span style={labelStyle}>{labelMap[key] ?? key}</span>
+            </Pressable>
+          ))}
+        </div>
+        {/* Edge fades */}
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
+          background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
+          opacity: canL ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
+          background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
+          opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+        }} />
+        <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
+        <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+      </div>
+    </div>
+  );
+}
+
 // ─── AgeBands ─────────────────────────────────────────────────────────────────
 function AgeBands({
-  category, area,
+  category, area, onPick, selected,
 }: {
   category: CategoryKey;
   area: AreaKey;
+  onPick?: (key: string) => void;
+  selected?: string | null;
 }) {
   const { lang, t } = useLang();
   const railRef = useRef<HTMLDivElement>(null);
@@ -739,67 +1079,111 @@ function AgeBands({
           {isSchool
             ? schoolBands.map((b) => {
                 const n = countSchoolByGradeAndArea(b.key, area);
-                return (
-                  <Link
-                    key={b.key}
-                    href={`/schools?grade=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
-                    style={{
-                      flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
-                      padding: "11px 14px", borderRadius: 12,
-                      border: "1px solid rgba(15,23,42,0.14)", background: "#fff", minWidth: 96,
-                      textDecoration: "none", color: "inherit",
-                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                    }}
-                  >
+                const active = selected === b.key;
+                const inner = (
+                  <>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <span style={{
                         width: 8, height: 8, borderRadius: 999, background: b.dot,
-                        boxShadow: `0 0 0 3px ${b.dot}22`, flexShrink: 0,
+                        boxShadow: `0 0 0 3px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 17, fontWeight: 700, color: "#0e1d4f",
+                        fontSize: 17, fontWeight: 700,
+                        color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
                         {b.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>
-                      {b.sub} · <b style={{ color: "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
+                      color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
+                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
                     </div>
+                  </>
+                );
+                const cardStyle: React.CSSProperties = {
+                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
+                  padding: "11px 14px", borderRadius: 12, minWidth: 96,
+                  border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
+                  background: active ? "#0e1d4f" : "#fff",
+                  transition: "background .2s ease, border-color .2s ease",
+                };
+                return onPick ? (
+                  <Pressable
+                    key={b.key}
+                    scale={0.95}
+                    onClick={() => onPick(b.key)}
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </Pressable>
+                ) : (
+                  <Link
+                    key={b.key}
+                    href={`/schools?grade=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
+                    style={{
+                      ...cardStyle,
+                      textDecoration: "none", color: "inherit",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    {inner}
                   </Link>
                 );
               })
             : lcBands.map((b) => {
                 const n = countLCByAgeAndArea(b.key, area);
-                return (
-                  <Link
-                    key={b.key}
-                    href={`/learning-centers?age=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
-                    style={{
-                      flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
-                      padding: "11px 14px", borderRadius: 12,
-                      border: "1px solid rgba(15,23,42,0.14)", background: "#fff", minWidth: 96,
-                      textDecoration: "none", color: "inherit",
-                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                    }}
-                  >
+                const active = selected === b.key;
+                const inner = (
+                  <>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <span style={{
                         width: 8, height: 8, borderRadius: 999, background: b.dot,
-                        boxShadow: `0 0 0 3px ${b.dot}22`, flexShrink: 0,
+                        boxShadow: `0 0 0 3px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 17, fontWeight: 700, color: "#0e1d4f",
+                        fontSize: 17, fontWeight: 700,
+                        color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
                         {b.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: 10, color: "#94a3b8", fontWeight: 500, whiteSpace: "nowrap" }}>
-                      {b.sub} · <b style={{ color: "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
+                      color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
+                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
                     </div>
+                  </>
+                );
+                const cardStyle: React.CSSProperties = {
+                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
+                  padding: "11px 14px", borderRadius: 12, minWidth: 96,
+                  border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
+                  background: active ? "#0e1d4f" : "#fff",
+                  transition: "background .2s ease, border-color .2s ease",
+                };
+                return onPick ? (
+                  <Pressable
+                    key={b.key}
+                    scale={0.95}
+                    onClick={() => onPick(b.key)}
+                    style={cardStyle}
+                  >
+                    {inner}
+                  </Pressable>
+                ) : (
+                  <Link
+                    key={b.key}
+                    href={`/learning-centers?age=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
+                    style={{
+                      ...cardStyle,
+                      textDecoration: "none", color: "inherit",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    {inner}
                   </Link>
                 );
               })
@@ -831,14 +1215,17 @@ function FeaturePair() {
   const { t } = useLang();
   const [open, setOpen] = useState<CategoryKey | null>(null);
   const [area, setArea] = useState<AreaKey | null>(null);
+  const [grade, setGrade] = useState<string | null>(null);
 
   const toggleCard = (k: CategoryKey) => {
     if (open === k) {
       setOpen(null);
       setArea(null);
+      setGrade(null);
     } else {
       setOpen(k);
       setArea(null);
+      setGrade(null);
     }
   };
 
@@ -898,9 +1285,10 @@ function FeaturePair() {
           <AreaPills
             category={open}
             value={area}
-            onPick={(k) => setArea(k)}
+            onPick={(k) => { setArea(k); setGrade(null); }}
           />
         )}
+
       </div>
 
       {/* Tier 2: age bands — slides in after an area is picked */}
@@ -911,7 +1299,40 @@ function FeaturePair() {
         overflow: "clip",
         transition: "max-height .4s ease, opacity .3s ease, margin-top .3s ease",
       }}>
-        {open && area && <AgeBands category={open} area={area} />}
+        {open && area && (
+          <AgeBands
+            category={open}
+            area={area}
+            selected={grade}
+            onPick={(key) => setGrade(key)}
+          />
+        )}
+      </div>
+
+      {/* Tier 3: language pills (schools) — slides in after a grade is picked */}
+      <div style={{
+        marginTop: open === "sekolah" && area && grade ? 14 : 0,
+        maxHeight: open === "sekolah" && area && grade ? 200 : 0,
+        opacity: open === "sekolah" && area && grade ? 1 : 0,
+        overflow: "clip",
+        transition: "max-height .4s ease, opacity .3s ease, margin-top .3s ease",
+      }}>
+        {open === "sekolah" && area && grade && (
+          <LangPills grade={grade} area={area} />
+        )}
+      </div>
+
+      {/* Tier 3: course type pills (learning centers) — slides in after an age is picked */}
+      <div style={{
+        marginTop: open === "kursus" && area && grade ? 14 : 0,
+        maxHeight: open === "kursus" && area && grade ? 220 : 0,
+        opacity: open === "kursus" && area && grade ? 1 : 0,
+        overflow: "clip",
+        transition: "max-height .4s ease, opacity .3s ease, margin-top .3s ease",
+      }}>
+        {open === "kursus" && area && grade && (
+          <CourseTypePills ageKey={grade} area={area} />
+        )}
       </div>
     </div>
   );

@@ -107,6 +107,7 @@ function LearningCentersContent() {
   const [priceBucket, setPriceBucket] = useState(searchParams.get("price") ?? "all");
   const [sortBy,      setSortBy]      = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
 
+
   const COURSE_TYPE_OPTIONS = [
     { value: "all",             label: t.filterAll },
     { value: "Bahasa Inggris",  label: t.courseTypeEnglish },
@@ -228,8 +229,8 @@ function LearningCentersContent() {
 
           {/* Free filters */}
           {([
-            { label: t.filterCourseType, value: courseType, set: setCourseType, opts: COURSE_TYPE_OPTIONS },
             { label: t.filterAgeGroup,   value: ageGroup,   set: setAgeGroup,   opts: ageGroupOptions },
+            { label: t.filterCourseType, value: courseType, set: setCourseType, opts: COURSE_TYPE_OPTIONS },
           ] as const).map(({ label, value, set, opts }) => (
             <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
