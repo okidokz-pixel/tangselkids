@@ -8,7 +8,7 @@ import { PremiumBadge } from "@/components/PremiumBadge";
 import { BottomNav } from "@/components/BottomNav";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { getAreaGroup } from "@/lib/mockData";
-import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, getCachedCategory, getCachedCounts, getCachedAllPlaces } from "@/lib/db";
+import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces } from "@/lib/db";
 import type { Place } from "@/lib/mockData";
 import { articles, localizeArticle } from "@/lib/articles";
 
@@ -1211,20 +1211,11 @@ function FeaturePair() {
   const [area, setArea] = useState<AreaKey | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
 
-  const [allSchools, setAllSchools] = useState<Place[]>(() => getCachedCategory("school"));
-  const [allLCs,     setAllLCs]     = useState<Place[]>(() => getCachedCategory("learning-center"));
+  const [allSchools, setAllSchools] = useState<Place[]>([]);
+  const [allLCs,     setAllLCs]     = useState<Place[]>([]);
   useEffect(() => {
     fetchPlacesByCategory("school").then(setAllSchools);
     fetchPlacesByCategory("learning-center").then(setAllLCs);
-    // Re-fetch on bfcache restoration (browser back button restores frozen page)
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) {
-        fetchPlacesByCategory("school").then(setAllSchools);
-        fetchPlacesByCategory("learning-center").then(setAllLCs);
-      }
-    };
-    window.addEventListener("pageshow", onPageShow);
-    return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
   const tier2Ref = useRef<HTMLDivElement>(null);
@@ -1379,15 +1370,8 @@ function FeaturePair() {
 // ─── IndexList ────────────────────────────────────────────────────────────────
 function IndexList() {
   const { lang, t } = useLang();
-  const [counts, setCounts] = useState<Partial<Record<string, number>>>(() => getCachedCounts());
-  useEffect(() => {
-    fetchCategoryCounts().then(setCounts);
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) fetchCategoryCounts().then(setCounts);
-    };
-    window.addEventListener("pageshow", onPageShow);
-    return () => window.removeEventListener("pageshow", onPageShow);
-  }, []);
+  const [counts, setCounts] = useState<Partial<Record<string, number>>>({});
+  useEffect(() => { fetchCategoryCounts().then(setCounts); }, []);
 
   const INDEX_CATS = [
     { icon: "daycare",    name: t.catDaycare,       count: counts["daycare"]        ?? null, href: "/daycare"        },
@@ -1520,15 +1504,8 @@ function CoverStoryCard({
 // ─── CoverStory — 2×2 grid ────────────────────────────────────────────────────
 function CoverStory() {
   const { t } = useLang();
-  const [allPlaces, setAllPlaces] = useState<Place[]>(() => getCachedAllPlaces());
-  useEffect(() => {
-    fetchAllPlaces().then(setAllPlaces);
-    const onPageShow = (e: PageTransitionEvent) => {
-      if (e.persisted) fetchAllPlaces().then(setAllPlaces);
-    };
-    window.addEventListener("pageshow", onPageShow);
-    return () => window.removeEventListener("pageshow", onPageShow);
-  }, []);
+  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+  useEffect(() => { fetchAllPlaces().then(setAllPlaces); }, []);
 
   const featured = allPlaces.filter((p) => p.isFeatured).slice(0, 4);
   const cards = featured.length >= 4
