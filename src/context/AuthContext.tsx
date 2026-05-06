@@ -17,7 +17,7 @@ export type UserData = {
   premiumExpiresAt?: string; // ISO date string — undefined for lifetime members
 };
 
-export type Tier = "guest" | "free" | "registered" | "premium";
+export type Tier = "free" | "premium";
 
 type AuthContextType = {
   user: UserData | null;
@@ -30,17 +30,17 @@ type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType>({
-  user: null, tier: "guest", isRegistered: false, loaded: false,
+  user: null, tier: "free", isRegistered: false, loaded: false,
   register: () => {}, logout: () => {}, upgradeToPremium: (_lifetime?: boolean) => {},
 });
 
 function computeTier(user: UserData | null): Tier {
-  if (!user) return "free";              // anonymous
+  if (!user) return "free";
   if (user.tier === "premium") {
     if (user.lifetime) return "premium";
     if (user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date()) return "premium";
   }
-  return "registered";                   // logged-in free = Terdaftar
+  return "free";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -72,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("savedIds");
     localStorage.removeItem("compareIds");
     localStorage.removeItem("userReviews");
+    localStorage.removeItem("profilePhoto");
     setUser(null);
   }
 

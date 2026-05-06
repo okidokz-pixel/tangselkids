@@ -5,6 +5,8 @@ export type RegisterSheetOptions = {
   title?: string;
   subtitle?: string;
   onRegistered?: () => void;
+  /** Show only name + address in the profile step (hide photo, DOB, kids) — used for the upgrade-then-pay flow */
+  minimalProfile?: boolean;
 };
 
 type RegisterSheetContextType = {

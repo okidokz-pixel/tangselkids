@@ -6,7 +6,10 @@ import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { BottomNav } from "@/components/BottomNav";
-import { places, getAreaGroup } from "@/lib/mockData";
+import { AreaCoverageButton } from "@/components/AreaCoverageButton";
+import { getAreaGroup } from "@/lib/mockData";
+import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, getCachedCategory, getCachedCounts, getCachedAllPlaces } from "@/lib/db";
+import type { Place } from "@/lib/mockData";
 import { articles, localizeArticle } from "@/lib/articles";
 
 // ─── Photo URLs (replace before launch — see README) ─────────────────────────
@@ -64,48 +67,35 @@ const LC_AGE_BANDS: Record<"id" | "en", { key: string; label: string; sub: strin
 // ─── Area multipliers ─────────────────────────────────────────────────────────
 const AREA_MULT: Record<AreaKey, number> = { Bintaro: 1.0, BSD: 0.78, Semua: 1.7 };
 
-// ─── Dynamic count helpers ────────────────────────────────────────────────────
-function countCat(cat: string): number {
-  return places.filter((p) => p.category === cat).length;
-}
-function countPlacesByCat(cat: "school" | "learning-center", areaKey: AreaKey): number {
-  return places.filter((p) => {
-    if (p.category !== cat) return false;
-    if (areaKey === "Semua") return true;
-    const g = getAreaGroup(p.area);
-    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
-  }).length;
+// ─── Count helpers (accept data arrays so they work with both mock and live data)
+function matchesArea(area: string, areaKey: AreaKey): boolean {
+  if (areaKey === "Semua") return true;
+  const g = getAreaGroup(area);
+  return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
 }
 
-/** Count schools that offer a given grade level, filtered by area. */
-function countSchoolByGradeAndArea(gradeKey: string, areaKey: AreaKey): number {
-  return places.filter((p) => {
-    if (p.category !== "school") return false;
+function buildAreas(schools: Place[], lcs: Place[]): { key: AreaKey; counts: Record<CategoryKey, number> }[] {
+  return (["Bintaro", "BSD", "Semua"] as AreaKey[]).map(key => ({
+    key,
+    counts: {
+      sekolah: schools.filter(p => matchesArea(p.area, key)).length,
+      kursus:  lcs.filter(p => matchesArea(p.area, key)).length,
+    },
+  }));
+}
+
+function countSchoolByGrade(gradeKey: string, areaKey: AreaKey, schools: Place[]): number {
+  return schools.filter(p =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (!p.grades?.includes(gradeKey as any)) return false;
-    if (areaKey === "Semua") return true;
-    const g = getAreaGroup(p.area);
-    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
-  }).length;
+    p.grades?.includes(gradeKey as any) && matchesArea(p.area, areaKey)
+  ).length;
 }
 
-/** Count learning centers that serve a given age group key, filtered by area. */
-function countLCByAgeAndArea(ageKey: string, areaKey: AreaKey): number {
-  return places.filter((p) => {
-    if (p.category !== "learning-center") return false;
-    if (!p.ageGroups?.includes(ageKey)) return false;
-    if (areaKey === "Semua") return true;
-    const g = getAreaGroup(p.area);
-    return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
-  }).length;
+function countLCByAge(ageKey: string, areaKey: AreaKey, lcs: Place[]): number {
+  return lcs.filter(p =>
+    p.ageGroups?.includes(ageKey) && matchesArea(p.area, areaKey)
+  ).length;
 }
-
-// ─── Areas with dynamic counts ───────────────────────────────────────────────
-const AREAS: { key: AreaKey; counts: Record<CategoryKey, number> }[] = [
-  { key: "Bintaro", counts: { sekolah: countPlacesByCat("school", "Bintaro"), kursus: countPlacesByCat("learning-center", "Bintaro") } },
-  { key: "BSD",     counts: { sekolah: countPlacesByCat("school", "BSD"),     kursus: countPlacesByCat("learning-center", "BSD")     } },
-  { key: "Semua",   counts: { sekolah: countPlacesByCat("school", "Semua"),   kursus: countPlacesByCat("learning-center", "Semua")   } },
-];
 
 // ─── Chev ─────────────────────────────────────────────────────────────────────
 function Chev({
@@ -472,14 +462,14 @@ function Masthead({ userInitial }: { userInitial: string }) {
         </div>
 
         {/* tagline */}
-        <div style={{
-          marginTop: 14, fontSize: 12.5, lineHeight: 1.45,
-          color: "#475569", maxWidth: 320,
-        }}>
+        <div style={{ marginTop: 14, fontSize: 12.5, lineHeight: 1.45, color: "#475569", maxWidth: 320 }}>
           {t.homeAltTagline}{" "}
           <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>Bintaro</b>
           {" "}{lang === "id" ? "dan" : "&"}{" "}
-          <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>BSD</b>.
+          <b style={{ color: "var(--tk-accent, #c47a14)", fontWeight: 700 }}>BSD</b>
+          <span style={{ display: "inline-flex", verticalAlign: "middle", marginLeft: 5 }}>
+            <AreaCoverageButton />
+          </span>
         </div>
 
       </div>
@@ -574,22 +564,24 @@ function FeatureSquare({
 
 // ─── AreaPills ────────────────────────────────────────────────────────────────
 function AreaPills({
-  category, value, onPick,
+  category, value, onPick, areas,
 }: {
   category: CategoryKey;
   value: AreaKey | null;
   onPick: (k: AreaKey) => void;
+  areas: { key: AreaKey; counts: Record<CategoryKey, number> }[];
 }) {
   const { t } = useLang();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{
-        fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8",
-      }}>
-        {t.homeAltAreaWhere}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
+          {t.homeAltAreaWhere}
+        </span>
+        <AreaCoverageButton />
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {AREAS.map((a) => {
+        {areas.map((a) => {
           const active = value === a.key;
           const displayLabel = a.key === "Semua" ? t.homeAltAreaAll : a.key;
           return (
@@ -1016,12 +1008,14 @@ function LangPills({
 
 // ─── AgeBands ─────────────────────────────────────────────────────────────────
 function AgeBands({
-  category, area, onPick, selected,
+  category, area, onPick, selected, schools, lcs,
 }: {
   category: CategoryKey;
   area: AreaKey;
   onPick?: (key: string) => void;
   selected?: string | null;
+  schools: Place[];
+  lcs: Place[];
 }) {
   const { lang, t } = useLang();
   const railRef = useRef<HTMLDivElement>(null);
@@ -1078,7 +1072,7 @@ function AgeBands({
         >
           {isSchool
             ? schoolBands.map((b) => {
-                const n = countSchoolByGradeAndArea(b.key, area);
+                const n = countSchoolByGrade(b.key, area, schools);
                 const active = selected === b.key;
                 const inner = (
                   <>
@@ -1096,9 +1090,9 @@ function AgeBands({
                         {b.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
+                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
                       color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
-                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b>
                     </div>
                   </>
                 );
@@ -1133,7 +1127,7 @@ function AgeBands({
                 );
               })
             : lcBands.map((b) => {
-                const n = countLCByAgeAndArea(b.key, area);
+                const n = countLCByAge(b.key, area, lcs);
                 const active = selected === b.key;
                 const inner = (
                   <>
@@ -1151,9 +1145,9 @@ function AgeBands({
                         {b.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
+                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
                       color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
-                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b> {t.homeAltTempatUnit}
+                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b>
                     </div>
                   </>
                 );
@@ -1217,6 +1211,46 @@ function FeaturePair() {
   const [area, setArea] = useState<AreaKey | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
 
+  const [allSchools, setAllSchools] = useState<Place[]>(() => getCachedCategory("school"));
+  const [allLCs,     setAllLCs]     = useState<Place[]>(() => getCachedCategory("learning-center"));
+  useEffect(() => {
+    fetchPlacesByCategory("school").then(setAllSchools);
+    fetchPlacesByCategory("learning-center").then(setAllLCs);
+    // Re-fetch on bfcache restoration (browser back button restores frozen page)
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        fetchPlacesByCategory("school").then(setAllSchools);
+        fetchPlacesByCategory("learning-center").then(setAllLCs);
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
+  const tier2Ref = useRef<HTMLDivElement>(null);
+  const tier3Ref = useRef<HTMLDivElement>(null);
+
+  // Scroll newly revealed tiers above the bottom nav (≈80px)
+  function scrollIntoViewAboveNav(ref: React.RefObject<HTMLDivElement | null>) {
+    setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const bottomNavH = 84;
+      const gap = 12;
+      const overflow = rect.bottom - (window.innerHeight - bottomNavH - gap);
+      if (overflow > 0) window.scrollBy({ top: overflow, behavior: "smooth" });
+    }, 420); // after CSS slide-down animation
+  }
+
+  useEffect(() => {
+    if (area) scrollIntoViewAboveNav(tier2Ref);
+  }, [area]);
+
+  useEffect(() => {
+    if (grade) scrollIntoViewAboveNav(tier3Ref);
+  }, [grade]);
+
   const toggleCard = (k: CategoryKey) => {
     if (open === k) {
       setOpen(null);
@@ -1229,8 +1263,9 @@ function FeaturePair() {
     }
   };
 
-  const schoolTotal = countCat("school");
-  const lcTotal     = countCat("learning-center");
+  const schoolTotal = allSchools.length;
+  const lcTotal     = allLCs.length;
+  const areas       = buildAreas(allSchools, allLCs);
 
   return (
     <div style={{ padding: "28px 22px 0" }}>
@@ -1286,13 +1321,14 @@ function FeaturePair() {
             category={open}
             value={area}
             onPick={(k) => { setArea(k); setGrade(null); }}
+            areas={areas}
           />
         )}
 
       </div>
 
       {/* Tier 2: age bands — slides in after an area is picked */}
-      <div style={{
+      <div ref={tier2Ref} style={{
         marginTop: open && area ? 14 : 0,
         maxHeight: open && area ? 160 : 0,
         opacity: open && area ? 1 : 0,
@@ -1305,12 +1341,14 @@ function FeaturePair() {
             area={area}
             selected={grade}
             onPick={(key) => setGrade(key)}
+            schools={allSchools}
+            lcs={allLCs}
           />
         )}
       </div>
 
       {/* Tier 3: language pills (schools) — slides in after a grade is picked */}
-      <div style={{
+      <div ref={tier3Ref} style={{
         marginTop: open === "sekolah" && area && grade ? 14 : 0,
         maxHeight: open === "sekolah" && area && grade ? 200 : 0,
         opacity: open === "sekolah" && area && grade ? 1 : 0,
@@ -1323,7 +1361,7 @@ function FeaturePair() {
       </div>
 
       {/* Tier 3: course type pills (learning centers) — slides in after an age is picked */}
-      <div style={{
+      <div ref={open === "kursus" ? tier3Ref : undefined} style={{
         marginTop: open === "kursus" && area && grade ? 14 : 0,
         maxHeight: open === "kursus" && area && grade ? 220 : 0,
         opacity: open === "kursus" && area && grade ? 1 : 0,
@@ -1341,16 +1379,25 @@ function FeaturePair() {
 // ─── IndexList ────────────────────────────────────────────────────────────────
 function IndexList() {
   const { lang, t } = useLang();
+  const [counts, setCounts] = useState<Partial<Record<string, number>>>(() => getCachedCounts());
+  useEffect(() => {
+    fetchCategoryCounts().then(setCounts);
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) fetchCategoryCounts().then(setCounts);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   const INDEX_CATS = [
-    { icon: "daycare",    name: t.catDaycare,       count: countCat("daycare"),        href: "/daycare"        },
-    { icon: "playground", name: t.catPlayground,    count: countCat("playground"),     href: "/playgrounds"    },
-    { icon: "clinic",     name: t.catClinic,        count: countCat("clinic"),         href: "/clinics"        },
-    { icon: "cafe",       name: t.catCafe,          count: countCat("cafe"),           href: "/cafes"          },
-    { icon: "animals",    name: t.catMiniZoo,       count: countCat("mini-zoo"),       href: "/mini-zoo"       },
-    { icon: "pool",       name: t.catSwimmingPool,  count: countCat("swimming-pool"),  href: "/swimming-pools" },
-    { icon: "books",      name: t.catBookstore,     count: countCat("bookstore"),      href: "/bookstores"     },
-    { icon: "more",       name: t.homeOthers,       count: null,                       href: "/others"         },
+    { icon: "daycare",    name: t.catDaycare,       count: counts["daycare"]        ?? null, href: "/daycare"        },
+    { icon: "playground", name: t.catPlayground,    count: counts["playground"]     ?? null, href: "/playgrounds"    },
+    { icon: "clinic",     name: t.catClinic,        count: counts["clinic"]         ?? null, href: "/clinics"        },
+    { icon: "cafe",       name: t.catCafe,          count: counts["cafe"]           ?? null, href: "/cafes"          },
+    { icon: "animals",    name: t.catMiniZoo,       count: counts["mini-zoo"]       ?? null, href: "/mini-zoo"       },
+    { icon: "pool",       name: t.catSwimmingPool,  count: counts["swimming-pool"]  ?? null, href: "/swimming-pools" },
+    { icon: "books",      name: t.catBookstore,     count: counts["bookstore"]      ?? null, href: "/bookstores"     },
+    { icon: "more",       name: t.homeOthers,       count: null,                             href: "/others"         },
   ];
 
   return (
@@ -1473,12 +1520,23 @@ function CoverStoryCard({
 // ─── CoverStory — 2×2 grid ────────────────────────────────────────────────────
 function CoverStory() {
   const { t } = useLang();
-  const featured = places.filter((p) => p.isFeatured).slice(0, 4);
+  const [allPlaces, setAllPlaces] = useState<Place[]>(() => getCachedAllPlaces());
+  useEffect(() => {
+    fetchAllPlaces().then(setAllPlaces);
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) fetchAllPlaces().then(setAllPlaces);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
+  const featured = allPlaces.filter((p) => p.isFeatured).slice(0, 4);
   const cards = featured.length >= 4
     ? featured
-    : [...featured, ...places.filter((p) => !p.isFeatured)].slice(0, 4);
+    : [...featured, ...allPlaces.filter((p) => !p.isFeatured)].slice(0, 4);
 
-  const [saved, setSaved] = useState<boolean[]>(cards.map(() => false));
+  const [saved, setSaved] = useState<boolean[]>([]);
+  useEffect(() => { setSaved(cards.map(() => false)); }, [cards.length]);
   const toggle = (i: number) => setSaved((s) => s.map((v, j) => j === i ? !v : v));
 
   return (
@@ -1641,8 +1699,8 @@ export default function HomeAltPage() {
     <div style={{ "--tk-accent": "#2e8a5a" } as React.CSSProperties}>
       <style>{`
         @keyframes alt-home-enter {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
         .alt-home-content {
           animation: alt-home-enter 0.5s ease both;

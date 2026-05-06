@@ -1,11 +1,13 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Search, X } from "lucide-react";
-import { places, getAreaGroup } from "@/lib/mockData";
+import { getAreaGroup, type Place } from "@/lib/mockData";
+import { fetchAllPlaces } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { PlaceCard } from "@/components/PlaceCard";
 import { type AreaFilter } from "@/components/AreaToggle";
+import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { BottomNav } from "@/components/BottomNav";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
@@ -15,6 +17,10 @@ type Cat =
 
 export default function ExplorePage() {
   const { t } = useLang();
+  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  useEffect(() => { fetchAllPlaces().then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+
   const [query, setQuery] = useState("");
   const [cat,   setCat]   = useState<Cat>("all");
   const [area,  setArea]  = useState<AreaFilter>("all");
@@ -32,7 +38,7 @@ export default function ExplorePage() {
     { value: "bookstore",       label: t.exploreBookstores    },
   ];
 
-  const filtered = places
+  const filtered = allPlaces
     .filter((p) => {
       const matchCat   = cat === "all" || p.category === cat;
       const matchArea  = area === "all" || getAreaGroup(p.area) === area;
@@ -94,8 +100,8 @@ export default function ExplorePage() {
       {/* Filters + Results */}
       <div style={{ padding: "16px 20px 0", display: "flex", flexDirection: "column", gap: 12 }}>
 
-        {/* 1 — Area chips */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {/* 1 — Area chips + ⓘ */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {(["all", "bintaro", "bsd"] as AreaFilter[]).map((v) => {
             const label = v === "all" ? t.areaAll : v === "bintaro" ? t.areaBintaro : t.areaBSD;
             const active = area === v;
@@ -127,6 +133,7 @@ export default function ExplorePage() {
               </label>
             );
           })}
+          <AreaCoverageButton />
         </div>
 
         {/* 2 — Category dropdown (label + select on one line) */}
@@ -184,7 +191,7 @@ export default function ExplorePage() {
             <div style={{ textAlign: "center", padding: "64px 0" }}>
               <Search size={40} style={{ color: "var(--tk-line)", margin: "0 auto 12px" }} />
               <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "var(--tk-muted)" }}>
-                {t.exploreNoResults}
+                {loading ? "Memuat..." : t.exploreNoResults}
               </p>
             </div>
           )}

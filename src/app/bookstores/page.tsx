@@ -1,15 +1,17 @@
 ﻿"use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
-import { bookstores, placeMatchesAreas } from "@/lib/mockData";
+import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { PremiumBadge } from "@/components/PremiumBadge";
+import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
@@ -57,6 +59,10 @@ const HEADER_STYLE = {
 
 function BookstoresContent() {
   const { t } = useLang();
+  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  useEffect(() => { fetchPlacesByCategory("bookstore").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+
   const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
 
@@ -66,14 +72,14 @@ function BookstoresContent() {
     searchParams.get("view") === "results" ? "results" : "filter";
 
   const [area,   setArea]   = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
-  const [sortBy, setSortBy] = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
+  const [sortBy, setSortBy] = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
 
-  const filtered = bookstores
+  const filtered = allPlaces
     .filter(b => area === "all" || placeMatchesAreas(b, [area]))
     .sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "price" ? a.priceMin - b.priceMin : sortBy === "rating" ? b.rating - a.rating : a.name.localeCompare(b.name);
+    return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
   });
 
   const activeCount = [area !== "all"].filter(Boolean).length;
@@ -120,12 +126,13 @@ function BookstoresContent() {
         <div style={{ padding: "24px 20px 130px" }}>
           <div style={{ marginBottom: 28 }}>
             <SectionHead>Area</SectionHead>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               {(["all","bintaro","bsd"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
                   {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : "BSD"}
                 </Chip>
               ))}
+              <AreaCoverageButton />
             </div>
           </div>
 
@@ -194,13 +201,13 @@ function BookstoresContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
+        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
           border: "1.5px solid #e2e8f0" }}>
           <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? t.sortAlpha : sortBy === "rating" ? t.sortRating : t.sortPrice}
+          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
         </ActionButton>
       </div>
 

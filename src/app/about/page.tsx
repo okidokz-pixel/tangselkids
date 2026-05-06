@@ -1,6 +1,11 @@
 ﻿"use client";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, MapPin, Heart, Star, Users } from "lucide-react";
+
+const COVERAGE = {
+  bintaro: ["Bintaro Jaya", "Pondok Aren", "Pesanggrahan", "Ciputat", "Ciputat Timur", "Pamulang"],
+  bsd:     ["BSD City", "Serpong", "Serpong Utara", "Gading Serpong", "Alam Sutera", "Cisauk", "Pagedangan"],
+};
 import { BottomNav } from "@/components/BottomNav";
 
 const features = [
@@ -96,6 +101,62 @@ export default function AboutPage() {
             </div>
           </div>
         ))}
+
+        {/* Coverage card */}
+        <div style={{
+          background: "#fff", borderRadius: 18, padding: "18px 18px 20px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.05)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+              background: "#e6f4ed",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <MapPin size={20} color="#2e8a5a" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700, color: "#0f172a", margin: "0 0 2px" }}>
+                Cakupan Wilayah:
+              </p>
+              <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: 0 }}>
+                Area coverage terus berkembang 🌱
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {(["bintaro", "bsd"] as const).map((area) => (
+              <div key={area} style={{
+                background: area === "bintaro" ? "#f0fdf4" : "#eff6ff",
+                borderRadius: 14, padding: "12px 14px 14px",
+                border: `1.5px solid ${area === "bintaro" ? "#bbf7d0" : "#bfdbfe"}`,
+              }}>
+                <p style={{
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: 13, fontWeight: 700,
+                  color: area === "bintaro" ? "#166534" : "#1d4ed8",
+                  margin: "0 0 8px",
+                }}>
+                  {area === "bintaro" ? "Bintaro" : "BSD"}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {COVERAGE[area].map((name) => (
+                    <span key={name} style={{
+                      fontSize: 11.5,
+                      color: area === "bintaro" ? "#15803d" : "#1d4ed8",
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                      fontWeight: 500, lineHeight: 1.4,
+                    }}>
+                      · {name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Mission card */}
         <div style={{

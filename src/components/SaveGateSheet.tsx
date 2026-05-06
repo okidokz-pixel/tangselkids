@@ -1,22 +1,16 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 
-/**
- * SaveGateSheet — shown to anonymous users when they tap the save/favorite
- * button. Explains the benefit and offers two actions:
- *   • "Daftar Sekarang" → opens the registration modal (caller handles this)
- *   • "Nanti Saja"      → dismisses the sheet
- */
 export function SaveGateSheet({
   isOpen,
   onClose,
-  onRegister,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onRegister: () => void;
 }) {
+  const router = useRouter();
   const { t } = useLang();
 
   if (!isOpen) return null;
@@ -50,11 +44,11 @@ export function SaveGateSheet({
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 999,
-            background: "linear-gradient(135deg, #16a34a, #22c55e)",
+            background: "linear-gradient(135deg, #f59e0b, #d97706)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28,
           }}>
-            ❤️
+            ⭐
           </div>
         </div>
 
@@ -77,15 +71,15 @@ export function SaveGateSheet({
           {t.saveGateBody}
         </p>
 
-        {/* CTA — register */}
+        {/* CTA — upgrade */}
         <ActionButton
-          onClick={() => { onClose(); onRegister(); }}
+          onClick={() => { onClose(); router.push("/upgrade"); }}
           style={{
             width: "100%",
             padding: "17px 0",
             borderRadius: 16,
             border: "none",
-            background: "linear-gradient(135deg, #16a34a, #22c55e)",
+            background: "linear-gradient(135deg, #f59e0b, #d97706)",
             color: "#fff",
             fontFamily: "var(--font-jakarta), sans-serif",
             fontSize: 16,
@@ -96,7 +90,7 @@ export function SaveGateSheet({
             gap: 10,
             touchAction: "manipulation",
             WebkitTapHighlightColor: "transparent",
-            boxShadow: "0 4px 16px rgba(22,163,74,0.35)",
+            boxShadow: "0 4px 16px rgba(217,119,6,0.35)",
           }}
         >
           {t.saveGateCta}

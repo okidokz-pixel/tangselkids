@@ -1,9 +1,9 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Heart, Trash2 } from "lucide-react";
-import { places } from "@/lib/mockData";
+import { type Place } from "@/lib/mockData";
+import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PremiumBadge } from "@/components/PremiumBadge";
@@ -12,24 +12,24 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function SavedPage() {
   const { t } = useLang();
-  const { tier, loaded } = useAuth();
-  const router = useRouter();
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const { loaded } = useAuth();
+  const [savedIds,    setSavedIds]    = useState<string[]>([]);
+  const [savedPlaces, setSavedPlaces] = useState<Place[]>([]);
+  const [mounted,     setMounted]     = useState(false);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
     setSavedIds(ids);
     setMounted(true);
+    fetchPlacesByIds(ids).then(setSavedPlaces);
   }, []);
 
   function unsave(id: string) {
     const next = savedIds.filter((x) => x !== id);
     setSavedIds(next);
+    setSavedPlaces(prev => prev.filter(p => p.id !== id));
     localStorage.setItem("savedIds", JSON.stringify(next));
   }
-
-  const savedPlaces = places.filter((p) => savedIds.includes(p.id));
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col pb-28">
@@ -52,11 +52,6 @@ export default function SavedPage() {
         </h1>
         {mounted && savedPlaces.length > 0 && (
           <p className="text-white/60 text-xs font-jakarta mt-1">{t.savedCount(savedPlaces.length)}</p>
-        )}
-        {mounted && tier === "registered" && (
-          <p className="text-white/50 text-xs font-jakarta mt-0.5">
-            {savedPlaces.length}/5 favorit ·<span className="underline cursor-pointer" onClick={() => router.push("/upgrade")}>Upgrade untuk tanpa batas</span>
-          </p>
         )}
       </div>
 

@@ -1,7 +1,8 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { daycares, playgrounds, getAreaGroup } from "@/lib/mockData";
+import { getAreaGroup, type Place } from "@/lib/mockData";
+import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { AreaToggle, type AreaFilter } from "@/components/AreaToggle";
 import { PlaceCard } from "@/components/PlaceCard";
@@ -12,6 +13,13 @@ export default function DaycarePlaygroundsPage() {
   const [playgroundFilter, setPlaygroundFilter] = useState<"all" | "indoor" | "outdoor">("all");
   const [freeOnly,         setFreeOnly]         = useState(false);
   const [activeArea,       setActiveArea]       = useState<AreaFilter>("all");
+
+  const [daycares,    setDaycares]    = useState<Place[]>([]);
+  const [playgrounds, setPlaygrounds] = useState<Place[]>([]);
+  useEffect(() => {
+    fetchPlacesByCategory("daycare").then(setDaycares);
+    fetchPlacesByCategory("playground").then(setPlaygrounds);
+  }, []);
 
   const filteredDaycares = daycares
     .filter((d) => activeArea === "all" || getAreaGroup(d.area) === activeArea);

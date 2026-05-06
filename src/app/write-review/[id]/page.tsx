@@ -3,7 +3,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { ChevronLeft, Pencil, Check, Star } from "lucide-react";
-import { places } from "@/lib/mockData";
+import { type Place } from "@/lib/mockData";
+import { fetchPlaceById } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { ActionButton } from "@/components/ActionButton";
@@ -73,7 +74,8 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const router   = useRouter();
   const { t }    = useLang();
   const { user, tier, loaded } = useAuth();
-  const place    = places.find((p) => p.id === id);
+  const [place, setPlace] = useState<Place | null>(null);
+  useEffect(() => { fetchPlaceById(id).then(setPlace); }, [id]);
 
   const [step,               setStep]               = useState<Step>("form");
   const [name,               setName]               = useState(user?.name ?? "");

@@ -1,10 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { X, ChevronLeft, Navigation, Loader, Plus } from "lucide-react";
+import { X, ChevronLeft, Navigation, Loader, Plus, Camera, User } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
+import { ImageCropper } from "./ImageCropper";
 
 type Step = "phone" | "otp" | "profile" | "done";
 
@@ -61,6 +62,7 @@ export function RegisterSheet() {
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
+  const [showExitWarning, setShowExitWarning] = useState(false);
 
   // OTP
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -80,6 +82,12 @@ export function RegisterSheet() {
   const [kids, setKids]             = useState<Kid[]>([]);
   const [showReveal, setShowReveal] = useState(false);
 
+  // Photo
+  const [profilePhoto, setProfilePhoto] = useState("");
+  const [cropperSrc, setCropperSrc]     = useState("");
+  const [showCropper, setShowCropper]   = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const pendingData = useRef<Parameters<typeof register>[0] | null>(null);
   const onRegisteredRef = useRef(options.onRegistered);
   useEffect(() => { onRegisteredRef.current = options.onRegistered; });
@@ -97,6 +105,8 @@ export function RegisterSheet() {
       setLocLoading(false); setGeoError("");
       setDob(""); setKids([]);
       setShowReveal(false);
+      setProfilePhoto(""); setCropperSrc(""); setShowCropper(false);
+      setShowExitWarning(false);
       pendingData.current = null;
     }
   }, [isOpen]);
@@ -115,6 +125,7 @@ export function RegisterSheet() {
       const revealTimer = setTimeout(() => setShowReveal(true), 350);
       const doneTimer = setTimeout(() => {
         if (pendingData.current) register(pendingData.current);
+        if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
         closeRegisterSheet();
         onRegisteredRef.current?.();
       }, 2800);
@@ -123,6 +134,13 @@ export function RegisterSheet() {
   }, [step, register, closeRegisterSheet]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function handleBackdropClick() {
+    if (step === "done") return;
+    const inProgress = step !== "phone" || phone.trim().length > 0;
+    if (inProgress) { setShowExitWarning(true); return; }
+    closeRegisterSheet();
+  }
 
   function handleSendOtp() {
     if (phone.replace(/\D/g, "").length < 7) return;
@@ -186,12 +204,24 @@ export function RegisterSheet() {
     setKids(next);
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setCropperSrc(ev.target?.result as string);
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
   function handleSubmit() {
     let valid = true;
     if (!name.trim()) { setNameError("Nama wajib diisi"); valid = false; } else setNameError("");
     if (!address.trim()) { setAddressError("Alamat wajib diisi"); valid = false; } else setAddressError("");
     if (!valid) return;
-    pendingData.current = {
+    const data = {
       phone: `+62${phone.replace(/^0/, "")}`,
       name: name.trim(),
       address: address.trim(),
@@ -200,7 +230,15 @@ export function RegisterSheet() {
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
     };
-    setStep("done");
+    if (options.minimalProfile) {
+      register(data);
+      if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
+      closeRegisterSheet();
+      onRegisteredRef.current?.();
+    } else {
+      pendingData.current = data;
+      setStep("done");
+    }
   }
 
   const mapSrc = addressLat && addressLng
@@ -257,13 +295,95 @@ export function RegisterSheet() {
 
       {/* Backdrop */}
       <div
-        onClick={closeRegisterSheet}
+        onClick={handleBackdropClick}
         style={{
           position: "fixed", inset: 0, zIndex: 1000,
           background: "rgba(0,0,0,0.55)",
           animation: "sheet-fade-in 0.25s ease both",
         }}
       />
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
+
+      {/* Exit confirmation dialog */}
+      {showExitWarning && (
+        <div
+          onClick={() => setShowExitWarning(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 1050,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "0 32px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff", borderRadius: 24, padding: "28px 24px",
+              width: "100%", maxWidth: 360,
+              boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+            <p style={{
+              fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 17, fontWeight: 700, color: "#0e1d4f",
+              margin: "0 0 8px",
+            }}>
+              Yakin mau keluar?
+            </p>
+            <p style={{
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, color: "#64748b", lineHeight: 1.55,
+              margin: "0 0 24px",
+            }}>
+              Kamu sedang dalam proses pendaftaran. Jika keluar, data yang sudah diisi akan hilang.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <ActionButton
+                onClick={() => setShowExitWarning(false)}
+                style={{
+                  flex: 1, padding: "13px 0", borderRadius: 14,
+                  background: "#f1f5f9", color: "#0e1d4f",
+                  fontSize: 14, fontWeight: 700,
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                }}
+              >
+                Lanjut Daftar
+              </ActionButton>
+              <ActionButton
+                onClick={() => { setShowExitWarning(false); closeRegisterSheet(); }}
+                style={{
+                  flex: 1, padding: "13px 0", borderRadius: 14,
+                  background: "#fee2e2", color: "#dc2626",
+                  fontSize: 14, fontWeight: 700,
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                }}
+              >
+                Keluar
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo cropper — rendered above the sheet (zIndex 1100) */}
+      {showCropper && (
+        <ImageCropper
+          imageSrc={cropperSrc}
+          zIndex={1100}
+          onConfirm={(dataUrl) => { setProfilePhoto(dataUrl); setShowCropper(false); }}
+          onCancel={() => setShowCropper(false)}
+        />
+      )}
 
       {/* Full-screen reveal overlay */}
       {showReveal && (
@@ -391,7 +511,7 @@ export function RegisterSheet() {
             <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 0", position: "relative" }}>
               <div style={{ width: 40, height: 4, borderRadius: 999, background: "#e2e8f0" }} />
               <ActionButton
-                onClick={closeRegisterSheet}
+                onClick={handleBackdropClick}
                 style={{
                   position: "absolute", right: 16, top: 10,
                   width: 32, height: 32, borderRadius: 999,
@@ -541,6 +661,7 @@ export function RegisterSheet() {
                   </label>
                   <input
                     type="text"
+                    autoFocus
                     placeholder={t.obNamePlaceholder}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -554,11 +675,10 @@ export function RegisterSheet() {
                   <label style={labelStyle}>
                     {t.obAddressLabel} <span style={{ color: "#ef4444" }}>*</span>
                   </label>
-                  {/* Prominent hint */}
                   <div style={{
                     display: "flex", alignItems: "flex-start", gap: 8,
                     background: "#fffbeb", border: "1.5px solid #f59e0b",
-                    borderRadius: 12, padding: "10px 12px", marginBottom: 10,
+                    borderRadius: 12, padding: "10px 12px", marginBottom: 12,
                   }}>
                     <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔔</span>
                     <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: "#92400e", lineHeight: 1.45, fontFamily: "var(--font-jakarta, sans-serif)" }}>
@@ -566,28 +686,51 @@ export function RegisterSheet() {
                       Agar kami dapat menemukan tempat terdekat dari rumahmu.
                     </p>
                   </div>
-                  <textarea
-                    placeholder={t.obAddressPlaceholder}
-                    value={address}
-                    onChange={(e) => { setAddress(e.target.value); setGeoError(""); }}
-                    rows={2}
-                    style={{ ...inputStyle, resize: "none" }}
-                  />
-                  {addressError && <p style={errorStyle}>{t.obAddressError}</p>}
+                  {/* Location button — always visible */}
                   <ActionButton
                     onClick={handleGetLocation}
                     style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      marginTop: 8, padding: "8px 14px", borderRadius: 999,
-                      background: "var(--tk-accent-pale, #e6f4ed)", color: "var(--tk-accent, #2e8a5a)",
-                      fontSize: 12, fontWeight: 700, border: "1.5px solid #bfdbfe",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                      width: "100%", padding: "14px 20px", borderRadius: 14,
+                      background: address.trim()
+                        ? "#f1f5f9"
+                        : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                      color: address.trim() ? "#94a3b8" : "#fff",
+                      fontSize: 15, fontWeight: 700,
+                      boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
                     }}
                   >
                     {locLoading
-                      ? <><Loader size={12} style={{ animation: "rs-spin 1s linear infinite" }} /> {t.obLocating}</>
-                      : <><Navigation size={12} /> {t.obUseLocation}</>
+                      ? <><Loader size={16} style={{ animation: "rs-spin 1s linear infinite" }} /> {t.obLocating}</>
+                      : <><Navigation size={16} /> {t.obUseLocation}</>
                     }
                   </ActionButton>
+
+                  {/* Detected status chip + editable address — only after location is set */}
+                  {address && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{
+                        display: "inline-flex", alignItems: "center", gap: 5,
+                        background: "#dcfce7", borderRadius: 999, padding: "3px 10px",
+                        marginBottom: 8,
+                      }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#15803d", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                          Lokasi terdeteksi
+                        </span>
+                      </div>
+                      <textarea
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        rows={2}
+                        style={{ ...inputStyle, resize: "none", fontSize: 13 }}
+                      />
+                    </div>
+                  )}
+
+                  {addressError && <p style={{ ...errorStyle, marginTop: 6 }}>{t.obAddressError}</p>}
                   {geoError && (
                     <p style={{ fontSize: 11.5, color: "#f59e0b", marginTop: 6, lineHeight: 1.4, fontWeight: 500 }}>
                       ⚠ {geoError}
@@ -606,7 +749,81 @@ export function RegisterSheet() {
                   )}
                 </div>
 
-                {/* Date of birth */}
+                {/* Profile Photo — hidden in minimalProfile (upgrade) flow */}
+                {!options.minimalProfile && (
+                <div style={{ marginBottom: 18 }}>
+                  <label style={labelStyle}>
+                    Foto Profil <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span>
+                  </label>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <ActionButton
+                        onClick={() => {
+                          if (profilePhoto) { setCropperSrc(profilePhoto); setShowCropper(true); }
+                          else fileInputRef.current?.click();
+                        }}
+                        style={{
+                          width: 72, height: 72, borderRadius: 999,
+                          background: profilePhoto ? "transparent" : "#e6f4ed",
+                          border: "2.5px solid #2e8a5a",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          overflow: "clip", padding: 0,
+                        }}
+                      >
+                        {profilePhoto
+                          ? <img src={profilePhoto} alt="" style={{ width: 72, height: 72, objectFit: "cover" }} />
+                          : <User size={32} color="#2e8a5a" strokeWidth={1.5} />
+                        }
+                      </ActionButton>
+                      <div style={{
+                        position: "absolute", bottom: 2, right: 2,
+                        width: 20, height: 20, borderRadius: 999,
+                        background: "#2e8a5a", border: "2px solid #fff",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        pointerEvents: "none",
+                      }}>
+                        <Camera size={10} color="#fff" />
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a", margin: "0 0 6px", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                        {profilePhoto ? "Foto terpilih" : "Tambah foto profil"}
+                      </p>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <ActionButton
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "5px 10px", borderRadius: 999,
+                            background: "#e6f4ed", color: "#2e8a5a",
+                            fontSize: 11, fontWeight: 700,
+                            border: "1.5px solid #a7d4bc",
+                          }}
+                        >
+                          <Camera size={11} /> {profilePhoto ? "Ganti" : "Upload"}
+                        </ActionButton>
+                        {profilePhoto && (
+                          <ActionButton
+                            onClick={() => setProfilePhoto("")}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              padding: "5px 10px", borderRadius: 999,
+                              background: "#fef2f2", color: "#ef4444",
+                              fontSize: 11, fontWeight: 700,
+                              border: "1.5px solid #fecaca",
+                            }}
+                          >
+                            <X size={11} /> Hapus
+                          </ActionButton>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                )}
+
+                {/* Date of birth + Kids — hidden in minimalProfile (upgrade) flow */}
+                {!options.minimalProfile && (<>
                 <div style={{ marginBottom: 18 }}>
                   <label style={labelStyle}>
                     {t.obDobLabel} <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>({t.obOptional})</span>
@@ -696,18 +913,23 @@ export function RegisterSheet() {
                     <Plus size={14} strokeWidth={2.5} /> {t.obAddKid}
                   </ActionButton>
                 </div>
+                </>)}
 
                 {/* Submit */}
                 <ActionButton
-                  onClick={handleSubmit}
+                  onClick={address.trim() ? handleSubmit : () => {}}
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "17px 20px", borderRadius: 18,
-                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
-                    color: "#fff", fontWeight: 700, fontSize: 16,
-                    boxShadow: "0 8px 24px rgba(46,138,90,0.35)",
+                    background: address.trim()
+                      ? "linear-gradient(135deg, #1f6b43, #2e8a5a)"
+                      : "#e2e8f0",
+                    color: address.trim() ? "#fff" : "#94a3b8",
+                    fontWeight: 700, fontSize: 16,
+                    boxShadow: address.trim() ? "0 8px 24px rgba(46,138,90,0.35)" : "none",
                     fontFamily: "var(--font-fraunces), Georgia, serif",
                     letterSpacing: -0.3,
+                    cursor: address.trim() ? "pointer" : "default",
                   }}
                 >
                   {t.obSubmitBtn}

@@ -213,9 +213,9 @@ export const translations = {
     // ── COURSE TYPES ─────────────────────────────────────────
     courseTypeEnglish: "Bahasa Inggris",
     courseTypeMath: "Matematika",
-    courseTypeArts: "Seni",
-    courseTypeMusic: "Musik",
-    courseTypeCoding: "Coding/Robotik",
+    courseTypeArts: "Seni Rupa",
+    courseTypeMusic: "Musik & Vokal",
+    courseTypeCoding: "Coding / Robotik",
     courseTypeDance: "Tari & Balet",
     courseTypeGymnastics: "Gimnastik",
 
@@ -305,15 +305,27 @@ export const translations = {
     pdEnrollContact:   "Hubungi sekolah untuk informasi pendaftaran",
     pdPsbBtn:          "Aktifkan Notifikasi PSB",
     pdPsbAlert:        "🔔 Fitur notifikasi PSB segera hadir! Kamu akan diberitahu saat pendaftaran dibuka.",
-    pdChipBahasa:      "Bahasa",
-    pdChipUangPangkal: "Uang Pangkal",
-    pdChipSpp:         "SPP / Bulan",
+    pdChipBahasa:         "Bahasa",
+    pdChipUangPangkal:    "Uang Pangkal",
+    pdChipSpp:            "SPP / Bulan",
+    pdStudentsPerClass:   "Murid / Kelas",
+    pdComputerLab:        "Lab Komputer",
+    pdSchoolPool:         "Kolam Renang",
+    pdYearFounded:        "Tahun Berdiri",
+    pdFreeTrial:          "Free Trial",
+    pdTeacherRatio:       "Rasio Guru:Murid",
+    pdTeachingLanguage:   "Bahasa Pengantar",
+    pdCarerRatio:         "Rasio Pengasuh:Anak",
+    pdDaycareMethod:      "Kurikulum / Metode",
+    pdCctv:               "CCTV & Akses",
+    pdAccreditation:      "Akreditasi",
     pdChipCourseType:  "Tipe Kursus",
     pdChipAgeChild:    "Usia Anak",
     pdChipCost:        "Biaya",
     pdChipTicket:      "Tiket",
     pdChipServices:    "Layanan",
     pdChipBudget:      "Budget",
+    pdSeeDetails:      "Lihat detail lengkap",
 
     // ── COMPARE ─────────────────────────────────────────────
     cmpTitle: "Bandingkan Sekolah",
@@ -348,7 +360,7 @@ export const translations = {
 
     // ── CATEGORY LABELS ──────────────────────────────────────
     catSchool: "Sekolah",
-    catLC: "Pusat Belajar",
+    catLC: "Tempat Kursus",
     catDaycare: "Daycares",
     catPlayground: "Playgrounds",
     catClinic: "Klinik Tumbuh Kembang",
@@ -389,14 +401,14 @@ export const translations = {
 
     // ── GUEST GATE ───────────────────────────────────────────
     guestGateMore: (n: number) => `+${n} tempat lainnya`,
-    guestGateTitle: "Daftar Gratis & Dapatkan Akses Penuh",
+    guestGateTitle: "Akses Penuh dengan Premium",
     guestGateBenefits: [
-      "🏫  Lihat semua tempat tanpa batas",
-      "❤️  Simpan tempat favoritmu",
+      "❤️  Simpan tempat favoritmu tanpa batas",
       "🔍  Gunakan filter & sort canggih",
-      "📋  Akses detail lengkap setiap tempat",
+      "⚖️  Bandingkan hingga 3 sekolah sekaligus",
+      "✍️  Tulis ulasan & catatan pribadi",
     ],
-    guestGateCta: "Daftar GRATIS Sekarang!",
+    guestGateCta: "Upgrade ke Premium →",
 
     // ── FILTER GATE ──────────────────────────────────────────
     filterGateTitle: "Filter Khusus Premium",
@@ -407,9 +419,9 @@ export const translations = {
     profileTitle: "Profil",
     profileSubtitle: "Pengaturan & preferensi",
     profileGuest: "Belum Terdaftar",
-    profileGuestDesc: "Daftar gratis sekarang",
+    profileGuestDesc: "Upgrade ke Premium sekarang",
     profileGuestStatus: "Status Akun: Belum Terdaftar",
-    profileGuestStatusDesc: "Daftar gratis untuk menyimpan tempat favorit, menulis ulasan, dan dapatkan akses penuh ke semua fitur.",
+    profileGuestStatusDesc: "Upgrade ke premium untuk mendapatkan akses penuh ke semua fitur.",
     profileGuestRegister: "Daftar Gratis",
     profileLogin: "Masuk / Daftar",
     profileLang: "Bahasa",
@@ -557,7 +569,7 @@ export const translations = {
       { emoji: "📊", title: "Data SPP & Uang Pangkal",       desc: "Lihat biaya lengkap setiap sekolah — SPP bulanan, uang pangkal, dan kurikulum — tanpa blur." },
       { emoji: "⚖️", title: "Bandingkan Sekolah",            desc: "Bandingkan hingga 3 sekolah sekaligus: biaya, kurikulum, jenjang, dan rating." },
       { emoji: "✍️", title: "Tulis Ulasan",                  desc: "Bagikan pengalamanmu dan bantu ribuan orang tua lain membuat keputusan terbaik." },
-      { emoji: "❤️", title: "Simpan Tanpa Batas",            desc: "Simpan sebanyak apapun tempat favoritmu. Akun gratis dibatasi 3 tempat." },
+      { emoji: "❤️", title: "Simpan Tanpa Batas",            desc: "Simpan sebanyak apapun tempat favoritmu tanpa batas." },
       { emoji: "📞", title: "Kontak Langsung",               desc: "Akses nomor telepon & WhatsApp setiap tempat untuk menghubungi langsung." },
       { emoji: "📝", title: "Catatan Pribadi",               desc: "Tambahkan catatan pribadimu di setiap tempat — hanya kamu yang bisa lihat." },
       { emoji: "🎯", title: "Dukungan Prioritas",            desc: "Hubungi tim kami langsung via WhatsApp dan dapatkan respons lebih cepat." },
@@ -567,8 +579,8 @@ export const translations = {
     upgradeCompareGratis:   "Gratis",
     upgradeCompareRows: [
       ["Lihat listing",       "✓", "✓"],
-      ["Filter & urutkan",    "✓", "✓"],
-      ["Simpan tempat",       "3", "∞"],
+      ["Filter & urutkan",    "—", "✓"],
+      ["Simpan tempat",       "—", "✓"],
       ["Data SPP & biaya",    "—", "✓"],
       ["Kurikulum sekolah",   "—", "✓"],
       ["Bandingkan sekolah",  "—", "✓"],
@@ -713,18 +725,22 @@ export const translations = {
     // ── CONTACT BUTTONS ──────────────────────────────────────
     contactCallBtn: "Telepon",
     contactWhatsAppBtn: "WhatsApp",
+    contactEmailBtn: "Email",
     contactPremiumTooltip: "Fitur Premium — upgrade untuk menghubungi langsung",
     contactPremiumTitle: "Hubungi Langsung",
     contactPremiumDesc: "Upgrade ke Premium untuk menelepon atau menghubungi via WhatsApp langsung dari aplikasi.",
 
     // ── PERSONAL NOTES ───────────────────────────────────────
+    notesLabel: "Catatan Pribadiku",
     notesSectionTitle: "Catatan Saya",
-    notesPlaceholder: "Tulis catatan pribadimu tentang tempat ini... (maks. 500 karakter)",
+    notesPlaceholder: "Contoh: Terlalu jauh dari rumah, dll.",
     notesSaveBtn: "Simpan Catatan",
     notesClearBtn: "Hapus Catatan",
     notesLastEdited: (date: string) => `Terakhir diubah ${date}`,
     notesCharsLeft: (n: number) => `${n} karakter tersisa`,
-    notesLockMsg: "Upgrade ke Premium untuk menambahkan catatan pribadi",
+    notesLockMsg:   "Upgrade ke Premium untuk menambahkan catatan pribadi",
+    notesLockLabel: "Catatan Pribadi",
+    notesLockHint:  ": Terlalu jauh dari rumah, dll",
     notesEmptyProfile: "Belum ada catatan. Tambahkan catatan pada tempat yang kamu minati.",
     notesSaved: "Catatan disimpan!",
     notesDeleted: "Catatan dihapus.",
@@ -739,7 +755,7 @@ export const translations = {
     favTooltipRemove: "Dihapus dari Favorit",
 
     // ── DISTANCE FROM HOME ───────────────────────────────────
-    distanceFromHome: (km: number) => km < 0.1 ? "Di lokasimu 📍" : `~${km < 10 ? km.toFixed(1) : Math.round(km)} km dari rumahmu`,
+    distanceFromHome: (km: number) => km < 0.1 ? "Di lokasimu 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km dari rumahmu`,
     distanceNoHome:   "Atur alamat rumah untuk lihat jarak →",
 
     // ── PRIORITY SUPPORT ─────────────────────────────────────
@@ -779,7 +795,7 @@ export const translations = {
     articleTopicLabel: "Topik",
 
     // ── HOME-ALT PAGE ─────────────────────────────────────────
-    homeAltTagline:        "Direktori cerdas untuk orang tua di",
+    homeAltTagline:        "Direktori cerdas orang tua di",
     homeAltFeatureKicker:  "KAMU CARI APA?",
     homeAltSchoolSub:      "TK · SD · SMP · SMA — kurikulum nasional, internasional & alam.",
     homeAltKursusSub:      "English · Math · Art · Music · Coding — kelas privat & grup.",
@@ -800,23 +816,25 @@ export const translations = {
     homeAltTypewriterPost: "yang tepat.",
     homeAltSeeAll:         "Lihat semua →",
 
-    // ── SAVE GATE (anonymous → register prompt) ──────────────
-    saveGateTitle:   "Simpan tempat ini?",
-    saveGateBody:    "Buat akun gratis untuk menyimpan favoritmu di semua perangkat.",
-    saveGateCta:     "Daftar Sekarang",
+    // ── SAVE GATE (free → premium upgrade prompt) ────────────
+    saveGateTitle:   "Fitur Khusus Premium",
+    saveGateBody:    "Upgrade ke Premium untuk mengakses fitur ini.",
+    saveGateCta:     "Upgrade ke Premium",
     saveGateDismiss: "Nanti Saja",
 
     // ── DISTANCE — anonymous prompt ───────────────────────────
-    distanceAnonPrompt: "Daftar untuk lihat jarak dari rumahmu",
+    distanceAnonPrompt: "Jarak dari rumahmu",
 
-    // ── PROFILE — REGISTERED (TERDAFTAR) TIER CARD ───────────
-    profileRegisteredStatus:     "Status Akun: Terdaftar",
-    profileRegisteredStatusDesc: "Upgrade jadi Premium untuk mendapatkan akses penuh",
+    // ── PROFILE — GUEST/FREE TIER CARD ───────────────────────
+    profileRegisteredStatus:     "Status Akun: Gratis",
+    profileRegisteredStatusDesc: "Upgrade ke Premium untuk mendapatkan akses penuh",
     profileRegisteredUpgradeBtn: "Upgrade",
-    profileRegisteredUpgradeHint:"Hanya Rp 29.000/bln",
+    profileRegisteredUpgradeHint:"Mulai Rp 29.000/bln",
 
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Ulasan",
+    pdUserReviewsTitle: "Review Pengguna TangselKids",
+    pdGoogleRating: "Google Rating:",
     reviews: "ulasan",
     perMonth: "/ bln",
     free: "Gratis",
@@ -1036,7 +1054,7 @@ export const translations = {
     courseTypeMath: "Math",
     courseTypeArts: "Arts",
     courseTypeMusic: "Music",
-    courseTypeCoding: "Coding/Robotics",
+    courseTypeCoding: "Coding / Robotics",
     courseTypeDance: "Dance & Ballet",
     courseTypeGymnastics: "Gymnastics",
 
@@ -1126,15 +1144,27 @@ export const translations = {
     pdEnrollContact:   "Contact the school for enrollment information",
     pdPsbBtn:          "Enable PSB Notification",
     pdPsbAlert:        "🔔 PSB notification feature coming soon! You'll be notified when enrollment opens.",
-    pdChipBahasa:      "Language",
-    pdChipUangPangkal: "Enrollment Fee",
-    pdChipSpp:         "Tuition / Month",
+    pdChipBahasa:         "Language",
+    pdChipUangPangkal:    "Enrollment Fee",
+    pdChipSpp:            "Tuition / Month",
+    pdStudentsPerClass:   "Students / Class",
+    pdComputerLab:        "Computer Lab",
+    pdSchoolPool:         "Swimming Pool",
+    pdYearFounded:        "Year Founded",
+    pdFreeTrial:          "Free Trial",
+    pdTeacherRatio:       "Teacher:Student Ratio",
+    pdTeachingLanguage:   "Teaching Language",
+    pdCarerRatio:         "Carer:Child Ratio",
+    pdDaycareMethod:      "Curriculum / Method",
+    pdCctv:               "CCTV & Access",
+    pdAccreditation:      "Accreditation",
     pdChipCourseType:  "Course Type",
     pdChipAgeChild:    "Child's Age",
     pdChipCost:        "Cost",
     pdChipTicket:      "Ticket",
     pdChipServices:    "Services",
     pdChipBudget:      "Budget",
+    pdSeeDetails:      "See full details",
 
     // ── COMPARE ─────────────────────────────────────────────
     cmpTitle: "Compare Schools",
@@ -1210,14 +1240,14 @@ export const translations = {
 
     // ── GUEST GATE ───────────────────────────────────────────
     guestGateMore: (n: number) => `+${n} more places`,
-    guestGateTitle: "Register Free & Get Full Access",
+    guestGateTitle: "Get Full Access with Premium",
     guestGateBenefits: [
-      "🏫  See all places, unlimited",
-      "❤️  Save your favourite places",
+      "❤️  Save your favourite places, unlimited",
       "🔍  Use filters & advanced sorting",
-      "📋  Access full details for every place",
+      "⚖️  Compare up to 3 schools at once",
+      "✍️  Write reviews & personal notes",
     ],
-    guestGateCta: "Register FREE Now!",
+    guestGateCta: "Upgrade to Premium →",
 
     // ── FILTER GATE ──────────────────────────────────────────
     filterGateTitle: "Premium-Only Filter",
@@ -1228,9 +1258,9 @@ export const translations = {
     profileTitle: "Profile",
     profileSubtitle: "Settings & preferences",
     profileGuest: "Unregistered User",
-    profileGuestDesc: "Register free now",
+    profileGuestDesc: "Upgrade to Premium now",
     profileGuestStatus: "Account Status: Unregistered",
-    profileGuestStatusDesc: "Register free now to save your favourite places, write reviews, and unlock full access to all features.",
+    profileGuestStatusDesc: "Upgrade to Premium to get full access to all features.",
     profileGuestRegister: "Register Free",
     profileLogin: "Sign In / Register",
     profileLang: "Language",
@@ -1378,7 +1408,7 @@ export const translations = {
       { emoji: "📊", title: "Tuition & Fee Data",            desc: "See full cost breakdown for every school — monthly tuition, registration fee, and curriculum — no blur." },
       { emoji: "⚖️", title: "Compare Schools",               desc: "Compare up to 3 schools at once: cost, curriculum, grade level, and rating." },
       { emoji: "✍️", title: "Write Reviews",                 desc: "Share your experience and help thousands of other parents make the best decisions." },
-      { emoji: "❤️", title: "Save Without Limits",           desc: "Save as many favourite places as you want. Free accounts are limited to 3 places." },
+      { emoji: "❤️", title: "Save Without Limits",           desc: "Save as many favourite places as you want, without any limit." },
       { emoji: "📞", title: "Direct Contact",                desc: "Access the phone number & WhatsApp of every place to contact them directly." },
       { emoji: "📝", title: "Personal Notes",                desc: "Add private notes to any place — only visible to you." },
       { emoji: "🎯", title: "Priority Support",              desc: "Reach our team directly via WhatsApp and get a faster response." },
@@ -1388,8 +1418,8 @@ export const translations = {
     upgradeCompareGratis:   "Free",
     upgradeCompareRows: [
       ["Browse listings",    "✓", "✓"],
-      ["Filter & sort",      "✓", "✓"],
-      ["Save places",        "3", "∞"],
+      ["Filter & sort",      "—", "✓"],
+      ["Save places",        "—", "✓"],
       ["Tuition & fee data", "—", "✓"],
       ["School curriculum",  "—", "✓"],
       ["Compare schools",    "—", "✓"],
@@ -1534,18 +1564,22 @@ export const translations = {
     // ── CONTACT BUTTONS ──────────────────────────────────────
     contactCallBtn: "Call",
     contactWhatsAppBtn: "WhatsApp",
+    contactEmailBtn: "Email",
     contactPremiumTooltip: "Premium feature — upgrade to contact directly",
     contactPremiumTitle: "Contact Directly",
     contactPremiumDesc: "Upgrade to Premium to call or message via WhatsApp directly from the app.",
 
     // ── PERSONAL NOTES ───────────────────────────────────────
+    notesLabel: "My Personal Notes",
     notesSectionTitle: "My Notes",
-    notesPlaceholder: "Write your private notes about this place... (max. 500 characters)",
+    notesPlaceholder: "Example: Too far from home, etc.",
     notesSaveBtn: "Save Note",
     notesClearBtn: "Delete Note",
     notesLastEdited: (date: string) => `Last edited ${date}`,
     notesCharsLeft: (n: number) => `${n} characters left`,
-    notesLockMsg: "Upgrade to Premium to add private notes",
+    notesLockMsg:   "Upgrade to Premium to add private notes",
+    notesLockLabel: "Personal Notes",
+    notesLockHint:  ": Too far from home, etc.",
     notesEmptyProfile: "No notes yet. Add notes to places you're interested in.",
     notesSaved: "Note saved!",
     notesDeleted: "Note deleted.",
@@ -1560,7 +1594,7 @@ export const translations = {
     favTooltipRemove: "Removed from Favorites",
 
     // ── DISTANCE FROM HOME ───────────────────────────────────
-    distanceFromHome: (km: number) => km < 0.1 ? "At your location 📍" : `~${km < 10 ? km.toFixed(1) : Math.round(km)} km from your home`,
+    distanceFromHome: (km: number) => km < 0.1 ? "At your location 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km from your home`,
     distanceNoHome:   "Set home address to see distance →",
 
     // ── PRIORITY SUPPORT ─────────────────────────────────────
@@ -1621,23 +1655,25 @@ export const translations = {
     homeAltTypewriterPost: "that's right for you.",
     homeAltSeeAll:         "View all →",
 
-    // ── SAVE GATE (anonymous → register prompt) ──────────────
-    saveGateTitle:   "Save this place?",
-    saveGateBody:    "Create a free account to save your favorites across all devices.",
-    saveGateCta:     "Register Now",
+    // ── SAVE GATE (free → premium upgrade prompt) ────────────
+    saveGateTitle:   "Premium Feature",
+    saveGateBody:    "Upgrade to Premium to access this feature.",
+    saveGateCta:     "Upgrade to Premium",
     saveGateDismiss: "Maybe Later",
 
     // ── DISTANCE — anonymous prompt ───────────────────────────
-    distanceAnonPrompt: "Register to see distance from your home",
+    distanceAnonPrompt: "Distance from your home",
 
-    // ── PROFILE — REGISTERED (TERDAFTAR) TIER CARD ───────────
-    profileRegisteredStatus:     "Account Status: Registered",
+    // ── PROFILE — GUEST/FREE TIER CARD ───────────────────────
+    profileRegisteredStatus:     "Account Status: Free",
     profileRegisteredStatusDesc: "Upgrade to Premium to get full access",
     profileRegisteredUpgradeBtn: "Upgrade",
-    profileRegisteredUpgradeHint:"Only Rp 29,000/mo",
+    profileRegisteredUpgradeHint:"From Rp 29,000/mo",
 
     // ── MISC ─────────────────────────────────────────────────
     pdReviewsTitle: "Reviews",
+    pdUserReviewsTitle: "TangselKids User Reviews",
+    pdGoogleRating: "Google Rating:",
     reviews: "reviews",
     perMonth: "/ mo",
     free: "Free",

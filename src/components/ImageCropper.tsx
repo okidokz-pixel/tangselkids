@@ -7,11 +7,12 @@ interface Props {
   imageSrc: string;
   onConfirm: (croppedDataUrl: string) => void;
   onCancel: () => void;
+  zIndex?: number;
 }
 
 const SIZE = 280; // crop circle diameter in px
 
-export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
+export function ImageCropper({ imageSrc, onConfirm, onCancel, zIndex = 200 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef    = useRef<HTMLImageElement | null>(null);
   const { t } = useLang();
@@ -216,7 +217,7 @@ export function ImageCropper({ imageSrc, onConfirm, onCancel }: Props) {
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 200,
+        position: "fixed", inset: 0, zIndex,
         background: "rgba(0,0,0,0.88)",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",

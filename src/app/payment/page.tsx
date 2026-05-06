@@ -10,7 +10,7 @@ import { useLang } from "@/context/LanguageContext";
 function PaymentContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const { upgradeToPremium } = useAuth();
+  const { upgradeToPremium, user } = useAuth();
   const { t } = useLang();
 
   const product     = searchParams.get("product") ?? "premium-monthly";
@@ -21,6 +21,7 @@ function PaymentContent() {
   const [selectedMethod, setSelectedMethod] = useState("bca");
   const [paying,  setPaying]  = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showAddressNudge, setShowAddressNudge] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ── Confetti effect on premium / lifetime success ─────────────────────────
@@ -108,6 +109,10 @@ function PaymentContent() {
     if (isPremium) upgradeToPremium(isLifetime);
     setPaying(false);
     setSuccess(true);
+    // Show complete-profile nudge after a short delay for premium users
+    if (isPremium) {
+      setTimeout(() => setShowAddressNudge(true), 1400);
+    }
   }
 
   // ── Success state ────────────────────────────────────────────────────────────
@@ -297,6 +302,84 @@ function PaymentContent() {
             </ActionButton>
           </div>
         </div>
+
+        {/* ── Complete-profile nudge bottom sheet ───────────────────────── */}
+        {showAddressNudge && (
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.45)", animation: "sheet-fade-in 0.25s ease both" }}
+            onClick={() => setShowAddressNudge(false)}
+          >
+            <div
+              style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                maxWidth: 448, margin: "0 auto",
+                background: "#fff", borderRadius: "24px 24px 0 0",
+                padding: "20px 20px 44px",
+                animation: "sheet-slide-up 0.38s cubic-bezier(0.32,0.72,0,1) both",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 20px" }} />
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+                <div style={{
+                  width: 60, height: 60, borderRadius: 999,
+                  background: "linear-gradient(135deg, #d97706, #f59e0b)",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
+                }}>✨</div>
+              </div>
+              <p style={{
+                fontFamily: "var(--font-fraunces), Georgia, serif",
+                fontSize: 19, fontWeight: 700, color: "#0e1d4f",
+                textAlign: "center", margin: "0 0 8px",
+              }}>
+                Lengkapi profilmu!
+              </p>
+              <p style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 13, color: "#64748b", lineHeight: 1.6,
+                textAlign: "center", margin: "0 0 18px", padding: "0 8px",
+              }}>
+                Tambahkan foto profil, tanggal lahir, dan data anakmu untuk pengalaman yang lebih personal.
+              </p>
+              {/* What they can add */}
+              <div style={{
+                display: "flex", justifyContent: "center", gap: 20,
+                margin: "0 0 24px",
+              }}>
+                {[["📸", "Foto profil"], ["🎂", "Tanggal lahir"], ["👦", "Data anak"]].map(([emoji, label]) => (
+                  <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <span style={{ fontSize: 22 }}>{emoji}</span>
+                    <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 10, fontWeight: 700, color: "#94a3b8", textAlign: "center" }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+              <ActionButton
+                onClick={() => { window.location.href = "/profile"; }}
+                style={{
+                  width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+                  background: "linear-gradient(135deg, #d97706, #f59e0b)", color: "#fff",
+                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 15, fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  boxShadow: "0 4px 16px rgba(217,119,6,0.35)",
+                }}
+              >
+                Lengkapi Sekarang →
+              </ActionButton>
+              <ActionButton
+                onClick={() => setShowAddressNudge(false)}
+                style={{
+                  marginTop: 10, width: "100%", padding: "13px 0", borderRadius: 16,
+                  background: "transparent", color: "#94a3b8",
+                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 600,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                Nanti Saja
+              </ActionButton>
+            </div>
+          </div>
+        )}
       </>
     );
   }

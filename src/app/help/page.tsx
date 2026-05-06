@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, HelpCircle, ChevronDown } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
+import { ActionButton } from "@/components/ActionButton";
+import { useAuth } from "@/context/AuthContext";
 
 const faqs = [
   {
@@ -45,7 +47,9 @@ const faqs = [
 
 export default function HelpPage() {
   const router = useRouter();
+  const { tier } = useAuth();
   const [open, setOpen] = useState<number | null>(null);
+  const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
 
   function toggle(i: number) {
     setOpen((prev) => (prev === i ? null : i));
@@ -138,30 +142,115 @@ export default function HelpPage() {
         {/* Still need help */}
         <div style={{
           marginTop: 8, padding: "20px", borderRadius: 20,
-          background: "linear-gradient(135deg, #e6f4ed, #e6f4ed)",
-          border: "1.5px solid #a7d4bc", textAlign: "center",
+          background: tier === "premium" ? "linear-gradient(135deg, #e6f4ed, #e6f4ed)" : "#f1f5f9",
+          border: tier === "premium" ? "1.5px solid #a7d4bc" : "1.5px dashed #cbd5e1",
+          textAlign: "center",
         }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: "#0e1d4f", margin: "0 0 4px", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             Masih ada pertanyaan?
           </p>
           <p style={{ fontSize: 12.5, color: "#475569", margin: "0 0 14px", lineHeight: 1.5, fontFamily: "var(--font-jakarta), sans-serif" }}>
-            Kami siap membantu kamu langsung.
+            {tier === "premium" ? "Kami siap membantu kamu langsung." : "Fitur ini tersedia untuk pengguna Premium."}
           </p>
-          <a
-            href="/feedback"
-            style={{
-              display: "inline-block", padding: "10px 24px", borderRadius: 999,
-              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
-              fontSize: 13, fontWeight: 700, textDecoration: "none",
-              fontFamily: "var(--font-jakarta), sans-serif",
-            }}
-          >
-            Kirim Pertanyaan →
-          </a>
+          {tier === "premium" ? (
+            <a
+              href="/feedback"
+              style={{
+                display: "inline-block", padding: "10px 24px", borderRadius: 999,
+                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
+                fontSize: 13, fontWeight: 700, textDecoration: "none",
+                fontFamily: "var(--font-jakarta), sans-serif",
+              }}
+            >
+              Kirim Pertanyaan →
+            </a>
+          ) : (
+            <ActionButton
+              onClick={() => setShowUpgradeSheet(true)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "10px 24px", borderRadius: 999,
+                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
+                fontSize: 13, fontWeight: 700,
+                fontFamily: "var(--font-jakarta), sans-serif",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Upgrade ke Premium
+            </ActionButton>
+          )}
         </div>
       </div>
 
       <BottomNav active="profile" />
+
+      {/* Upgrade sheet */}
+      {showUpgradeSheet && (
+        <>
+          <style>{`
+            @keyframes pu-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes pu-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          `}</style>
+          <div
+            onClick={() => setShowUpgradeSheet(false)}
+            style={{ position: "fixed", inset: 0, zIndex: 1000,
+              background: "rgba(0,0,0,0.45)", animation: "pu-fade-in 0.25s ease both" }}
+          />
+          <div
+            style={{ position: "fixed", bottom: 0, left: 0, right: 0,
+              maxWidth: 448, margin: "0 auto",
+              background: "#fff", borderRadius: "24px 24px 0 0",
+              padding: "20px 20px 40px", zIndex: 1001,
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
+              animation: "pu-slide-up 0.38s cubic-bezier(0.32,0.72,0,1) both" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+              <div style={{ width: 64, height: 64, borderRadius: 999,
+                background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>
+                ⭐
+              </div>
+            </div>
+            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
+              textAlign: "center", margin: "0 0 8px" }}>
+              Fitur Premium
+            </p>
+            <p style={{ fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, color: "#64748b", lineHeight: 1.6,
+              textAlign: "center", margin: "0 0 24px" }}>
+              Kirim pertanyaan dan masukan langsung ke tim kami. Upgrade ke Premium untuk mengakses fitur ini.
+            </p>
+            <ActionButton
+              onClick={() => { setShowUpgradeSheet(false); router.push("/upgrade"); }}
+              style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 15, fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
+            >
+              Upgrade ke Premium →
+            </ActionButton>
+            <ActionButton
+              onClick={() => setShowUpgradeSheet(false)}
+              style={{ width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16, border: "none",
+                background: "#f1f5f9", color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 600,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
+            >
+              Nanti saja
+            </ActionButton>
+          </div>
+        </>
+      )}
     </div>
   );
 }

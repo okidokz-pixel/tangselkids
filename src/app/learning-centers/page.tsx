@@ -1,9 +1,10 @@
 ﻿"use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
-import { learningCenters, placeMatchesAreas } from "@/lib/mockData";
+import { ChevronLeft, ChevronDown, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
+import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
@@ -11,6 +12,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
+import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
@@ -85,6 +87,12 @@ function FTag({ label, onRemove }: { label: string; onRemove: () => void }) {
 
 const AGE_GROUP_OPTIONS_BASE = ["Toddler", "Kids", "Tween", "Teen"];
 
+const TEACHER_RATIO_LABELS: Record<string, string> = {
+  all: "Semua", "1to5": "≤ 1:5", "1to8": "1:6–1:8", "1to10": "1:9+",
+};
+const ADA_LABELS_LC: Record<string, string> = { all: "Semua", yes: "Ada", no: "Tidak Ada" };
+const TEACHING_LANG_OPTIONS_BASE = ["Indonesia", "Inggris", "Bilingual"];
+
 const HEADER_STYLE = {
   background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
@@ -93,7 +101,12 @@ const HEADER_STYLE = {
 function LearningCentersContent() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
+  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  useEffect(() => { fetchPlacesByCategory("learning-center").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+
   const [showFilterGate, setShowFilterGate] = useState(false);
+  const [premiumOpen,   setPremiumOpen]   = useState(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -105,16 +118,19 @@ function LearningCentersContent() {
   const [courseType,  setCourseType]  = useState(searchParams.get("course") ?? "all");
   const [ageGroup,    setAgeGroup]    = useState(searchParams.get("age") ?? "all");
   const [priceBucket, setPriceBucket] = useState(searchParams.get("price") ?? "all");
-  const [sortBy,      setSortBy]      = useState<"alpha"|"rating"|"price">((searchParams.get("sort") as "alpha"|"rating"|"price") ?? "alpha");
+  const [freeTrial,    setFreeTrial]    = useState(searchParams.get("ft") ?? "all");
+  const [teacherRatio, setTeacherRatio] = useState(searchParams.get("tr") ?? "all");
+  const [teachingLang, setTeachingLang] = useState(searchParams.get("lang") ?? "all");
+  const [sortBy,      setSortBy]      = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
 
 
   const COURSE_TYPE_OPTIONS = [
     { value: "all",             label: t.filterAll },
     { value: "Bahasa Inggris",  label: t.courseTypeEnglish },
     { value: "Matematika",      label: t.courseTypeMath },
-    { value: "Seni",            label: t.courseTypeArts },
-    { value: "Musik",           label: t.courseTypeMusic },
-    { value: "Coding/Robotik",  label: t.courseTypeCoding },
+    { value: "Seni Rupa",       label: t.courseTypeArts },
+    { value: "Musik & Vokal",   label: t.courseTypeMusic },
+    { value: "Coding / Robotik",  label: t.courseTypeCoding },
     { value: "Tari & Balet",    label: t.courseTypeDance },
     { value: "Gimnastik",       label: t.courseTypeGymnastics },
   ];
@@ -137,6 +153,13 @@ function LearningCentersContent() {
     ...AGE_GROUP_OPTIONS_BASE.map(ag => ({ value: ag, label: ageGroupLabels[ag] ?? ag })),
   ];
 
+  const teacherRatioOptions = Object.entries(TEACHER_RATIO_LABELS).map(([v, l]) => ({ value: v, label: l }));
+  const adaOptionsLC        = Object.entries(ADA_LABELS_LC).map(([v, l]) => ({ value: v, label: l }));
+  const teachingLangOptions = [
+    { value: "all", label: "Semua" },
+    ...TEACHING_LANG_OPTIONS_BASE.map(l => ({ value: l, label: l })),
+  ];
+
   function matchesPriceBucket(c: { priceMin: number }): boolean {
     if (priceBucket === "lt200")    return c.priceMin < 200_000;
     if (priceBucket === "200to500") return c.priceMin >= 200_000 && c.priceMin <= 500_000;
@@ -146,15 +169,28 @@ function LearningCentersContent() {
     return true;
   }
 
-  const filtered = learningCenters
+  const filtered = allPlaces
     .filter(c => area === "all" || placeMatchesAreas(c, [area]))
     .filter(c => courseType === "all" || c.courseTypes?.includes(courseType))
     .filter(c => ageGroup === "all" || c.ageGroups?.includes(ageGroup))
     .filter(c => matchesPriceBucket(c))
+    .filter(c => {
+      if (freeTrial === "all") return true;
+      return freeTrial === "yes" ? c.freeTrial === true : c.freeTrial !== true;
+    })
+    .filter(c => {
+      if (teacherRatio === "all") return true;
+      const n = parseInt((c.teacherStudentRatio ?? "").split(":")[1] ?? "0");
+      if (teacherRatio === "1to5")  return n > 0 && n <= 5;
+      if (teacherRatio === "1to8")  return n >= 6 && n <= 8;
+      if (teacherRatio === "1to10") return n >= 9;
+      return true;
+    })
+    .filter(c => teachingLang === "all" || c.teachingLanguage === teachingLang)
     .sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "price" ? a.priceMin - b.priceMin : sortBy === "rating" ? b.rating - a.rating : a.name.localeCompare(b.name);
+    return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
   });
 
   const activeCount = [
@@ -162,10 +198,14 @@ function LearningCentersContent() {
     courseType !== "all",
     ageGroup !== "all",
     priceBucket !== "all",
+    freeTrial !== "all",
+    teacherRatio !== "all",
+    teachingLang !== "all",
   ].filter(Boolean).length;
 
   function resetFilters() {
     setArea("all"); setCourseType("all"); setAgeGroup("all"); setPriceBucket("all");
+    setFreeTrial("all"); setTeacherRatio("all"); setTeachingLang("all");
   }
 
   function toResults() {
@@ -174,6 +214,9 @@ function LearningCentersContent() {
     if (courseType !== "all") p.set("course", courseType);
     if (ageGroup !== "all") p.set("age", ageGroup);
     if (priceBucket !== "all") p.set("price", priceBucket);
+    if (freeTrial !== "all") p.set("ft", freeTrial);
+    if (teacherRatio !== "all") p.set("tr", teacherRatio);
+    if (teachingLang !== "all") p.set("lang", teachingLang);
     if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
@@ -183,6 +226,9 @@ function LearningCentersContent() {
     if (courseType !== "all") p.set("course", courseType);
     if (ageGroup !== "all") p.set("age", ageGroup);
     if (priceBucket !== "all") p.set("price", priceBucket);
+    if (freeTrial !== "all") p.set("ft", freeTrial);
+    if (teacherRatio !== "all") p.set("tr", teacherRatio);
+    if (teachingLang !== "all") p.set("lang", teachingLang);
     if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
@@ -218,12 +264,13 @@ function LearningCentersContent() {
           <div style={{ marginBottom: 28 }}>
             <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
               color: "#94a3b8", textTransform: "uppercase" }}>Area</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               {(["all","bintaro","bsd"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
                   {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : "BSD"}
                 </Chip>
               ))}
+              <AreaCoverageButton />
             </div>
           </div>
 
@@ -241,33 +288,82 @@ function LearningCentersContent() {
             </div>
           ))}
 
-          {/* Monthly fee — premium only */}
-          {tier === "premium" ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{t.filterPrice}</p>
-              <div style={{ flex: 1 }}>
-                <FilterDropdown value={priceBucket} onChange={setPriceBucket} options={PRICE_OPTIONS} />
-              </div>
+          {/* Collapsible premium filter section */}
+          <ActionButton
+            onClick={() => setPremiumOpen(o => !o)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              width: "100%", padding: "13px 16px", marginBottom: premiumOpen ? 0 : 8,
+              borderRadius: premiumOpen ? "14px 14px 0 0" : 14,
+              background: "#f0fdf4",
+              border: "1.5px solid #bbf7d0",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              cursor: "pointer",
+            } as React.CSSProperties}
+          >
+            <span style={{
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 13, fontWeight: 700, color: "#166534",
+            }}>
+              Filter Lebih Dalam?{" "}
+              <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
+            </span>
+            <ChevronDown
+              size={18} color="#166534"
+              style={{ transform: premiumOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+            />
+          </ActionButton>
+
+          {premiumOpen && (
+            <div style={{
+              border: "1.5px solid #bbf7d0", borderTop: "none",
+              borderRadius: "0 0 14px 14px",
+              padding: "16px 16px 4px",
+              marginBottom: 8,
+              background: "#fff",
+            }}>
+              {tier === "premium" ? (
+                <>
+                  {([
+                    { label: t.filterPrice,      value: priceBucket,  set: setPriceBucket,  opts: PRICE_OPTIONS       },
+                    { label: "Free Trial",        value: freeTrial,    set: setFreeTrial,    opts: adaOptionsLC        },
+                    { label: "Rasio Guru:Murid",  value: teacherRatio, set: setTeacherRatio, opts: teacherRatioOptions },
+                    { label: "Bahasa Pengantar",  value: teachingLang, set: setTeachingLang, opts: teachingLangOptions },
+                  ] as const).map(({ label, value, set, opts }) => (
+                    <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
+                      <div style={{ flex: 1 }}>
+                        <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts as { value: string; label: string }[]} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {([t.filterPrice, "Free Trial", "Rasio Guru:Murid", "Bahasa Pengantar"] as const).map((label) => (
+                    <ActionButton
+                      key={String(label)}
+                      onClick={() => setShowFilterGate(true)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
+                        width: "100%", padding: 0, background: "transparent" }}
+                    >
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
+                      <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
+                        fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+                        color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
+                        display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span>Premium only</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      </div>
+                    </ActionButton>
+                  ))}
+                </>
+              )}
             </div>
-          ) : (
-            <ActionButton
-              onClick={() => setShowFilterGate(true)}
-              style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18,
-                width: "100%", padding: 0, background: "transparent" }}
-            >
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{t.filterPrice}</p>
-              <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span>Premium only</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </div>
-            </ActionButton>
           )}
 
         </div>
@@ -335,13 +431,13 @@ function LearningCentersContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "rating" : s === "rating" ? "price" : "alpha")} style={{
+        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
           border: "1.5px solid #e2e8f0" }}>
           <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? t.sortAlpha : sortBy === "rating" ? t.sortRating : t.sortPrice}
+          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
         </ActionButton>
       </div>
 
@@ -352,6 +448,9 @@ function LearningCentersContent() {
           {courseType !== "all" && <FTag label={`${t.ftagCourse}: ${COURSE_TYPE_OPTIONS.find(o => o.value === courseType)?.label ?? courseType}`} onRemove={() => setCourseType("all")} />}
           {ageGroup !== "all" && <FTag label={`${t.ftagAge}: ${ageGroupLabels[ageGroup] ?? ageGroup}`} onRemove={() => setAgeGroup("all")} />}
           {priceBucket !== "all" && <FTag label={`${t.ftagPrice}: ${PRICE_OPTIONS.find(o => o.value === priceBucket)?.label ?? priceBucket}`} onRemove={() => setPriceBucket("all")} />}
+          {freeTrial !== "all" && <FTag label={`Free Trial: ${ADA_LABELS_LC[freeTrial] ?? freeTrial}`} onRemove={() => setFreeTrial("all")} />}
+          {teacherRatio !== "all" && <FTag label={`Rasio: ${TEACHER_RATIO_LABELS[teacherRatio] ?? teacherRatio}`} onRemove={() => setTeacherRatio("all")} />}
+          {teachingLang !== "all" && <FTag label={`Bahasa: ${teachingLang}`} onRemove={() => setTeachingLang("all")} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>

@@ -4,14 +4,29 @@ import { ChevronLeft, Check } from "lucide-react";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LanguageContext";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
 
 export default function UpgradePage() {
   const router = useRouter();
   const { tier, user } = useAuth();
   const { t } = useLang();
+  const { openRegisterSheet } = useRegisterSheet();
 
   const isLifetime = !!(user?.lifetime && tier === "premium");
   const isMonthly  = tier === "premium" && !isLifetime;
+
+  function handleUpgradeClick(product: string) {
+    if (!user) {
+      openRegisterSheet({
+        title: "Buat akun dulu",
+        subtitle: "Buat akun dalam 30 detik, lalu lanjut ke pembayaran.",
+        minimalProfile: true,
+        onRegistered: () => router.push(`/payment?product=${product}`),
+      });
+    } else {
+      router.push(`/payment?product=${product}`);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
@@ -80,7 +95,7 @@ export default function UpgradePage() {
           <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
             {/* Monthly — smaller */}
             <ActionButton
-              onClick={() => router.push("/payment?product=premium-monthly")}
+              onClick={() => handleUpgradeClick("premium-monthly")}
               style={{
                 flex: "0 0 38%",
                 padding: "11px 8px", borderRadius: 14,
@@ -99,7 +114,7 @@ export default function UpgradePage() {
             </ActionButton>
             {/* Lifetime — larger / primary */}
             <ActionButton
-              onClick={() => router.push("/payment?product=premium-lifetime")}
+              onClick={() => handleUpgradeClick("premium-lifetime")}
               style={{
                 flex: 1,
                 position: "relative", overflow: "clip",
@@ -122,7 +137,7 @@ export default function UpgradePage() {
         )}
         {isMonthly && (
           <ActionButton
-            onClick={() => router.push("/payment?product=premium-lifetime")}
+            onClick={() => handleUpgradeClick("premium-lifetime")}
             style={{
               position: "relative", overflow: "clip",
               width: "100%", padding: "14px 0", borderRadius: 14,
@@ -253,7 +268,7 @@ export default function UpgradePage() {
               {t.upgradeAlreadyPremium}
             </div>
             <ActionButton
-              onClick={() => router.push("/payment?product=premium-lifetime")}
+              onClick={() => handleUpgradeClick("premium-lifetime")}
               style={{
                 position: "relative", overflow: "clip",
                 width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
@@ -302,7 +317,7 @@ export default function UpgradePage() {
                 </div>
               </div>
               <ActionButton
-                onClick={() => router.push("/payment?product=premium-monthly")}
+                onClick={() => handleUpgradeClick("premium-monthly")}
                 style={{
                   marginTop: 6,
                   width: "100%", padding: "14px 0", borderRadius: 14, border: "none",
@@ -395,7 +410,7 @@ export default function UpgradePage() {
               </div>
 
               <ActionButton
-                onClick={() => router.push("/payment?product=premium-lifetime")}
+                onClick={() => handleUpgradeClick("premium-lifetime")}
                 style={{
                   position: "relative",
                   width: "100%", padding: "14px 0", borderRadius: 14,

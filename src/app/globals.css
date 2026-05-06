@@ -50,6 +50,11 @@ input, textarea, [contenteditable] {
   user-select: text;
 }
 
+/* Darker placeholder for personal notes input */
+.note-input::placeholder {
+  color: #94a3b8;
+}
+
 /* ─── iOS WebKit: ensure all interactive elements are always tappable ────────
    touch-action: manipulation  → removes 300ms tap delay
    -webkit-tap-highlight-color → removes the grey flash on tap

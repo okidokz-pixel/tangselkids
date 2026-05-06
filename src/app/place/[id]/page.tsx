@@ -1,23 +1,25 @@
 ﻿"use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import {
-  ChevronLeft, ChevronRight, X, MapPin, Clock, Phone,
+  ChevronLeft, ChevronRight, ChevronDown, X, MapPin, Clock, Phone,
   Heart, Pencil, Star, Globe, Play, Check, Lock, MessageCircle,
+  GraduationCap, BookOpen, Banknote, Calendar, Users, Monitor,
+  Droplets, Gift, Wallet, Camera, Award, Layers, Ticket,
+  CreditCard, Activity, Baby,
 } from "lucide-react";
-import { places, formatPriceRange, getAreaGroup, formatPrice, getPlaceCoords, haversineKm } from "@/lib/mockData";
+import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } from "@/lib/mockData";
+import { fetchPlaceById } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumGate } from "@/components/PremiumGate";
-import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { SaveGateSheet } from "@/components/SaveGateSheet";
 import { PremiumBadge } from "@/components/PremiumBadge";
-import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
@@ -135,13 +137,6 @@ const aboutExtra: Partial<Record<string, string[]>> = {
   ],
 };
 
-// ── Related videos (dummy) ─────────────────────────────────────────────────
-const relatedVideos = [
-  { id: "iG9CE55wbtY", title: "Do Schools Kill Creativity? — Ken Robinson TED Talk" },
-  { id: "wW4UK6FPcHk", title: "How to Raise Successful Kids Without Overparenting" },
-  { id: "H14bBuluwB8", title: "Grit: The Power of Passion & Perseverance" },
-  { id: "RiM5a-vaNkg", title: "The Importance of Play in Early Learning" },
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -150,11 +145,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const router  = useRouter();
   const { t, lang } = useLang();
   const { tier, loaded, user } = useAuth();
-  const { openRegisterSheet } = useRegisterSheet();
-  const place   = places.find((p) => p.id === id);
 
-  // Compute allPhotos early so auto-advance effect can reference it
-  const allPhotos = place ? [place.photo, ...(place.photos ?? [])] : [];
+  const [place,   setPlace]   = useState<Place | null>(null);
+  const [loadingPlace, setLoadingPlace] = useState(true);
 
   const [heroIndex,      setHeroIndex]      = useState(0);
   const [lightboxOpen,   setLightboxOpen]   = useState(false);
@@ -163,11 +156,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [mapOpen,        setMapOpen]        = useState(false);
   const [userReview,     setUserReview]     = useState<UserReview | null>(null);
   const [showReviewGate, setShowReviewGate] = useState(false);
-  const [showPsbSheet,   setShowPsbSheet]   = useState(false);
   const [showPsbGate,    setShowPsbGate]    = useState(false);
   const [showSaveGate,   setShowSaveGate]   = useState(false);
-  const [showSaveLimitSheet, setShowSaveLimitSheet] = useState(false);
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
+  const [detailOpen,        setDetailOpen]        = useState(false);
 
   // ── Suggest Edits form state ────────────────────────────────────────────────
   const [suggestField,     setSuggestField]     = useState(0);
@@ -178,15 +170,22 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [favTooltip, setFavTooltip] = useState<"add" | "remove" | null>(null);
   const favTooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Notes expand state (compact single-line row → expanded textarea) ─────────
-  const [notesExpanded, setNotesExpanded] = useState(false);
-
   // ── Personal note state ─────────────────────────────────────────────────────
   const NOTE_MAX = 500;
-  const [noteText,    setNoteText]    = useState("");
+  const [noteText,      setNoteText]      = useState("");
   const [noteUpdatedAt, setNoteUpdatedAt] = useState<string | null>(null);
-  const [noteFeedback,  setNoteFeedback]  = useState<"saved" | "deleted" | null>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [noteEditing,   setNoteEditing]   = useState(false);
+  const saveTimerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX   = useRef<number>(0);
+
+  // Derived from place state — safe here (not a hook)
+  const allPhotos = place ? [place.photo, ...(place.photos ?? [])] : [];
+
+  // Fetch place from Supabase
+  useEffect(() => {
+    setLoadingPlace(true);
+    fetchPlaceById(id).then(p => { setPlace(p); setLoadingPlace(false); });
+  }, [id]);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
@@ -214,50 +213,30 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
   // Guests can freely view place detail pages (no gate)
 
-  // Auto-advance slideshow every 4 s (pauses when lightbox is open)
+  // Auto-advance slideshow every 2 s (pauses when lightbox is open)
   useEffect(() => {
     if (allPhotos.length <= 1 || lightboxOpen) return;
     const timer = setInterval(() => {
       setHeroIndex((i) => (i + 1) % allPhotos.length);
-    }, 4000);
+    }, 2000);
     return () => clearInterval(timer);
   }, [allPhotos.length, lightboxOpen]);
 
   function toggleSave() {
-    // Anonymous users must register first
-    if (tier === "free") {
+    if (tier !== "premium") {
       setShowSaveGate(true);
       return;
     }
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    // Terdaftar (registered) users are capped at 5 saves
-    if (!ids.includes(id) && tier === "registered" && ids.length >= 5) {
-      setShowSaveLimitSheet(true);
-      return;
-    }
     const adding = !ids.includes(id);
     const next = adding ? [...ids, id] : ids.filter((x) => x !== id);
     localStorage.setItem("savedIds", JSON.stringify(next));
     setIsSaved(next.includes(id));
-    // Sync to Supabase in background
     if (adding) addSaved(id, user?.phone);
     else removeSaved(id, user?.phone);
     if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
     setFavTooltip(adding ? "add" : "remove");
     favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
-  }
-
-  function saveAfterRegister() {
-    const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    if (!ids.includes(id)) {
-      const next = [...ids, id];
-      localStorage.setItem("savedIds", JSON.stringify(next));
-      setIsSaved(true);
-      addSaved(id);
-      if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
-      setFavTooltip("add");
-      favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
-    }
   }
 
   const categoryLabel: Record<string, string> = {
@@ -271,6 +250,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
     "swimming-pool":   t.catSwimmingPool,
     bookstore:         t.catBookstore,
   };
+
+  if (loadingPlace) {
+    return (
+      <div className="max-w-md mx-auto flex flex-col items-center justify-center min-h-screen gap-4">
+        <p className="font-jakarta text-gray-500 text-sm">Memuat...</p>
+      </div>
+    );
+  }
 
   if (!place) {
     return (
@@ -291,9 +278,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const extraParas = aboutExtra[place.category] ?? [];
 
   // ── Distance from home ────────────────────────────────────────────────────
-  const placeGps = getPlaceCoords(place.id);
-  const homeKm: number | null = (user?.addressLat && user?.addressLng && placeGps)
-    ? haversineKm(user.addressLat, user.addressLng, placeGps.lat, placeGps.lng)
+  const homeKm: number | null = (user?.addressLat && user?.addressLng && place.lat && place.lng)
+    ? haversineKm(user.addressLat, user.addressLng, place.lat, place.lng)
     : null;
 
   return (
@@ -327,8 +313,17 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             position: "fixed", inset: 0, zIndex: 60,
             background: "rgba(0,0,0,0.95)",
             display: "flex", alignItems: "center", justifyContent: "center",
+            touchAction: "pan-y",
           }}
           onClick={() => setLightboxOpen(false)}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            const dx = e.changedTouches[0].clientX - touchStartX.current;
+            if (allPhotos.length > 1 && Math.abs(dx) > 40) {
+              e.preventDefault();
+              setHeroIndex((i) => dx < 0 ? (i + 1) % allPhotos.length : (i - 1 + allPhotos.length) % allPhotos.length);
+            }
+          }}
         >
           <img
             src={allPhotos[heroIndex]}
@@ -483,8 +478,18 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* ── Hero slideshow ────────────────────────────────────────────────── */}
-      <div style={{ position: "relative", height: 288, overflow: "clip" }}
-           onClick={() => setLightboxOpen(true)}>
+      <div
+        style={{ position: "relative", height: 288, overflow: "clip", touchAction: "pan-y" }}
+        onClick={() => setLightboxOpen(true)}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          const dx = e.changedTouches[0].clientX - touchStartX.current;
+          if (allPhotos.length > 1 && Math.abs(dx) > 40) {
+            e.preventDefault();
+            setHeroIndex((i) => dx < 0 ? (i + 1) % allPhotos.length : (i - 1 + allPhotos.length) % allPhotos.length);
+          }
+        }}
+      >
         {allPhotos.map((src, i) => (
           <img
             key={src}
@@ -573,304 +578,301 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       {/* ── White content card ────────────────────────────────────────────── */}
       <div className="flex-1 rounded-t-[48px] -mt-14 px-5 pt-16 pb-10 space-y-5" style={{ background: "#fff" }}>
 
-        {/* Name + category + rating */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1" style={{ minWidth: 0 }}>
-            <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block mb-2" style={{ background: colors.bg, color: colors.text }}>
-              {categoryLabel[place.category]}
-            </span>
-            <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
-            {place.address && (
-              <ActionButton
-                onClick={() => setMapOpen(true)}
-                style={{
-                  display: "flex", alignItems: "flex-start", gap: 4,
-                  marginTop: 6, padding: 0, background: "none", border: "none",
-                  cursor: "pointer", textAlign: "left",
-                }}
-              >
-                <MapPin size={12} style={{ color: "#2e8a5a", marginTop: 1, flexShrink: 0 }} />
-                <span className="font-jakarta text-xs leading-relaxed" style={{ color: "#2e8a5a", textDecoration: "underline", textDecorationColor: "rgba(29,78,216,0.35)", textUnderlineOffset: 2 }}>
-                  {place.address}
-                </span>
-              </ActionButton>
-            )}
-            {/* Distance from home */}
-            {tier === "free" ? (
-              /* Anonymous: tappable registration prompt */
-              <ActionButton
-                onClick={() => openRegisterSheet()}
-                style={{
-                  margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
-                  background: "none", border: "none", padding: 0, cursor: "pointer",
-                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11,
-                  color: "#2e8a5a", textDecoration: "underline", textDecorationStyle: "dotted",
-                  textUnderlineOffset: 2,
-                }}
-              >
-                <MapPin size={11} color="#2e8a5a" style={{ flexShrink: 0 }} />
-                {t.distanceAnonPrompt}
-              </ActionButton>
-            ) : homeKm !== null ? (
-              <p style={{ margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
-                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#64748b" }}>
-                🏠 {t.distanceFromHome(homeKm)}
-              </p>
-            ) : (
-              <p
-                style={{ margin: "3px 0 0", cursor: "pointer",
-                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#94a3b8" }}
-                onClick={() => { window.location.href = "/profile"; }}
-              >
-                🏠 {t.distanceNoHome}
-              </p>
-            )}
-            <div className="flex items-center gap-1 mt-0.5">
-              <Clock size={12} className="text-gray-400 flex-shrink-0" />
-              <p className="font-jakarta text-gray-400 text-xs">{place.hours}</p>
-            </div>
-            {/* ── Direct-contact buttons (phone + WhatsApp) ─────── */}
-            {place.phone && place.phone !== "-" && (() => {
-              const isPremium = tier === "premium";
-              const waNum = toWaNumber(place.whatsapp ?? place.phone);
-              const locked = !isPremium;
-              return (
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  {/* Phone call */}
-                  <ActionButton
-                    onClick={() => {
-                      if (locked) { setShowReviewGate(true); return; }
-                      window.location.href = `tel:${place.phone}`;
-                    }}
-                    ariaLabel={t.contactCallBtn}
-                    style={{
-                      flex: 1, minHeight: 44,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                      borderRadius: 12, fontSize: 13, fontWeight: 700,
-                      fontFamily: "var(--font-jakarta),sans-serif",
-                      background: locked ? "#f1f5f9" : "#2e8a5a",
-                      color: locked ? "#94a3b8" : "#fff",
-                      border: locked ? "1.5px solid #e2e8f0" : "none",
-                      position: "relative",
-                    }}
-                    title={locked ? t.contactPremiumTooltip : place.phone}
-                  >
-                    {locked && <Lock size={11} strokeWidth={2.5} style={{ position: "absolute", top: 6, right: 7, opacity: 0.6 }} />}
-                    <Phone size={15} strokeWidth={2} />
-                    {t.contactCallBtn}
-                  </ActionButton>
-
-                  {/* WhatsApp */}
-                  <ActionButton
-                    onClick={() => {
-                      if (locked) { setShowReviewGate(true); return; }
-                      window.open(`https://wa.me/${waNum}`, "_blank");
-                    }}
-                    ariaLabel={t.contactWhatsAppBtn}
-                    style={{
-                      flex: 1, minHeight: 44,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                      borderRadius: 12, fontSize: 13, fontWeight: 700,
-                      fontFamily: "var(--font-jakarta),sans-serif",
-                      background: locked ? "#f1f5f9" : "#25D366",
-                      color: locked ? "#94a3b8" : "#fff",
-                      border: locked ? "1.5px solid #e2e8f0" : "none",
-                      position: "relative",
-                    }}
-                    title={locked ? t.contactPremiumTooltip : `WhatsApp ${place.phone}`}
-                  >
-                    {locked && <Lock size={11} strokeWidth={2.5} style={{ position: "absolute", top: 6, right: 7, opacity: 0.6 }} />}
-                    <WhatsAppIcon size={15} color={locked ? "#94a3b8" : "#fff"} />
-                    {t.contactWhatsAppBtn}
-                  </ActionButton>
+        {/* Name + category + rating + buttons */}
+        <div>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1" style={{ minWidth: 0 }}>
+              <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block mb-2" style={{ background: colors.bg, color: colors.text }}>
+                {categoryLabel[place.category]}
+              </span>
+              <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
+              {place.address && (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginTop: 6 }}>
+                  <MapPin size={12} style={{ color: "#2e8a5a", marginTop: 1, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", lineHeight: 1.5 }}>
+                    {place.address}
+                  </span>
                 </div>
-              );
-            })()}
-
-          </div>
-
-          {/* ── Rating + heart with favorites tooltip ─────────────────────── */}
-          <div className="flex flex-col items-end flex-shrink-0 mt-7 gap-2" style={{ position: "relative" }}>
-            <div className="flex items-center gap-0.5">
-              <Star size={14} fill="#FBBF24" stroke="none" />
-              <span className="font-jakarta font-bold text-gray-800">{place.rating}</span>
-            </div>
-            <span className="text-xs text-gray-400 font-jakarta">{place.reviews} {t.reviews}</span>
-            <ActionButton onClick={toggleSave} ariaLabel="Save to favorites" style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              width: 36, height: 36, borderRadius: 999,
-              background: isSaved ? "#FEF2F2" : "#F1F5F9",
-              border: `1.5px solid ${isSaved ? "#EF4444" : "#E2E8F0"}`,
-            }}>
-              <Heart size={16} fill={isSaved ? "#EF4444" : "none"} stroke={isSaved ? "#EF4444" : "#94A3B8"} strokeWidth={2} />
-            </ActionButton>
-            {favTooltip && (
-              <div style={{
-                position: "absolute", right: 0, bottom: "calc(100% + 6px)",
-                background: "#1e293b", borderRadius: 8, padding: "5px 10px",
-                whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.22)",
-                animation: "fadein 0.18s ease",
-              }}>
-                <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 600, color: "#fff" }}>
-                  {favTooltip === "add" ? t.favTooltipAdd : t.favTooltipRemove}
+              )}
+              {/* Distance from home */}
+              {tier === "free" ? (
+                <ActionButton
+                  onClick={() => setShowSaveGate(true)}
+                  style={{
+                    margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                    background: "none", border: "none", padding: 0, cursor: "pointer",
+                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b",
+                  }}
+                >
+                  <MapPin size={12} color="#64748b" style={{ flexShrink: 0 }} />
+                  {t.distanceAnonPrompt}
+                </ActionButton>
+              ) : homeKm !== null ? (
+                <ActionButton
+                  onClick={() => setMapOpen(true)}
+                  style={{
+                    margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                    background: "none", border: "none", padding: 0, cursor: "pointer",
+                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b",
+                  }}
+                >
+                  🏠 {t.distanceFromHome(homeKm)}
+                </ActionButton>
+              ) : (
+                <p
+                  style={{ margin: "3px 0 0", cursor: "pointer", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}
+                  onClick={() => { window.location.href = "/profile"; }}
+                >
+                  🏠 {t.distanceNoHome}
+                </p>
+              )}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
+                <Clock size={12} style={{ color: "#64748b", flexShrink: 0 }} />
+                <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}>
+                  {place.hours}
+                  {place.yearFounded && (
+                    <>
+                      <span style={{ margin: "0 5px", color: "#cbd5e1" }}>|</span>
+                      {t.pdYearFounded}: {place.yearFounded}
+                    </>
+                  )}
                 </span>
               </div>
-            )}
+            </div>
+
+            {/* ── Rating + heart with favorites tooltip ─────────────────────── */}
+            <div className="flex flex-col items-end flex-shrink-0 mt-7 gap-2" style={{ position: "relative" }}>
+              <div className="font-jakarta text-[10px] font-semibold text-gray-400 tracking-wide text-right" style={{ lineHeight: 1.3 }}>
+                <span style={{ display: "block" }}>Google</span>
+                <span style={{ display: "block" }}>Rating:</span>
+              </div>
+              <div className="flex items-center gap-0.5" style={{ marginTop: -4 }}>
+                <Star size={14} fill="#FBBF24" stroke="none" />
+                <span className="font-jakarta font-bold text-gray-800">{place.rating}</span>
+              </div>
+              <ActionButton onClick={toggleSave} ariaLabel="Save to favorites" style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 36, height: 36, borderRadius: 999,
+                background: isSaved ? "#FEF2F2" : "#F1F5F9",
+                border: `1.5px solid ${isSaved ? "#EF4444" : "#E2E8F0"}`,
+              }}>
+                <Heart size={16} fill={isSaved ? "#EF4444" : "none"} stroke={isSaved ? "#EF4444" : "#94A3B8"} strokeWidth={2} />
+              </ActionButton>
+              {favTooltip && (
+                <div style={{
+                  position: "absolute", right: 0, bottom: "calc(100% + 6px)",
+                  background: "#1e293b", borderRadius: 8, padding: "5px 10px",
+                  whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.22)",
+                  animation: "fadein 0.18s ease",
+                }}>
+                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 600, color: "#fff" }}>
+                    {favTooltip === "add" ? t.favTooltipAdd : t.favTooltipRemove}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* ── Direct-contact buttons — full width below the name/rating row ── */}
+          {place.phone && place.phone !== "-" && (() => {
+            const waNum = toWaNumber(place.whatsapp ?? place.phone);
+            return (
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <ActionButton
+                  onClick={() => { window.location.href = `tel:${place.phone}`; }}
+                  ariaLabel={t.contactCallBtn}
+                  style={{
+                    flex: 1, minHeight: 44,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    borderRadius: 12, fontSize: 13, fontWeight: 700,
+                    fontFamily: "var(--font-jakarta),sans-serif",
+                    background: "#2e8a5a", color: "#fff", border: "none",
+                  }}
+                  title={place.phone}
+                >
+                  <Phone size={15} strokeWidth={2} />
+                  {t.contactCallBtn}
+                </ActionButton>
+                <ActionButton
+                  onClick={() => { window.open(`https://wa.me/${waNum}`, "_blank"); }}
+                  ariaLabel={t.contactWhatsAppBtn}
+                  style={{
+                    flex: 1, minHeight: 44,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                    borderRadius: 12, fontSize: 13, fontWeight: 700,
+                    fontFamily: "var(--font-jakarta),sans-serif",
+                    background: "#25D366", color: "#fff", border: "none",
+                  }}
+                  title={`WhatsApp ${place.phone}`}
+                >
+                  <WhatsAppIcon size={15} color="#fff" />
+                  {t.contactWhatsAppBtn}
+                </ActionButton>
+                {place.email && (
+                  <ActionButton
+                    onClick={() => { window.location.href = `mailto:${place.email}`; }}
+                    ariaLabel={t.contactEmailBtn}
+                    style={{
+                      minHeight: 44, minWidth: 44, padding: "0 14px",
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5,
+                      borderRadius: 12, fontSize: 13, fontWeight: 600,
+                      fontFamily: "var(--font-jakarta),sans-serif",
+                      background: "#f1f5f9", color: "#475569",
+                      border: "1.5px solid #e2e8f0",
+                    }}
+                    title={place.email}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                    {t.contactEmailBtn}
+                  </ActionButton>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
-        {/* ── Compact Notes row ────────────────────────────────────────────── */}
+        {/* ── Personal Notes ───────────────────────────────────────────────── */}
+        <div style={{ marginTop: 8, marginBottom: 8 }}>
         {tier === "premium" ? (
-          <div style={{ marginTop: 10 }}>
-            <ActionButton
-              onClick={() => setNotesExpanded((v) => !v)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 8,
-                padding: "9px 12px", borderRadius: 12,
-                background: noteText.trim() ? "#F0FDF4" : "#f6f1e8",
-                border: `1.5px solid ${noteText.trim() ? "#BBF7D0" : "#E2E8F0"}`,
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📝</span>
-              <span style={{
-                flex: 1, fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 12, color: noteText.trim() ? "#166534" : "#94a3b8",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                textAlign: "left",
-              }}>
-                {noteText.trim() || t.notesSectionTitle}
-              </span>
-              <Pencil size={12} color={noteText.trim() ? "#16a34a" : "#94a3b8"} style={{ flexShrink: 0 }} />
-            </ActionButton>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {/* Label */}
+            <p style={{
+              margin: 0,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 11, fontWeight: 700, color: "#64748b",
+              textTransform: "uppercase", letterSpacing: 0.8,
+            }}>
+              📝 {t.notesLabel}
+            </p>
 
-            {notesExpanded && (
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                <textarea
-                  value={noteText}
-                  onChange={(e) => {
-                    const val = e.target.value.slice(0, NOTE_MAX);
-                    setNoteText(val);
-                    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-                    saveTimerRef.current = setTimeout(() => {
-                      const now = new Date().toISOString();
-                      if (val.trim()) {
-                        saveNote({ placeId: id, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText: val, updatedAt: now });
-                        setNoteUpdatedAt(now);
-                      } else {
-                        deleteNote(id);
-                        setNoteUpdatedAt(null);
-                      }
-                      setNoteFeedback("saved");
-                      setTimeout(() => setNoteFeedback(null), 2500);
-                      saveTimerRef.current = null;
-                    }, 1500);
+            {noteUpdatedAt && !noteEditing ? (
+              /* ── Saved display row ── */
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 12,
+                background: "#fff", border: "1.5px solid #BBF7D0",
+              }}>
+                <span style={{
+                  flex: 1, fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: 13, color: "#166534",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  {noteText}
+                </span>
+                {/* Edit */}
+                <ActionButton
+                  onClick={() => setNoteEditing(true)}
+                  style={{
+                    flexShrink: 0, padding: "4px 6px", borderRadius: 8,
+                    background: "#f1f5f9", display: "flex", alignItems: "center",
+                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                   }}
+                >
+                  <Pencil size={13} color="#64748b" />
+                </ActionButton>
+                {/* Delete */}
+                <ActionButton
+                  onClick={() => {
+                    if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
+                    deleteNote(id);
+                    setNoteText(""); setNoteUpdatedAt(null); setNoteEditing(false);
+                  }}
+                  style={{
+                    flexShrink: 0, padding: "4px 6px", borderRadius: 8,
+                    background: "#FEF2F2", display: "flex", alignItems: "center",
+                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  <X size={13} color="#ef4444" />
+                </ActionButton>
+              </div>
+            ) : (
+              /* ── Edit / empty input row ── */
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                <input
+                  type="text"
+                  className="note-input"
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value.slice(0, NOTE_MAX))}
                   placeholder={t.notesPlaceholder}
                   maxLength={NOTE_MAX}
-                  rows={4}
-                  autoFocus
+                  autoFocus={noteEditing}
                   style={{
-                    width: "100%", padding: "12px 14px", borderRadius: 12,
+                    width: "100%", padding: "9px 40px 9px 12px", borderRadius: 12,
                     fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13,
-                    border: "1.5px solid #E2E8F0", outline: "none", resize: "vertical",
-                    color: "#1E293B", background: "#f6f1e8", boxSizing: "border-box",
-                    lineHeight: 1.6,
+                    border: "1.5px solid #E2E8F0", outline: "none",
+                    color: "#1E293B", background: "#fff", boxSizing: "border-box",
                   }}
                 />
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: noteText.length >= NOTE_MAX ? "#ef4444" : "#9CA3AF", margin: 0 }}>
-                    {t.notesCharsLeft(NOTE_MAX - noteText.length)}
-                  </p>
-                  {noteUpdatedAt && (
-                    <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#9CA3AF", margin: 0 }}>
-                      {t.notesLastEdited(new Date(noteUpdatedAt).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID", { day: "numeric", month: "short" }))}
-                    </p>
-                  )}
-                </div>
-                {noteFeedback && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 6,
-                    padding: "7px 12px", borderRadius: 10,
-                    background: noteFeedback === "saved" ? "#F0FDF4" : "#FEF2F2",
-                    border: `1px solid ${noteFeedback === "saved" ? "#BBF7D0" : "#FECACA"}`,
-                  }}>
-                    <Check size={13} color={noteFeedback === "saved" ? "#16a34a" : "#ef4444"} />
-                    <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, fontWeight: 600, color: noteFeedback === "saved" ? "#16a34a" : "#ef4444" }}>
-                      {noteFeedback === "saved" ? t.notesSaved : t.notesDeleted}
-                    </span>
-                  </div>
-                )}
-                <div style={{ display: "flex", gap: 8 }}>
+                {/* Checkmark — only shown when there's text */}
+                {noteText.trim() && (
                   <ActionButton
                     onClick={() => {
                       if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
-                      if (!noteText.trim()) return;
                       const now = new Date().toISOString();
                       saveNote({ placeId: id, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now });
                       setNoteUpdatedAt(now);
-                      setNoteFeedback("saved");
-                      setNotesExpanded(false);
-                      setTimeout(() => setNoteFeedback(null), 2500);
+                      setNoteEditing(false);
                     }}
                     style={{
-                      flex: 1, padding: "10px 0", borderRadius: 12, fontSize: 13, fontWeight: 700,
-                      background: "#e6f4ed", color: "#2e8a5a",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      position: "absolute", right: 6,
+                      width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                      background: "#16a34a",
+                      display: "flex", alignItems: "center", justifyContent: "center",
                       touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                      fontFamily: "var(--font-jakarta), sans-serif",
                     }}
                   >
-                    <Check size={14} /> {t.notesSaveBtn}
+                    <Check size={14} color="#fff" strokeWidth={2.5} />
                   </ActionButton>
-                  {(noteText.trim() || noteUpdatedAt) && (
-                    <ActionButton
-                      onClick={() => {
-                        if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
-                        deleteNote(id);
-                        setNoteText(""); setNoteUpdatedAt(null);
-                        setNoteFeedback("deleted"); setNotesExpanded(false);
-                        setTimeout(() => setNoteFeedback(null), 2500);
-                      }}
-                      style={{
-                        padding: "10px 14px", borderRadius: 12, fontSize: 13, fontWeight: 700,
-                        background: "#FEF2F2", color: "#ef4444",
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                        fontFamily: "var(--font-jakarta), sans-serif",
-                      }}
-                    >
-                      <X size={14} /> {t.notesClearBtn}
-                    </ActionButton>
-                  )}
-                </div>
+                )}
               </div>
             )}
           </div>
         ) : (
-          <ActionButton
-            onClick={() => setShowReviewGate(true)}
-            style={{
-              marginTop: 10, width: "100%", display: "flex", alignItems: "center", gap: 8,
-              padding: "9px 12px", borderRadius: 12,
-              background: "#f6f1e8", border: "1.5px dashed #D1D5DB",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-            }}
-          >
-            <span style={{ fontSize: 14, lineHeight: 1, flexShrink: 0 }}>📝</span>
-            <span style={{
-              flex: 1, fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 12, color: "#94a3b8", textAlign: "left",
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          /* ── Free user — same visual as premium, locked ── */
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <p style={{
+              margin: 0,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 11, fontWeight: 700, color: "#64748b",
+              textTransform: "uppercase", letterSpacing: 0.8,
             }}>
-              {t.notesLockMsg}
-            </span>
-            <Lock size={12} color="#d97706" style={{ flexShrink: 0 }} />
-          </ActionButton>
+              📝 {t.notesLabel}
+            </p>
+            <ActionButton
+              onClick={() => setShowReviewGate(true)}
+              style={{
+                position: "relative", width: "100%",
+                padding: "9px 40px 9px 12px", borderRadius: 12,
+                background: "#fff", border: "1.5px solid #E2E8F0",
+                textAlign: "left",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 13, color: "#cbd5e1",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                boxSizing: "border-box",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}
+            >
+              {t.notesPlaceholder}
+              <div style={{
+                position: "absolute", right: 6, top: "50%",
+                transform: "translateY(-50%)",
+                width: 28, height: 28, borderRadius: 8,
+                background: "#f1f5f9",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Lock size={13} color="#d97706" strokeWidth={2.5} />
+              </div>
+            </ActionButton>
+          </div>
         )}
+        </div>
 
-        {/* Info chips — aligned with category filters */}
+        {/* Info chips */}
         {(() => {
           const ag = getAreaGroup(place.area);
           const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
@@ -879,111 +881,267 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
           const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`;
 
-          // Chip card — label on top, content below
-          const chip = (label: string, content: React.ReactNode, wide = false) => (
-            <div className={`bg-gray-50 rounded-xl px-3 py-2.5 flex flex-col gap-1.5${wide ? " col-span-2" : ""}`}>
-              <span className="text-[9px] font-jakarta text-gray-400 uppercase tracking-widest font-bold">{label}</span>
-              {content}
+          // ── Icon map: label string → icon node
+          const ic = (Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>, heroChip = false) => (
+            <Icon size={13} color={heroChip ? "#2e8a5a" : "#94a3b8"} strokeWidth={2} />
+          );
+          const iconMap: Record<string, React.ReactNode> = {
+            [t.pdGrade]:           ic(GraduationCap, true),
+            [t.pdChipBahasa]:      ic(Globe, true),
+            [t.pdCurriculum]:      ic(BookOpen),
+            ["Area"]:              ic(MapPin),
+            [t.pdChipUangPangkal]: ic(Banknote),
+            [t.pdChipSpp]:         ic(Calendar),
+            [t.pdStudentsPerClass]:ic(Users),
+            [t.pdComputerLab]:     ic(Monitor),
+            [t.pdSchoolPool]:      ic(Droplets),
+            [t.pdChipCourseType]:  ic(Layers, true),
+            [t.pdChipAgeChild]:    ic(Baby, true),
+            [t.pdMonthlyFee]:      ic(Wallet),
+            [t.pdFreeTrial]:       ic(Gift),
+            [t.pdTeacherRatio]:    ic(Users),
+            [t.pdTeachingLanguage]:ic(MessageCircle),
+            [t.pdAgeRange]:        ic(Baby, true),
+            [t.pdCarerRatio]:      ic(Users),
+            [t.pdDaycareMethod]:   ic(BookOpen),
+            [t.pdCctv]:            ic(Camera),
+            [t.pdAccreditation]:   ic(Award),
+            [t.pdType]:            ic(Layers, true),
+            [t.pdChipTicket]:      ic(Ticket, true),
+            [t.pdChipCost]:        ic(CreditCard, true),
+            [t.pdChipServices]:    ic(Activity),
+            [t.pdChipBudget]:      ic(Wallet, true),
+          };
+
+          // ── Hero chip (large, colored bg, label + value stacked)
+          const hero = (label: string, value: string) => (
+            <div style={{
+              flex: 1, background: "transparent", borderRadius: 12,
+              padding: "10px 12px", minWidth: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 5 }}>
+                {iconMap[label]}
+                <span style={{
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: 9, fontWeight: 700, color: "#2e8a5a",
+                  textTransform: "uppercase" as const, letterSpacing: "0.08em",
+                }}>
+                  {label}
+                </span>
+              </div>
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 700, fontSize: 17, color: "#0e1d4f",
+                lineHeight: 1.3, display: "block",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
+              }}>
+                {value}
+              </span>
             </div>
           );
-          const txt = (v: string) => (
-            <span className="font-jakarta font-semibold text-gray-800 text-xs leading-snug">{v}</span>
-          );
-          const pills = (vals: string[]) => (
-            <span className="font-jakarta font-semibold text-gray-800 text-xs leading-snug">
-              {vals.join(", ")}
-            </span>
+
+          // ── Free info row (label left, value right)
+          const row = (label: string, value: React.ReactNode) => (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              paddingTop: 9, paddingBottom: 9,
+              borderBottom: "1px solid #e9eef4",
+            }}>
+              <span style={{
+                display: "flex", alignItems: "center", gap: 6,
+                flexShrink: 0,
+              }}>
+                {iconMap[label]}
+                <span style={{
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: "0.875rem", color: "#6b7280",
+                }}>
+                  {label}
+                </span>
+              </span>
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
+                textAlign: "right" as const, maxWidth: "58%",
+              }}>
+                {value}
+              </span>
+            </div>
           );
 
-          if (place.category === "school") return (
-            <div className="grid grid-cols-2 gap-2" style={{ marginTop: 8 }}>
-              {chip("Area", txt(areaLabel))}
-              {place.grades?.length ? chip(t.pdGrade, pills(place.grades)) : null}
-              {place.curriculum ? chip(t.pdCurriculum,
-                tier === "premium"
-                  ? txt(place.curriculum)
-                  : <PremiumGate label="Kurikulum">{txt(place.curriculum)}</PremiumGate>
-              ) : null}
-              {place.bahasa?.length ? chip(t.pdChipBahasa, pills(place.bahasa)) : null}
-              {place.uangPangkalMin !== undefined
-                ? chip(t.pdChipUangPangkal,
-                    tier === "premium"
-                      ? txt(`Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}`)
-                      : <PremiumGate label="Uang Pangkal">{txt(`Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}`)}</PremiumGate>
-                  )
-                : null}
-              {chip(t.pdChipSpp,
-                tier === "premium"
-                  ? txt(fmtBulanan)
-                  : <PremiumGate label="SPP">{txt(fmtBulanan)}</PremiumGate>
+          // ── Gated row: clear for premium, blurred+lock for free
+          const gatedRow = (label: string, value: string) => {
+            const val = (
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
+              }}>
+                {value}
+              </span>
+            );
+            return row(label, tier === "premium" ? val : <PremiumGate>{val}</PremiumGate>);
+          };
+
+          // ── Build per-category arrays
+          type StrPair = [string, string];
+          let heroItems: StrPair[] = [];
+          let freeRows:  StrPair[] = [];
+          let gatedRows: StrPair[] = [];
+
+          if (place.category === "school") {
+            heroItems = [];
+            freeRows = [
+              [t.pdGrade,      place.grades?.join(", ") ?? "—"],
+              [t.pdChipBahasa, place.bahasa?.join(", ")  ?? "—"],
+              [t.pdCurriculum, place.curriculum ?? "—"],
+              ["Area",         areaLabel],
+            ];
+            gatedRows.push([t.pdChipUangPangkal, place.uangPangkalMin !== undefined ? `Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}` : "—"]);
+            gatedRows.push([t.pdChipSpp, fmtBulanan]);
+            gatedRows.push([t.pdStudentsPerClass, place.studentsPerClass !== undefined ? `${place.studentsPerClass} murid` : "—"]);
+            gatedRows.push([t.pdComputerLab, place.hasComputerLab !== undefined ? (place.hasComputerLab ? "Ada" : "Tidak Ada") : "—"]);
+            gatedRows.push([t.pdSchoolPool, place.hasPool !== undefined ? (place.hasPool ? "Ada" : "Tidak Ada") : "—"]);
+
+          } else if (place.category === "learning-center") {
+            heroItems = [];
+            freeRows = [
+              [t.pdChipCourseType, place.courseTypes?.join(", ") ?? place.centerType ?? "—"],
+              [t.pdChipAgeChild,   place.ageRange],
+              ["Area",             areaLabel],
+            ];
+            if (place.freeTrial !== undefined)
+              freeRows.push([t.pdFreeTrial, place.freeTrial ? "Ada" : "Tidak Ada"]);
+            gatedRows.push([t.pdMonthlyFee, fmtBulanan]);
+            if (place.teacherStudentRatio !== undefined)
+              gatedRows.push([t.pdTeacherRatio, place.teacherStudentRatio]);
+            if (place.teachingLanguage !== undefined)
+              gatedRows.push([t.pdTeachingLanguage, place.teachingLanguage]);
+
+          } else if (place.category === "daycare") {
+            heroItems = [];
+            freeRows = [
+              [t.pdAgeRange,   place.daycareAgeGroups?.join(", ") ?? place.ageRange],
+              [t.pdMonthlyFee, fmtBulanan],
+              ["Area",         areaLabel],
+            ];
+            if (place.carerChildRatio !== undefined)
+              gatedRows.push([t.pdCarerRatio, place.carerChildRatio]);
+            if (place.daycareMethod !== undefined)
+              gatedRows.push([t.pdDaycareMethod, place.daycareMethod]);
+            if (place.hasCctv !== undefined)
+              gatedRows.push([t.pdCctv, place.hasCctv ? "Ada" : "Tidak Ada"]);
+            if (place.hasAccreditation !== undefined)
+              gatedRows.push([t.pdAccreditation, place.hasAccreditation ? "Ada" : "Tidak Ada"]);
+
+          } else if (place.category === "playground") {
+            heroItems = [];
+            freeRows = [
+              [t.pdType,       place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"],
+              [t.pdChipTicket, fmtTicket],
+              ["Area",         areaLabel],
+            ];
+
+          } else if (place.category === "clinic") {
+            heroItems = [];
+            freeRows = [
+              ["Area",       areaLabel],
+              [t.pdChipCost, `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`],
+            ];
+            if (place.clinicServices?.length)
+              freeRows.push([t.pdChipServices, place.clinicServices.join(", ")]);
+
+          } else if (place.category === "cafe") {
+            heroItems = [];
+            freeRows = [["Area", areaLabel]];
+            if (place.priceCategory) freeRows.push([t.pdChipBudget, place.priceCategory]);
+
+          } else if (place.category === "mini-zoo" || place.category === "swimming-pool") {
+            heroItems = [];
+            freeRows = [
+              ["Area",         areaLabel],
+              [t.pdChipTicket, fmtTicket],
+            ];
+
+          } else if (place.category === "bookstore") {
+            heroItems = [];
+            freeRows = [["Area", areaLabel]];
+          }
+
+          return (
+            <div style={{
+              marginTop: 8,
+              background: "#f8fafc",
+              borderRadius: 18,
+              padding: "14px 14px 4px",
+            }}>
+              {/* Hero chips */}
+              {heroItems.length > 0 && (
+                <div style={{ display: "flex", marginBottom: 0, paddingBottom: 12, borderBottom: "1px solid #e9eef4" }}>
+                  {heroItems.map(([label, value], i) => (
+                    <React.Fragment key={label}>
+                      {i > 0 && <div style={{ width: 1, background: "#e9eef4", alignSelf: "stretch", flexShrink: 0 }} />}
+                      {hero(label, value)}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Free rows */}
+              {freeRows.length > 0 && (
+                <div>
+                  {freeRows.map(([label, value]) => (
+                    <React.Fragment key={label}>{row(label, value)}</React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Collapsible gated section */}
+              {gatedRows.length > 0 && (
+                <>
+                  <ActionButton
+                    onClick={() => setDetailOpen((o) => !o)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "10px 0",
+                      background: "none", border: "none",
+                      borderTop: freeRows.length > 0 ? "1px solid #e9eef4" : "none",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                      cursor: "pointer",
+                    } as React.CSSProperties}
+                  >
+                    <span style={{
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                      fontSize: 13, fontWeight: 600, color: "#2e8a5a",
+                    }}>
+                      {t.pdSeeDetails}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{
+                        fontFamily: "var(--font-jakarta), sans-serif",
+                        fontSize: 11, fontWeight: 700, color: "#fff",
+                        background: "#2e8a5a", borderRadius: 999,
+                        padding: "1px 7px", lineHeight: 1.6,
+                      }}>
+                        +{gatedRows.length}
+                      </span>
+                      <ChevronDown
+                        size={16} color="#2e8a5a"
+                        style={{ transform: detailOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                      />
+                    </span>
+                  </ActionButton>
+
+                  {detailOpen && (
+                    <div style={{ borderTop: "1px solid #e9eef4" }}>
+                      {gatedRows.map(([label, value]) => (
+                        <React.Fragment key={label}>{gatedRow(label, value)}</React.Fragment>
+                      ))}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           );
-
-          if (place.category === "learning-center") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {chip(t.pdChipAgeChild, txt(place.ageRange))}
-              {place.courseTypes?.length ? chip(t.pdChipCourseType, pills(place.courseTypes)) : null}
-              {chip(t.pdMonthlyFee,
-                tier === "premium"
-                  ? txt(fmtBulanan)
-                  : <PremiumGate label="Biaya">{txt(fmtBulanan)}</PremiumGate>
-              )}
-            </div>
-          );
-
-          if (place.category === "daycare") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {chip(t.pdMonthlyFee,
-                tier === "premium"
-                  ? txt(fmtBulanan)
-                  : <PremiumGate label="Biaya">{txt(fmtBulanan)}</PremiumGate>
-              )}
-              {place.daycareAgeGroups?.length ? chip(t.pdAgeRange, pills(place.daycareAgeGroups)) : null}
-            </div>
-          );
-
-          if (place.category === "playground") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {place.playgroundType
-                ? chip(t.pdType, txt(place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"))
-                : null}
-              {chip(t.pdChipTicket, txt(fmtTicket))}
-            </div>
-          );
-
-          if (place.category === "clinic") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {chip(t.pdChipCost, txt(`Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`))}
-              {place.clinicServices?.length ? chip(t.pdChipServices, pills(place.clinicServices)) : null}
-            </div>
-          );
-
-          if (place.category === "cafe") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {place.priceCategory ? chip(t.pdChipBudget, txt(place.priceCategory)) : null}
-            </div>
-          );
-
-          if (place.category === "mini-zoo" || place.category === "swimming-pool") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-              {chip(t.pdChipTicket, txt(fmtTicket))}
-            </div>
-          );
-
-          if (place.category === "bookstore") return (
-            <div className="grid grid-cols-2 gap-2">
-              {chip("Area", txt(areaLabel))}
-            </div>
-          );
-
-          return null;
         })()}
 
         {/* TangselKids Rating — playgrounds only */}
@@ -1099,7 +1257,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               const bubble = (
                 <div style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                  opacity: active ? 1 : 0.35,
+                  opacity: active ? 1 : 0.55,
                 }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: 14,
@@ -1131,103 +1289,93 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
             Related Videos
           </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {relatedVideos.map((v) => (
-              <ActionButton
-                key={v.id}
-                onClick={() => setVideoOpen(v.id)}
-                style={{ display: "block", textAlign: "left", padding: 0, borderRadius: 14, overflow: "clip" }}
-              >
-                {/* Thumbnail */}
-                <div style={{ position: "relative", paddingBottom: "56.25%", background: "#000", borderRadius: "14px 14px 0 0", overflow: "clip" }}>
-                  <img
-                    src={`https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}
-                    alt={v.title}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                  {/* Play button overlay */}
-                  <div style={{
-                    position: "absolute", inset: 0,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "rgba(0,0,0,0.22)",
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 999,
-                      background: "rgba(255,255,255,0.92)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <Play size={16} fill="#1f6b43" stroke="none" style={{ marginLeft: 2 }} />
+          {(place.videos ?? []).length === 0 ? (
+            <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#94a3b8" }}>
+              Belum ada video terkait.
+            </p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {(place.videos ?? []).map((v) => (
+                <ActionButton
+                  key={v.id}
+                  onClick={() => setVideoOpen(v.id)}
+                  style={{ display: "block", textAlign: "left", padding: 0, borderRadius: 14, overflow: "clip" }}
+                >
+                  <div style={{ position: "relative", paddingBottom: "56.25%", background: "#000", borderRadius: "14px 14px 0 0", overflow: "clip" }}>
+                    <img
+                      src={`https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}
+                      alt={v.title}
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.22)" }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.92)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <Play size={16} fill="#1f6b43" stroke="none" style={{ marginLeft: 2 }} />
+                      </div>
                     </div>
                   </div>
-                </div>
-                {/* Title */}
-                <div style={{
-                  padding: "8px 10px 10px",
-                  background: "#f6f1e8",
-                  borderRadius: "0 0 14px 14px",
-                  border: "1px solid #e2e8f0", borderTop: "none",
-                }}>
-                  <p style={{
-                    fontSize: 11, fontWeight: 600, color: "#0e1d4f", lineHeight: 1.4,
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}>
-                    {v.title}
-                  </p>
-                </div>
-              </ActionButton>
-            ))}
-          </div>
+                  <div style={{ padding: "8px 10px 10px", background: "#f6f1e8", borderRadius: "0 0 14px 14px", border: "1px solid #e2e8f0", borderTop: "none" }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: "#0e1d4f", lineHeight: 1.4, fontFamily: "var(--font-jakarta), sans-serif", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {v.title}
+                    </p>
+                  </div>
+                </ActionButton>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Reviews */}
         {(() => {
           const baseList = place.reviewsList ?? [];
           const totalCount = baseList.length + (userReview ? 1 : 0);
-          if (totalCount === 0) return null;
           return (
             <div>
               <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                {t.pdReviewsTitle} ({totalCount})
+                {t.pdUserReviewsTitle}{totalCount > 0 ? ` (${totalCount})` : ""}
               </h2>
-              <div className="space-y-3">
-                {/* User's own review — shown first */}
-                {userReview && (
-                  <div className="rounded-2xl p-4" style={{ background: "#F0F9FF", border: "1.5px solid #BAE6FD" }}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.name}</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, background: "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
-                          Ulasanmu
-                        </span>
+              {totalCount === 0 ? (
+                <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#94a3b8" }}>
+                  Belum ada review.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {/* User's own review — shown first */}
+                  {userReview && (
+                    <div className="rounded-2xl p-4" style={{ background: "#F0F9FF", border: "1.5px solid #BAE6FD" }}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.name}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, background: "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                            Ulasanmu
+                          </span>
+                        </div>
+                        <span className="font-jakarta text-xs text-gray-400">{userReview.date}</span>
                       </div>
-                      <span className="font-jakarta text-xs text-gray-400">{userReview.date}</span>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <Star key={s} size={13} fill={s < userReview.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
+                        ))}
+                      </div>
+                      <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{userReview.comment}</p>
                     </div>
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {Array.from({ length: 5 }).map((_, s) => (
-                        <Star key={s} size={13} fill={s < userReview.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
-                      ))}
+                  )}
+                  {/* Existing reviews */}
+                  {baseList.map((review, i) => (
+                    <div key={i} className="bg-gray-50 rounded-2xl p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-jakarta font-semibold text-sm text-gray-800">{review.name}</span>
+                        <span className="font-jakarta text-xs text-gray-400">{review.date}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 mb-2">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <Star key={s} size={13} fill={s < review.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
+                        ))}
+                      </div>
+                      <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{review.comment}</p>
                     </div>
-                    <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{userReview.comment}</p>
-                  </div>
-                )}
-                {/* Existing mock reviews */}
-                {baseList.map((review, i) => (
-                  <div key={i} className="bg-gray-50 rounded-2xl p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-jakarta font-semibold text-sm text-gray-800">{review.name}</span>
-                      <span className="font-jakarta text-xs text-gray-400">{review.date}</span>
-                    </div>
-                    <div className="flex items-center gap-0.5 mb-2">
-                      {Array.from({ length: 5 }).map((_, s) => (
-                        <Star key={s} size={13} fill={s < review.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
-                      ))}
-                    </div>
-                    <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{review.comment}</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}
@@ -1481,100 +1629,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       <SaveGateSheet
         isOpen={showSaveGate}
         onClose={() => setShowSaveGate(false)}
-        onRegister={() => openRegisterSheet({ onRegistered: saveAfterRegister })}
       />
 
-      {/* ── Save Limit Upgrade Sheet (registered — 5-place cap) ───────────── */}
-      {showSaveLimitSheet && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 70,
-            background: "rgba(0,0,0,0.45)",
-            animation: "sheet-fade-in 0.25s ease both",
-          }}
-          onClick={() => setShowSaveLimitSheet(false)}
-        >
-          <div
-            style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "#fff", borderRadius: "24px 24px 0 0",
-              padding: "20px 20px 40px",
-              maxWidth: 448, margin: "0 auto",
-              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle */}
-            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
-
-            {/* Icon */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 30,
-              }}>
-                ⭐
-              </div>
-            </div>
-
-            {/* Title */}
-            <p style={{
-              fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
-              textAlign: "center", margin: "0 0 8px",
-            }}>
-              {t.saveLimitTitle}
-            </p>
-
-            {/* Body */}
-            <p style={{
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, color: "#64748b", lineHeight: 1.6,
-              textAlign: "center", margin: "0 0 24px",
-            }}>
-              {t.saveLimitDesc}
-            </p>
-
-            {/* CTA */}
-            <ActionButton
-              onClick={() => { setShowSaveLimitSheet(false); router.push("/upgrade"); }}
-              style={{
-                width: "100%", padding: "15px 0",
-                borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.filterGateCta}
-            </ActionButton>
-
-            {/* Cancel */}
-            <ActionButton
-              onClick={() => setShowSaveLimitSheet(false)}
-              style={{
-                width: "100%", marginTop: 10, padding: "13px 0",
-                borderRadius: 16, border: "none",
-                background: "#f1f5f9", color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.premiumGateCancel}
-            </ActionButton>
-          </div>
-        </div>
-      )}
-
-      {/* ── PSB Guest Sheet (unregistered) ───────────────────────────────── */}
-      <PremiumGuestSheet isOpen={showPsbSheet} onClose={() => setShowPsbSheet(false)} />
 
       {/* ── PSB Upgrade Sheet (registered) ───────────────────────────────── */}
       {showPsbGate && (

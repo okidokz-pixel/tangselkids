@@ -10,11 +10,9 @@ import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
 import { BottomNav } from "@/components/BottomNav";
 import { ActionButton } from "@/components/ActionButton";
-import { useAuth, type Kid, type Tier } from "@/context/AuthContext";
+import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { PremiumGuestSheet } from "@/components/PremiumGuestSheet";
 import { getReviews } from "@/lib/reviewsStorage";
 import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
@@ -39,8 +37,6 @@ export default function ProfilePage() {
   const [savedCount,    setSavedCount]    = useState(0);
   const [reviewsCount,  setReviewsCount]  = useState(0);
   const [myNotes,       setMyNotes]       = useState<FacilityNote[]>([]);
-  const [showGuestGate,    setShowGuestGate]    = useState(false);
-  const [showPremiumSheet, setShowPremiumSheet] = useState(false);
   const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [cropperSrc, setCropperSrc] = useState("");
@@ -213,13 +209,13 @@ export default function ProfilePage() {
         <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: "rgba(255,255,255,0.12)" }}>
           <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
             style={{
-              background: profilePhoto ? "transparent" : (user ? "#0e1d4f" : "rgba(255,255,255,0.2)"),
+              background: (profilePhoto && user) ? "transparent" : (user ? "#0e1d4f" : "rgba(255,255,255,0.2)"),
               border: "2px solid rgba(255,255,255,0.3)",
               fontSize: 24, fontWeight: 700, color: "#fff",
               fontFamily: "var(--font-jakarta), sans-serif",
               overflow: "clip",
             }}>
-            {profilePhoto
+            {profilePhoto && user
               ? <img src={profilePhoto} alt="" style={{ width: 56, height: 56, objectFit: "cover" }} />
               : user ? (user.name?.charAt(0).toUpperCase() || "?") : <User size={28} color="white" strokeWidth={1.5} />
             }
@@ -257,7 +253,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          {tier !== "free" && !editing && (
+          {tier === "premium" && !editing && (
             <ActionButton
               onClick={openEdit}
               style={{
@@ -316,51 +312,16 @@ export default function ProfilePage() {
               {user?.lifetime ? "LIFETIME" : "PREMIUM"}
             </span>
           </div>
-        ) : tier === "registered" ? (
-          /* ── Terdaftar card ────────────────────────────────── */
-          <div className="rounded-2xl p-4 border-2"
-               style={{ borderColor: "#22c55e", background: "#f0fdf4" }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                   style={{ background: "#dcfce7", fontSize: 22 }}>✅</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d" }}>
-                  {t.profileRegisteredStatus}
-                </p>
-                <p className="font-jakarta text-xs mt-0.5" style={{ color: "#16a34a", lineHeight: 1.5 }}>
-                  {t.profileRegisteredStatusDesc}
-                </p>
-                <p className="font-jakarta text-xs mt-1" style={{ color: "#64748b", lineHeight: 1.5 }}>
-                  {t.profileRegisteredUpgradeHint}
-                </p>
-              </div>
-              <ActionButton
-                onClick={() => router.push("/upgrade")}
-                style={{
-                  padding: "8px 16px", borderRadius: 999, flexShrink: 0,
-                  background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                  color: "#fff", fontSize: 11, fontWeight: 800,
-                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                  fontFamily: "var(--font-jakarta), sans-serif",
-                  whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 5,
-                  boxShadow: "0 4px 12px rgba(217,119,6,0.35)",
-                }}
-              >
-                {t.profileRegisteredUpgradeBtn}
-                <span style={{ display: "inline-block", animation: "upgrade-arrow 0.9s ease-in-out infinite" }}>→</span>
-              </ActionButton>
-            </div>
-          </div>
         ) : (
-          /* ── Dead-code fallback (should never render) ───────── */
+          /* ── Guest / not logged-in card ─────────────────────── */
           <div className="rounded-2xl p-4 flex items-center gap-3 border-2"
-               style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
+               style={{ borderColor: "#94a3b8", background: "#f8fafc" }}>
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: "#fef3c7", fontSize: 22 }}>🔓</div>
+                 style={{ background: "#e2e8f0", fontSize: 22 }}>👤</div>
             <div className="flex-1">
-              <p className="font-jakarta font-bold text-sm text-amber-900">{t.profileFreeStatus}</p>
-              <p className="font-jakarta text-xs text-amber-700 mt-0.5">
-                {t.profileFreeStatusDesc}
+              <p className="font-jakarta font-bold text-sm" style={{ color: "#334155" }}>{t.profileGuestStatus}</p>
+              <p className="font-jakarta text-xs mt-0.5" style={{ color: "#64748b" }}>
+                {t.profileGuestStatusDesc}
               </p>
             </div>
             <ActionButton
@@ -683,7 +644,7 @@ export default function ProfilePage() {
             {/* Saved — all users can save (up to 5 for free) */}
             <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
               <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-              <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{savedCount}</span>
+              <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{user ? savedCount : "—"}</span>
               <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
             </Link>
 
@@ -816,21 +777,45 @@ export default function ProfilePage() {
           </p>
           <div className="rounded-2xl overflow-hidden divide-y"
                style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)" }}>
-            {appRows.map((row) => {
+            {appRows.map((row, idx) => {
+              const isFeedback = row.label === t.profileFeedback;
+              const feedbackLocked = isFeedback && tier !== "premium";
+              const divider = idx > 0 ? { borderTop: "1px solid var(--tk-line)" } : {};
+
               const inner = (
                 <>
-                  <row.Icon size={20} strokeWidth={1.75} style={{ color: "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
-                  <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{row.label}</span>
+                  <row.Icon size={20} strokeWidth={1.75} style={{ color: feedbackLocked ? "#cbd5e1" : "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
+                  <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: feedbackLocked ? "#94a3b8" : "var(--tk-ink)" }}>{row.label}</span>
                   {row.value && <span className="font-jakarta text-xs" style={{ color: "var(--tk-muted)" }}>{row.value}</span>}
-                  <ChevronRight size={16} style={{ color: "var(--tk-line)" }} />
+                  {feedbackLocked ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  ) : (
+                    <ChevronRight size={16} style={{ color: "var(--tk-line)" }} />
+                  )}
                 </>
               );
+
+              if (feedbackLocked) {
+                return (
+                  <div key={row.label} style={divider}>
+                    <ActionButton
+                      onClick={() => setShowUpgradeSheet(true)}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "transparent", borderRadius: 0 }}
+                    >
+                      {inner}
+                    </ActionButton>
+                  </div>
+                );
+              }
               return row.href ? (
-                <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-3.5">
+                <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-3.5" style={divider}>
                   {inner}
                 </Link>
               ) : (
-                <div key={row.label} className="flex items-center gap-3 px-4 py-3.5">
+                <div key={row.label} className="flex items-center gap-3 px-4 py-3.5" style={divider}>
                   {inner}
                 </div>
               );
@@ -841,11 +826,14 @@ export default function ProfilePage() {
         {/* Logout */}
         <section>
           <ActionButton
-            onClick={doLogout}
+            onClick={user ? doLogout : () => {}}
             style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               width: "100%", padding: "13px 0", borderRadius: 14,
-              background: "#0e1d4f", color: "#fff", fontSize: 14, fontWeight: 700,
+              background: user ? "#0e1d4f" : "#94a3b8", color: "#fff", fontSize: 14, fontWeight: 700,
+              opacity: user ? 1 : 0.45,
+              cursor: user ? "pointer" : "not-allowed",
+              pointerEvents: user ? "auto" : "none",
             }}
           >
             <LogOut size={17} /> Log Out
@@ -861,10 +849,7 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav active="profile" />
-      <FilterGateSheet isOpen={showGuestGate} onClose={() => setShowGuestGate(false)} />
-      <PremiumGuestSheet isOpen={showPremiumSheet} onClose={() => setShowPremiumSheet(false)} />
-
-      {/* Upgrade sheet — registered → premium */}
+      {/* Upgrade sheet — free → premium */}
       {showUpgradeSheet && (
         <>
           <style>{`

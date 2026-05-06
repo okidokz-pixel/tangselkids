@@ -8,9 +8,8 @@ import { ActionButton } from "./ActionButton";
 
 /**
  * PremiumGate — wraps premium-only content with a blur + lock badge.
- * - Unregistered: red lock icon   → PremiumGuestSheet (two-step: Register → Upgrade)
- * - Registered:   amber lock icon → upgrade bottom sheet → /upgrade
- * - Premium:      renders children unblurred (no gate)
+ * - Free (anonymous): amber lock icon → upgrade bottom sheet → /upgrade
+ * - Premium:          renders children unblurred (no gate)
  */
 export function PremiumGate({
   children,

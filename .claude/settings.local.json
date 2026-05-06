@@ -94,7 +94,16 @@
       "Bash(node -e \"const {places} = require\\('./src/lib/mockData.ts'\\); console.log\\('x'\\)\")",
       "Bash(curl -I \"https://tangselkids-5s6mnoufh-minisite911-5071s-projects.vercel.app\")",
       "Bash(curl -I \"https://tangselkids-minisite911-5071s-projects.vercel.app\")",
-      "Bash(timeout 8)"
+      "Bash(timeout 8)",
+      "WebFetch(domain:www.loom.com)",
+      "Read(//mnt/c/Users/USER/**)",
+      "Read(//c/Users/USER/Desktop/**)",
+      "Read(//c/Users/USER/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/fe394b00-2d08-4eaa-a030-66d7ff713844/58a1ce84-a538-4282-9637-3401bc56d41f/skills/xlsx/**)",
+      "Bash(extract-text \"C:\\\\Users\\\\USER\\\\Downloads\\\\Family_Directory_Bintaro_BSD_v20_5.xlsx\")",
+      "Bash(pip install *)",
+      "Bash(python -c \"import pandas; print\\('ok'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(vercel env *)"
     ]
   }
 }

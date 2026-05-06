@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Scale, GraduationCap, Lock } from "lucide-react";
-import { places, formatPriceRange, type Place } from "@/lib/mockData";
+import { formatPriceRange, type Place } from "@/lib/mockData";
+import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
@@ -19,7 +20,7 @@ function getValue(place: Place, key: string): string {
 }
 
 function isBest(list: Place[], key: string, index: number): boolean {
-  if (key === "priceRange") return places[index]?.priceMin === Math.min(...list.map((p) => p.priceMin));
+  if (key === "priceRange") return list[index]?.priceMin === Math.min(...list.map((p) => p.priceMin));
   if (key === "rating")     return list[index]?.rating === Math.max(...list.map((p) => p.rating));
   return false;
 }
@@ -41,10 +42,9 @@ export default function ComparePage() {
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("compareIds") || "[]");
-    const found = ids
-      .map((id) => places.find((p) => p.id === id))
-      .filter((p): p is Place => !!p && p.category === "school");
-    setCompareSchools(found);
+    fetchPlacesByIds(ids).then(all => {
+      setCompareSchools(all.filter(p => p.category === "school"));
+    });
   }, [loaded, tier, router]);
 
   function removeSchool(id: string) {
