@@ -354,7 +354,7 @@ function PaymentContent() {
                 ))}
               </div>
               <ActionButton
-                onClick={() => { window.location.href = "/profile"; }}
+                onClick={() => { window.location.href = "/profile?edit=1"; }}
                 style={{
                   width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                   background: "linear-gradient(135deg, #d97706, #f59e0b)", color: "#fff",

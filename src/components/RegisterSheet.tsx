@@ -123,8 +123,21 @@ export function RegisterSheet() {
   useEffect(() => {
     if (step === "done") {
       const revealTimer = setTimeout(() => setShowReveal(true), 350);
-      const doneTimer = setTimeout(() => {
-        if (pendingData.current) register(pendingData.current);
+      const doneTimer = setTimeout(async () => {
+        let data = pendingData.current;
+        // Silently geocode typed address if no pin coordinates were set
+        if (data && !data.addressLat && !data.addressLng && data.address) {
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1&countrycodes=id`
+            );
+            const results = await res.json();
+            if (results?.[0]) {
+              data = { ...data, addressLat: parseFloat(results[0].lat), addressLng: parseFloat(results[0].lon) };
+            }
+          } catch {}
+        }
+        if (data) register(data);
         if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
         closeRegisterSheet();
         onRegisteredRef.current?.();
@@ -154,7 +167,7 @@ export function RegisterSheet() {
     const next = [...otp];
     next[i] = val.slice(-1);
     setOtp(next);
-    if (val && i < 5) otpRefs.current[i + 1]?.focus();
+    if (val && i < 5) requestAnimationFrame(() => otpRefs.current[i + 1]?.focus());
     if (i === 5 && val) {
       const full = [...next];
       if (full.every(d => d !== "")) {
@@ -216,17 +229,36 @@ export function RegisterSheet() {
     e.target.value = "";
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     let valid = true;
     if (!name.trim()) { setNameError("Nama wajib diisi"); valid = false; } else setNameError("");
     if (!address.trim()) { setAddressError("Alamat wajib diisi"); valid = false; } else setAddressError("");
     if (!valid) return;
+
+    let lat = addressLat;
+    let lng = addressLng;
+
+    // For minimal-profile path, geocode now (no done-animation to hide the wait).
+    // For standard path the geocoding happens during the 2.8s done animation instead.
+    if (options.minimalProfile && !lat && !lng && address.trim()) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address.trim())}&limit=1&countrycodes=id`
+        );
+        const results = await res.json();
+        if (results?.[0]) {
+          lat = parseFloat(results[0].lat);
+          lng = parseFloat(results[0].lon);
+        }
+      } catch {}
+    }
+
     const data = {
       phone: `+62${phone.replace(/^0/, "")}`,
       name: name.trim(),
       address: address.trim(),
-      addressLat,
-      addressLng,
+      addressLat: lat,
+      addressLng: lng,
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
     };
@@ -614,7 +646,6 @@ export function RegisterSheet() {
                       maxLength={1}
                       value={otp[i]}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
-                      onTouchEnd={(e) => { e.currentTarget.focus(); }}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       style={{
                         width: 44, height: 54, textAlign: "center", fontSize: 22, fontWeight: 700,
@@ -661,7 +692,6 @@ export function RegisterSheet() {
                   </label>
                   <input
                     type="text"
-                    autoFocus
                     placeholder={t.obNamePlaceholder}
                     value={name}
                     onChange={(e) => setName(e.target.value)}

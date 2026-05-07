@@ -411,8 +411,8 @@ export const translations = {
     guestGateCta: "Upgrade ke Premium →",
 
     // ── FILTER GATE ──────────────────────────────────────────
-    filterGateTitle: "Filter Khusus Premium",
-    filterGateSubtitle: "Filter lanjutan ini tersedia untuk member Premium TangselKids. Upgrade sekarang mulai Rp 29.000/bulan atau Rp 169.000 seumur hidup.",
+    filterGateTitle: "Fitur Khusus Premium",
+    filterGateSubtitle: "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     filterGateCta: "Upgrade ke Premium",
 
     // ── PROFILE ──────────────────────────────────────────────
@@ -562,7 +562,7 @@ export const translations = {
     // ── UPGRADE PAGE ─────────────────────────────────────────
     upgradeBadge:           "⭐ PREMIUM",
     upgradeTitle:           "Akses Penuh,\nKeputusan Terbaik",
-    upgradeSubtitle:        "Semua yang kamu butuhkan untuk memilih tempat terbaik bagi si kecil.",
+    upgradeSubtitle:        "Akses fitur penuh tanpa batasan!",
     upgradePricingPer:      "per bulan · batalkan kapan saja",
     upgradeWhatYouGet:      "Yang kamu dapatkan",
     upgradeBenefits: [
@@ -615,21 +615,21 @@ export const translations = {
     upgradeEarlyAdopterBadge: "Early Adopter Price",
 
     // ── PROFILE — LIFETIME TIER ──────────────────────────────
-    profileLifetimeStatus:  "Status Akun: Premium Seumur Hidup",
-    profileLifetimeDesc:    "Akses penuh · Tidak pernah kedaluwarsa",
-    profileLifetimeBadge:   "👑 LIFETIME",
+    profileLifetimeStatus:  "Status Akun: Premium Lifetime",
+    profileLifetimeDesc:    "Akses penuh tanpa kadaluwarsa",
+    profileLifetimeBadge:   "💎 LIFETIME",
 
     // premium gate popup
     premiumGateTitle:       "Fitur Khusus Premium",
-    premiumGateDesc:        "Upgrade ke Premium untuk mengakses fitur ini.",
-    premiumGateCta:         "Upgrade ke Premium · Rp 29.000/bln",
+    premiumGateDesc:        "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
+    premiumGateCta:         "Upgrade ke Premium",
     premiumGateCancel:      "Batal",
-    premiumGateGuestDesc:   "Fitur ini khusus untuk member Premium. Daftar gratis terlebih dahulu, lalu upgrade ke Premium untuk mengakses fitur ini.",
+    premiumGateGuestDesc:   "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     premiumGateStepRegister: "Daftar Gratis",
     premiumGateStepUpgrade:  "Upgrade Premium",
     premiumGateGuestCta:     "Daftar Gratis",
     premiumGateGuestSheetTitle:    "Upgrade ke Premium",
-    premiumGateGuestSheetSubtitle: "Upgrade ke Premium untuk mengakses fitur ini. Mulai Rp 29.000/bulan atau Rp 169.000 seumur hidup.",
+    premiumGateGuestSheetSubtitle: "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
 
     // ── SAVE LIMIT ───────────────────────────────────────────
     saveLimitTitle: "Batas Favorit Tercapai",
@@ -818,7 +818,7 @@ export const translations = {
 
     // ── SAVE GATE (free → premium upgrade prompt) ────────────
     saveGateTitle:   "Fitur Khusus Premium",
-    saveGateBody:    "Upgrade ke Premium untuk mengakses fitur ini.",
+    saveGateBody:    "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     saveGateCta:     "Upgrade ke Premium",
     saveGateDismiss: "Nanti Saja",
 
@@ -1250,8 +1250,8 @@ export const translations = {
     guestGateCta: "Upgrade to Premium →",
 
     // ── FILTER GATE ──────────────────────────────────────────
-    filterGateTitle: "Premium-Only Filter",
-    filterGateSubtitle: "Advanced filters are available for TangselKids Premium members. Upgrade from Rp 29,000/month or Rp 169,000 lifetime.",
+    filterGateTitle: "Fitur Khusus Premium",
+    filterGateSubtitle: "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     filterGateCta: "Upgrade to Premium",
 
     // ── PROFILE ──────────────────────────────────────────────
@@ -1456,19 +1456,19 @@ export const translations = {
     // ── PROFILE — LIFETIME TIER ──────────────────────────────
     profileLifetimeStatus:  "Account Status: Lifetime Premium",
     profileLifetimeDesc:    "Full access · Never expires",
-    profileLifetimeBadge:   "👑 LIFETIME",
+    profileLifetimeBadge:   "💎 LIFETIME",
 
     // premium gate popup
     premiumGateTitle:       "Premium-Only Feature",
-    premiumGateDesc:        "Upgrade to Premium to access this feature.",
-    premiumGateCta:         "Upgrade to Premium · Rp 29,000/mo",
+    premiumGateDesc:        "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
+    premiumGateCta:         "Upgrade to Premium",
     premiumGateCancel:      "Cancel",
-    premiumGateGuestDesc:   "This feature is for Premium members only. Register for free first, then upgrade to Premium to access it.",
+    premiumGateGuestDesc:   "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     premiumGateStepRegister: "Register Free",
     premiumGateStepUpgrade:  "Upgrade Premium",
     premiumGateGuestCta:     "Register Free",
     premiumGateGuestSheetTitle:    "Upgrade to Premium",
-    premiumGateGuestSheetSubtitle: "Upgrade to Premium to access this feature. From Rp 29,000/month or Rp 169,000 lifetime.",
+    premiumGateGuestSheetSubtitle: "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
 
     // ── SAVE LIMIT ───────────────────────────────────────────
     saveLimitTitle: "Saved Limit Reached",
@@ -1657,7 +1657,7 @@ export const translations = {
 
     // ── SAVE GATE (free → premium upgrade prompt) ────────────
     saveGateTitle:   "Premium Feature",
-    saveGateBody:    "Upgrade to Premium to access this feature.",
+    saveGateBody:    "Upgrade dulu, yuk! Cuma Rp 29.000/bulan!",
     saveGateCta:     "Upgrade to Premium",
     saveGateDismiss: "Maybe Later",
 

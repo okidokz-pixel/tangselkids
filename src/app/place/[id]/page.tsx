@@ -1481,25 +1481,42 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               /* Locked state */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 12px", textAlign: "center" }}>
                 <div style={{
-                  width: 56, height: 56, borderRadius: 999,
-                  background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
-                }}>✏️</div>
-                <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#1E293B", margin: 0 }}>
-                  {t.suggestEditTitle}
+                  width: 64, height: 64, borderRadius: 999,
+                  background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
+                }}>⭐</div>
+                <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#0e1d4f", margin: 0 }}>
+                  {t.premiumGateTitle}
                 </p>
-                <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#64748B", margin: 0, lineHeight: 1.55 }}>
-                  {t.suggestEditLockMsg}
+                <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b", margin: 0, lineHeight: 1.6, padding: "0 8px" }}>
+                  {t.premiumGateDesc}
                 </p>
                 <ActionButton
                   onClick={() => { setShowSuggestSheet(false); router.push("/upgrade"); }}
                   style={{
-                    marginTop: 4, padding: "12px 28px", borderRadius: 999, fontSize: 14, fontWeight: 700,
+                    width: "100%", marginTop: 4, padding: "15px 0", borderRadius: 16, fontSize: 15, fontWeight: 700,
                     background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                     touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                     fontFamily: "var(--font-jakarta), sans-serif",
+                    boxShadow: "0 4px 16px rgba(217,119,6,0.35)",
                   }}
                 >
-                  Upgrade Premium
+                  {t.premiumGateCta}
+                  <span style={{ display: "inline-block", fontSize: 20, lineHeight: 1, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
+                </ActionButton>
+                <ActionButton
+                  onClick={() => setShowSuggestSheet(false)}
+                  style={{
+                    width: "100%", padding: "13px 0", borderRadius: 16,
+                    background: "transparent", color: "#94a3b8",
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                    fontSize: 14, fontWeight: 600,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  }}
+                >
+                  {t.premiumGateCancel}
                 </ActionButton>
               </div>
             ) : suggestSubmitted ? (
@@ -1633,181 +1650,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
 
       {/* ── PSB Upgrade Sheet (registered) ───────────────────────────────── */}
-      {showPsbGate && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 70,
-            background: "rgba(0,0,0,0.45)",
-            animation: "sheet-fade-in 0.25s ease both",
-          }}
-          onClick={() => setShowPsbGate(false)}
-        >
-          <div
-            style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "#fff", borderRadius: "24px 24px 0 0",
-              padding: "20px 20px 40px",
-              maxWidth: 448, margin: "0 auto",
-              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle */}
-            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
-
-            {/* Icon */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 30,
-              }}>
-                ⭐
-              </div>
-            </div>
-
-            {/* Title */}
-            <p style={{
-              fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
-              textAlign: "center", margin: "0 0 8px",
-            }}>
-              {t.premiumGateTitle}
-            </p>
-
-            {/* Body */}
-            <p style={{
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, color: "#64748b", lineHeight: 1.6,
-              textAlign: "center", margin: "0 0 24px",
-            }}>
-              {t.premiumGateDesc}
-            </p>
-
-            {/* CTA */}
-            <ActionButton
-              onClick={() => { setShowPsbGate(false); router.push("/upgrade"); }}
-              style={{
-                width: "100%", padding: "15px 0",
-                borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.premiumGateCta}
-            </ActionButton>
-
-            {/* Cancel */}
-            <ActionButton
-              onClick={() => setShowPsbGate(false)}
-              style={{
-                width: "100%", marginTop: 10, padding: "13px 0",
-                borderRadius: 16, border: "none",
-                background: "#f1f5f9", color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.premiumGateCancel}
-            </ActionButton>
-          </div>
-        </div>
-      )}
+      <FilterGateSheet isOpen={showPsbGate} onClose={() => setShowPsbGate(false)} />
 
       {/* ── Review Gate Bottom Sheet ──────────────────────────────────────── */}
-      {showReviewGate && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 70,
-            background: "rgba(0,0,0,0.45)",
-            animation: "sheet-fade-in 0.25s ease both",
-          }}
-          onClick={() => setShowReviewGate(false)}
-        >
-          <div
-            style={{
-              position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "#fff", borderRadius: "24px 24px 0 0",
-              padding: "20px 20px 40px",
-              maxWidth: 448, margin: "0 auto",
-              animation: "sheet-slide-up 0.38s cubic-bezier(0.32, 0.72, 0, 1) both",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Handle bar */}
-            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
-
-            {/* Icon */}
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 30,
-              }}>
-                ⭐
-              </div>
-            </div>
-
-            {/* Text */}
-            <p style={{
-              fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
-              textAlign: "center", margin: "0 0 8px",
-            }}>
-              {t.premiumGateTitle}
-            </p>
-            <p style={{
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, color: "#64748b", lineHeight: 1.6,
-              textAlign: "center", margin: "0 0 24px",
-            }}>
-              {t.premiumGateDesc}
-            </p>
-
-            {/* CTA */}
-            <ActionButton
-              onClick={() => { setShowReviewGate(false); router.push("/upgrade"); }}
-              style={{
-                width: "100%", padding: "15px 0",
-                borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.premiumGateCta}
-            </ActionButton>
-
-            {/* Cancel */}
-            <ActionButton
-              onClick={() => setShowReviewGate(false)}
-              style={{
-                width: "100%", marginTop: 10, padding: "13px 0",
-                borderRadius: 16, border: "none",
-                background: "#f1f5f9",
-                color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {t.premiumGateCancel}
-            </ActionButton>
-          </div>
-        </div>
-      )}
+      <FilterGateSheet isOpen={showReviewGate} onClose={() => setShowReviewGate(false)} />
 
     </div>
   );

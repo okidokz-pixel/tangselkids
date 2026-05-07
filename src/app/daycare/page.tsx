@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
+import { ChevronLeft, ChevronDown, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
 import { placeMatchesAreas, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
@@ -129,6 +129,7 @@ function DaycareContent() {
   useEffect(() => { fetchPlacesByCategory("daycare").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
 
   const [showFilterGate, setShowFilterGate] = useState(false);
+  const [premiumOpen,    setPremiumOpen]    = useState(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -264,48 +265,80 @@ function DaycareContent() {
             </div>
           </div>
 
-          {/* Premium-only filters */}
-          {tier === "premium" ? (
-            <>
-              {([
-                { label: t.filterPrice,       value: priceBucket,      set: setPriceBucket,      opts: PRICE_OPTIONS        },
-                { label: "Rasio Pengasuh:Anak", value: carerRatio,       set: setCarerRatio,       opts: CARER_RATIO_OPTIONS  },
-                { label: "Kurikulum / Metode",  value: daycareMethod,    set: setDaycareMethod,    opts: DAYCARE_METHOD_OPTIONS },
-                { label: "CCTV & Akses",        value: hasCctv,          set: setHasCctv,          opts: adaOptionsDC         },
-                { label: "Akreditasi",           value: hasAccreditation, set: setHasAccreditation, opts: adaOptionsDC         },
-              ] as const).map(({ label, value, set, opts }) => (
-                <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
-                  <div style={{ flex: 1 }}>
-                    <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts as { value: string; label: string }[]} />
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              {([t.filterPrice, "Rasio Pengasuh:Anak", "Kurikulum / Metode", "CCTV & Akses", "Akreditasi"] as const).map((label) => (
-                <ActionButton
-                  key={String(label)}
-                  onClick={() => setShowFilterGate(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18,
-                    width: "100%", padding: 0, background: "transparent" }}
-                >
-                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
-                  <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                    fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                    color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                    display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span>Premium only</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                </ActionButton>
-              ))}
-            </>
+          {/* Collapsible premium filter section */}
+          <ActionButton
+            onClick={() => setPremiumOpen(o => !o)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              width: "100%", padding: "13px 16px", marginBottom: premiumOpen ? 0 : 8,
+              borderRadius: premiumOpen ? "14px 14px 0 0" : 14,
+              background: "#f0fdf4",
+              border: "1.5px solid #bbf7d0",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              cursor: "pointer",
+            } as React.CSSProperties}
+          >
+            <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#166534" }}>
+              Filter Lebih Dalam?{" "}
+              <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
+            </span>
+            <ChevronDown
+              size={18} color="#166534"
+              style={{ transform: premiumOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+            />
+          </ActionButton>
+
+          {premiumOpen && (
+            <div style={{
+              border: "1.5px solid #bbf7d0", borderTop: "none",
+              borderRadius: "0 0 14px 14px",
+              padding: "16px 16px 4px",
+              marginBottom: 8,
+              background: "#fff",
+            }}>
+              {tier === "premium" ? (
+                <>
+                  {([
+                    { label: t.filterPrice,         value: priceBucket,      set: setPriceBucket,      opts: PRICE_OPTIONS          },
+                    { label: "Rasio Pengasuh:Anak",  value: carerRatio,       set: setCarerRatio,       opts: CARER_RATIO_OPTIONS    },
+                    { label: "Kurikulum / Metode",   value: daycareMethod,    set: setDaycareMethod,    opts: DAYCARE_METHOD_OPTIONS  },
+                    { label: "CCTV & Akses",         value: hasCctv,          set: setHasCctv,          opts: adaOptionsDC           },
+                    { label: "Akreditasi",            value: hasAccreditation, set: setHasAccreditation, opts: adaOptionsDC           },
+                  ] as const).map(({ label, value, set, opts }) => (
+                    <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
+                      <div style={{ flex: 1 }}>
+                        <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts as { value: string; label: string }[]} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {([t.filterPrice, "Rasio Pengasuh:Anak", "Kurikulum / Metode", "CCTV & Akses", "Akreditasi"] as const).map((label) => (
+                    <ActionButton
+                      key={String(label)}
+                      onClick={() => setShowFilterGate(true)}
+                      style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
+                        width: "100%", padding: 0, background: "transparent" }}
+                    >
+                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
+                      <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
+                        fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+                        color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
+                        display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span>Premium only</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      </div>
+                    </ActionButton>
+                  ))}
+                </>
+              )}
+            </div>
           )}
 
         </div>
@@ -327,6 +360,7 @@ function DaycareContent() {
             </button>
           </div>
         </div>
+        <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       </div>
     );
   }
@@ -362,7 +396,8 @@ function DaycareContent() {
         <ActionButton onClick={() => router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
-          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
+          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0,
+          animation: "filter-pulse 2s ease-in-out infinite" }}>
           <SlidersHorizontal size={14} strokeWidth={2.5} />
           Filter
           {activeCount > 0 && (

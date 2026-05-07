@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, MapPin } from "lucide-react";
 
 const COVERAGE = {
@@ -10,6 +10,23 @@ const COVERAGE = {
 export function AreaCoverageButton() {
   const [show, setShow] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  // Force-close on browser back-nav and on tab refocus / BFCache restore.
+  // The modal uses zIndex: 9000 — if it gets stuck open after a back-navigation
+  // (which happens with the Next.js + Turbopack dev-mode router-cache bug), it
+  // silently swallows every click on the page underneath. Belt-and-suspenders.
+  useEffect(() => {
+    const close = () => setShow(false);
+    window.addEventListener("popstate", close);
+    window.addEventListener("pageshow", close);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") close();
+    });
+    return () => {
+      window.removeEventListener("popstate", close);
+      window.removeEventListener("pageshow", close);
+    };
+  }, []);
 
   function handleTouchStart(e: React.TouchEvent) {
     const t = e.touches[0];

@@ -17,6 +17,8 @@ import { getReviews } from "@/lib/reviewsStorage";
 import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
 import { ImageCropper } from "@/components/ImageCropper";
+import { PremiumBadge } from "@/components/PremiumBadge";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
 
 // ── Support WhatsApp number ───────────────────────────────────────────────────
 const SUPPORT_WA_NUMBER = "6281234567890"; // TODO: replace with real support number
@@ -65,6 +67,13 @@ export default function ProfilePage() {
     const photo = localStorage.getItem("profilePhoto");
     if (photo) setProfilePhoto(photo);
   }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("edit") === "1" && user) {
+      openEdit();
+      router.replace("/profile", { scroll: false });
+    }
+  }, [user]);
 
   function openEdit() {
     if (!user) return;
@@ -127,18 +136,34 @@ export default function ProfilePage() {
     setEditKids((prev) => prev.map((k, idx) => idx === i ? { ...k, [field]: val } : k));
   }
 
-  function saveEdit() {
+  async function saveEdit() {
     let valid = true;
     if (!editName.trim()) { setNameError(true); valid = false; }
     if (!editAddress.trim()) { setAddressError(true); valid = false; }
     if (!valid) return;
 
+    // If no pin coordinates, silently geocode the typed address via Nominatim
+    let lat = editAddressLat;
+    let lng = editAddressLng;
+    if (!lat || !lng) {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(editAddress.trim())}&limit=1&countrycodes=id`
+        );
+        const results = await res.json();
+        if (results?.[0]) {
+          lat = parseFloat(results[0].lat);
+          lng = parseFloat(results[0].lon);
+        }
+      } catch {}
+    }
+
     register({
       phone: user!.phone,
       name: editName.trim(),
       address: editAddress.trim(),
-      addressLat: editAddressLat,
-      addressLng: editAddressLng,
+      addressLat: lat,
+      addressLng: lng,
       dob: editDob || undefined,
       kids: editKids.filter((k) => k.name.trim()),
     });
@@ -186,6 +211,14 @@ export default function ProfilePage() {
         @keyframes upgrade-arrow {
           0%, 100% { transform: translateX(0); }
           50%       { transform: translateX(4px); }
+        }
+        @keyframes edit-modal-backdrop {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes edit-modal-in {
+          from { opacity: 0; transform: scale(0.96) translateY(8px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0);   }
         }
       `}</style>
 
@@ -290,7 +323,7 @@ export default function ProfilePage() {
             }} />
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{ background: "rgba(0,0,0,0.18)", fontSize: 22, position: "relative" }}>
-              {user?.lifetime ? "👑" : "⭐"}
+              {user?.lifetime ? "💎" : "⭐"}
             </div>
             <div className="flex-1" style={{ position: "relative" }}>
               <p className="font-jakarta font-bold text-sm">
@@ -307,10 +340,7 @@ export default function ProfilePage() {
                     </>}
               </p>
             </div>
-            <span className="font-jakarta text-xs font-bold px-2 py-1 rounded-full"
-                  style={{ background: "rgba(0,0,0,0.20)", color: "#fef9c3", position: "relative" }}>
-              {user?.lifetime ? "LIFETIME" : "PREMIUM"}
-            </span>
+            <PremiumBadge />
           </div>
         ) : (
           /* ── Guest / not logged-in card ─────────────────────── */
@@ -339,24 +369,50 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── EDIT FORM (inline) ──────────────────────────────────────────── */}
+        {/* ── EDIT FORM (centered modal) ───────────────────────────────────── */}
         {editing && (
-          <section>
-            <div className="flex items-center justify-between mb-2 px-1">
-              <p className="text-xs font-jakarta font-semibold uppercase tracking-widest" style={{ color: "var(--tk-muted)" }}>
-                Edit My Info
-              </p>
-              <ActionButton
-                onClick={cancelEdit}
-                style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px",
-                  borderRadius: 999, background: "#f1f5f9", color: "#64748b", fontSize: 12, fontWeight: 600 }}
-              >
-                <X size={13} /> Cancel
-              </ActionButton>
-            </div>
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 300,
+              background: "rgba(10,32,24,0.55)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "20px 16px",
+              animation: "edit-modal-backdrop 0.22s ease both",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff", borderRadius: 20,
+                width: "100%", maxWidth: 480,
+                maxHeight: "85vh", overflowY: "auto",
+                boxShadow: "0 24px 64px rgba(10,32,24,0.22)",
+                animation: "edit-modal-in 0.26s cubic-bezier(0.32,0.72,0,1) both",
+              }}
+            >
+              {/* Modal header */}
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "16px 20px 12px",
+                borderBottom: "1px solid var(--tk-line)",
+                position: "sticky", top: 0, background: "#fff", zIndex: 1,
+                borderRadius: "20px 20px 0 0",
+              }}>
+                <p className="font-jakarta font-bold" style={{ fontSize: 16, color: "var(--tk-ink)" }}>
+                  Edit My Info
+                </p>
+                <ActionButton
+                  onClick={cancelEdit}
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 32, height: 32, borderRadius: 999,
+                    background: "#f1f5f9", color: "#64748b",
+                  }}
+                >
+                  <X size={16} />
+                </ActionButton>
+              </div>
 
-            <div className="rounded-2xl p-4 space-y-4"
-                 style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)" }}>
+            <div className="space-y-4" style={{ padding: "16px 20px 20px" }}>
 
               {/* Profile Photo */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: 4 }}>
@@ -630,7 +686,8 @@ export default function ProfilePage() {
                 <Check size={17} /> Save Changes
               </ActionButton>
             </div>
-          </section>
+            </div>
+          </div>
         )}
 
         {/* Activity stats — 3-column row */}
@@ -849,70 +906,7 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav active="profile" />
-      {/* Upgrade sheet — free → premium */}
-      {showUpgradeSheet && (
-        <>
-          <style>{`
-            @keyframes pu-fade-in  { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes pu-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-          `}</style>
-          <div
-            onClick={() => setShowUpgradeSheet(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 1000,
-              background: "rgba(0,0,0,0.45)", animation: "pu-fade-in 0.25s ease both" }}
-          />
-          <div
-            style={{ position: "fixed", bottom: 0, left: 0, right: 0,
-              maxWidth: 448, margin: "0 auto",
-              background: "#fff", borderRadius: "24px 24px 0 0",
-              padding: "20px 20px 40px", zIndex: 1001,
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
-              animation: "pu-slide-up 0.38s cubic-bezier(0.32,0.72,0,1) both" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>
-                ⭐
-              </div>
-            </div>
-            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
-              textAlign: "center", margin: "0 0 8px" }}>
-              {t.premiumGateTitle}
-            </p>
-            <p style={{ fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, color: "#64748b", lineHeight: 1.6,
-              textAlign: "center", margin: "0 0 24px" }}>
-              {t.premiumGateDesc}
-            </p>
-            <ActionButton
-              onClick={() => { setShowUpgradeSheet(false); router.push("/upgrade"); }}
-              style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
-            >
-              {t.premiumGateCta}
-            </ActionButton>
-            <ActionButton
-              onClick={() => setShowUpgradeSheet(false)}
-              style={{ width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16, border: "none",
-                background: "#f1f5f9", color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
-            >
-              {t.premiumGateCancel}
-            </ActionButton>
-          </div>
-        </>
-      )}
+      <FilterGateSheet isOpen={showUpgradeSheet} onClose={() => setShowUpgradeSheet(false)} />
 
       {/* ── Profile photo file input + cropper ───────────────────────────── */}
       <input
@@ -925,6 +919,7 @@ export default function ProfilePage() {
       {showCropper && (
         <ImageCropper
           imageSrc={cropperSrc}
+          zIndex={400}
           onConfirm={(dataUrl) => {
             localStorage.setItem("profilePhoto", dataUrl);
             setProfilePhoto(dataUrl);

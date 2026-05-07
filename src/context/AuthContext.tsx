@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const merged: UserData = {
       ...data,
       tier: data.tier ?? existing?.tier ?? "free",
+      lifetime: data.lifetime ?? existing?.lifetime,
       premiumExpiresAt: data.premiumExpiresAt ?? existing?.premiumExpiresAt,
     };
     localStorage.setItem("tkUser", JSON.stringify(merged));
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("compareIds");
     localStorage.removeItem("userReviews");
     localStorage.removeItem("profilePhoto");
+    localStorage.removeItem("facilityNotes");
     setUser(null);
   }
 

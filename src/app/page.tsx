@@ -8,7 +8,7 @@ import { PremiumBadge } from "@/components/PremiumBadge";
 import { BottomNav } from "@/components/BottomNav";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { getAreaGroup } from "@/lib/mockData";
-import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces } from "@/lib/db";
+import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, getCachedCategory, getCachedCounts } from "@/lib/db";
 import type { Place } from "@/lib/mockData";
 import { articles, localizeArticle } from "@/lib/articles";
 
@@ -1213,9 +1213,29 @@ function FeaturePair() {
 
   const [allSchools, setAllSchools] = useState<Place[]>([]);
   const [allLCs,     setAllLCs]     = useState<Place[]>([]);
+
+  // Hydrate from window cache + always refetch fresh. Also re-runs on
+  // back-navigation / tab refocus to defeat Next.js router-cache restore
+  // that otherwise leaves this component mounted with empty arrays.
   useEffect(() => {
-    fetchPlacesByCategory("school").then(setAllSchools);
-    fetchPlacesByCategory("learning-center").then(setAllLCs);
+    const load = () => {
+      const sc = getCachedCategory("school");
+      const lc = getCachedCategory("learning-center");
+      if (sc.length) setAllSchools(sc);
+      if (lc.length) setAllLCs(lc);
+      fetchPlacesByCategory("school").then(setAllSchools);
+      fetchPlacesByCategory("learning-center").then(setAllLCs);
+    };
+    load();
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    window.addEventListener("popstate", load);
+    window.addEventListener("pageshow", load);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("popstate", load);
+      window.removeEventListener("pageshow", load);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   const tier2Ref = useRef<HTMLDivElement>(null);
@@ -1371,7 +1391,27 @@ function FeaturePair() {
 function IndexList() {
   const { lang, t } = useLang();
   const [counts, setCounts] = useState<Partial<Record<string, number>>>({});
-  useEffect(() => { fetchCategoryCounts().then(setCounts); }, []);
+
+  // Same defensive pattern as FeaturePair — hydrate from window cache and
+  // refetch on back-nav / refocus so we never get stuck on an empty {}
+  // showing the "+4 kategori" fallback for every row.
+  useEffect(() => {
+    const load = () => {
+      const c = getCachedCounts();
+      if (Object.keys(c).length) setCounts(c);
+      fetchCategoryCounts().then(setCounts);
+    };
+    load();
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    window.addEventListener("popstate", load);
+    window.addEventListener("pageshow", load);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("popstate", load);
+      window.removeEventListener("pageshow", load);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
 
   const INDEX_CATS = [
     { icon: "daycare",    name: t.catDaycare,       count: counts["daycare"]        ?? null, href: "/daycare"        },

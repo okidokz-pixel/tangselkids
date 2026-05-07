@@ -103,13 +103,13 @@ export default function UpgradePage() {
                 border: "1.5px solid rgba(255,255,255,0.35)",
                 color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 12, fontWeight: 700,
+                fontSize: 16, fontWeight: 700,
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 1,
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              <span style={{ fontSize: 10, opacity: 0.75 }}>{t.upgradeMonthlyLabel}</span>
+              <span style={{ fontSize: 13, opacity: 0.75 }}>{t.upgradeMonthlyLabel}</span>
               <span>{t.upgradeMonthlyPrice}</span>
             </ActionButton>
             {/* Lifetime — larger / primary */}
@@ -122,7 +122,7 @@ export default function UpgradePage() {
                 background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
                 color: "#fff",
                 fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 13, fontWeight: 800,
+                fontSize: 17, fontWeight: 800,
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center", gap: 1,
                 boxShadow: "0 4px 16px rgba(217,119,6,0.50)",
@@ -130,8 +130,9 @@ export default function UpgradePage() {
               }}
             >
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.22) 50%, transparent 65%)", animation: "gold-shimmer 2.8s ease-in-out infinite", pointerEvents: "none" }} />
-              <span style={{ position: "relative", fontSize: 10, color: "rgba(255,255,255,0.85)" }}>👑 {t.upgradeLifetimeLabel}</span>
+              <span style={{ position: "relative", fontSize: 13, color: "rgba(255,255,255,0.85)" }}>👑 {t.upgradeLifetimeLabel}</span>
               <span style={{ position: "relative" }}>{t.upgradeLifetimePrice} →</span>
+              <span style={{ position: "relative", fontSize: 11, color: "rgba(255,255,255,0.80)", fontWeight: 600, marginTop: 2 }}>Lebih murah dari 6 bulan!</span>
             </ActionButton>
           </div>
         )}

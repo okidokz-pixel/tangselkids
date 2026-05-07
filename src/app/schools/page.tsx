@@ -476,6 +476,7 @@ function SchoolsContent() {
             </button>
           </div>
         </div>
+        <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       </div>
     );
   }
@@ -511,7 +512,8 @@ function SchoolsContent() {
         <ActionButton onClick={() => router.replace(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
-          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0 }}>
+          background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0,
+          animation: "filter-pulse 2s ease-in-out infinite" }}>
           <SlidersHorizontal size={14} strokeWidth={2.5} />
           Filter
           {activeCount > 0 && (

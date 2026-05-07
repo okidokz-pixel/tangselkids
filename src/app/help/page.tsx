@@ -5,6 +5,7 @@ import { ChevronLeft, HelpCircle, ChevronDown } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { ActionButton } from "@/components/ActionButton";
 import { useAuth } from "@/context/AuthContext";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
 
 const faqs = [
   {
@@ -186,71 +187,7 @@ export default function HelpPage() {
       </div>
 
       <BottomNav active="profile" />
-
-      {/* Upgrade sheet */}
-      {showUpgradeSheet && (
-        <>
-          <style>{`
-            @keyframes pu-fade-in  { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes pu-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-          `}</style>
-          <div
-            onClick={() => setShowUpgradeSheet(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 1000,
-              background: "rgba(0,0,0,0.45)", animation: "pu-fade-in 0.25s ease both" }}
-          />
-          <div
-            style={{ position: "fixed", bottom: 0, left: 0, right: 0,
-              maxWidth: 448, margin: "0 auto",
-              background: "#fff", borderRadius: "24px 24px 0 0",
-              padding: "20px 20px 40px", zIndex: 1001,
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.20)",
-              animation: "pu-slide-up 0.38s cubic-bezier(0.32,0.72,0,1) both" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 24px" }} />
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{ width: 64, height: 64, borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>
-                ⭐
-              </div>
-            </div>
-            <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif",
-              fontSize: 20, fontWeight: 700, color: "#0e1d4f",
-              textAlign: "center", margin: "0 0 8px" }}>
-              Fitur Premium
-            </p>
-            <p style={{ fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, color: "#64748b", lineHeight: 1.6,
-              textAlign: "center", margin: "0 0 24px" }}>
-              Kirim pertanyaan dan masukan langsung ke tim kami. Upgrade ke Premium untuk mengakses fitur ini.
-            </p>
-            <ActionButton
-              onClick={() => { setShowUpgradeSheet(false); router.push("/upgrade"); }}
-              style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
-                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 15, fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
-            >
-              Upgrade ke Premium →
-            </ActionButton>
-            <ActionButton
-              onClick={() => setShowUpgradeSheet(false)}
-              style={{ width: "100%", marginTop: 10, padding: "13px 0", borderRadius: 16, border: "none",
-                background: "#f1f5f9", color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontSize: 14, fontWeight: 600,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent" } as React.CSSProperties}
-            >
-              Nanti saja
-            </ActionButton>
-          </div>
-        </>
-      )}
+      <FilterGateSheet isOpen={showUpgradeSheet} onClose={() => setShowUpgradeSheet(false)} />
     </div>
   );
 }

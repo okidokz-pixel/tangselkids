@@ -53,7 +53,7 @@ export function FilterGateSheet({
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: 28,
           }}>
-            🔍
+            ⭐
           </div>
         </div>
 
