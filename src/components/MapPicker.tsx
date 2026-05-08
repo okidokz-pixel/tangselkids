@@ -3,53 +3,57 @@ import { useState, useRef, useEffect } from "react";
 import { X, Search, MapPin, Loader, Navigation } from "lucide-react";
 import { ActionButton } from "./ActionButton";
 
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address: {
-    road?: string;
-    suburb?: string;
-    city_district?: string;
-    city?: string;
-    county?: string;
-    state?: string;
-  };
+interface Prediction {
+  place_id: string;
+  description: string;
+}
+
+interface SelectedPlace {
+  address: string;
+  lat: number;
+  lng: number;
 }
 
 interface Props {
   initialAddress?: string;
   onConfirm: (address: string, lat: number, lng: number) => void;
   onClose: () => void;
+  zIndex?: number;
 }
 
-export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
-  const [query,      setQuery]      = useState(initialAddress ?? "");
-  const [results,    setResults]    = useState<NominatimResult[]>([]);
-  const [loading,    setLoading]    = useState(false);
-  const [gpsLoading, setGpsLoading] = useState(false);
-  const [selected,   setSelected]   = useState<NominatimResult | null>(null);
-  const [error,      setError]      = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+export function MapPicker({ initialAddress, onConfirm, onClose, zIndex = 300 }: Props) {
+  const [query,         setQuery]         = useState(initialAddress ?? "");
+  const [predictions,   setPredictions]   = useState<Prediction[]>([]);
+  const [loading,       setLoading]       = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [gpsLoading,    setGpsLoading]    = useState(false);
+  const [selected,      setSelected]      = useState<SelectedPlace | null>(null);
+  const [error,         setError]         = useState("");
+  const inputRef   = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
+  // ── Autocomplete search ───────────────────────────────────────────────────
   function search(q: string) {
-    if (!q.trim() || q.trim().length < 4) { setResults([]); return; }
+    if (!q.trim() || q.trim().length < 3) { setPredictions([]); return; }
     setLoading(true);
     setError("");
-    fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=id&limit=6&addressdetails=1`,
-      { headers: { "Accept-Language": "id" } }
-    )
+    fetch(`/api/places?q=${encodeURIComponent(q)}`)
       .then(r => r.json())
-      .then((data: NominatimResult[]) => {
-        setResults(data);
-        if (data.length === 0) setError("Alamat tidak ditemukan. Coba kata kunci lain.");
+      .then((data) => {
+        if (data.status === "OK" || data.status === "ZERO_RESULTS") {
+          const preds: Prediction[] = (data.predictions ?? []).map((p: { place_id: string; description: string }) => ({
+            place_id: p.place_id,
+            description: p.description,
+          }));
+          setPredictions(preds);
+          if (preds.length === 0) setError("Alamat tidak ditemukan. Coba kata kunci lain.");
+        } else {
+          setError("Gagal mencari. Cek koneksi internet.");
+        }
       })
       .catch(() => setError("Gagal mencari. Cek koneksi internet."))
       .finally(() => setLoading(false));
@@ -58,35 +62,53 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
   function handleInputChange(val: string) {
     setQuery(val);
     setSelected(null);
+    setPredictions([]);
+    setError("");
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 600);
+    debounceRef.current = setTimeout(() => search(val), 500);
   }
 
+  // ── Pick a prediction → fetch coords ─────────────────────────────────────
+  async function handleSelect(pred: Prediction) {
+    setDetailLoading(true);
+    setError("");
+    setPredictions([]);
+    setQuery(pred.description);
+    try {
+      const res  = await fetch(`/api/places?place_id=${encodeURIComponent(pred.place_id)}`);
+      const data = await res.json();
+      if (data.status === "OK" && data.result?.geometry?.location) {
+        const { lat, lng } = data.result.geometry.location;
+        setSelected({
+          address: data.result.formatted_address ?? pred.description,
+          lat,
+          lng,
+        });
+      } else {
+        setError("Gagal memuat detail lokasi. Coba pilih lagi.");
+      }
+    } catch {
+      setError("Gagal memuat detail lokasi.");
+    }
+    setDetailLoading(false);
+  }
+
+  // ── GPS → reverse geocode ─────────────────────────────────────────────────
   function handleGPS() {
     if (!navigator.geolocation) { setError("GPS tidak tersedia di perangkat ini."); return; }
     setGpsLoading(true);
     setError("");
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+      async ({ coords: { latitude: lat, longitude: lng } }) => {
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-            { headers: { "Accept-Language": "id" } }
-          );
+          const res  = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
           const data = await res.json();
-          if (data.display_name) {
-            const fakeResult: NominatimResult = {
-              place_id: 0,
-              display_name: data.display_name,
-              lat: String(lat),
-              lon: String(lng),
-              address: data.address ?? {},
-            };
-            setSelected(fakeResult);
-            setQuery(data.display_name);
-            setResults([]);
-          }
+          const address =
+            data.results?.[0]?.formatted_address ??
+            `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          setSelected({ address, lat, lng });
+          setQuery(address);
+          setPredictions([]);
         } catch {
           setError("Gagal mendapatkan nama lokasi.");
         }
@@ -99,23 +121,22 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
 
   function handleConfirm() {
     if (!selected) return;
-    onConfirm(selected.display_name, parseFloat(selected.lat), parseFloat(selected.lon));
+    onConfirm(selected.address, selected.lat, selected.lng);
   }
 
-  // Shorten display name for the result list
-  function shortName(r: NominatimResult) {
-    const parts = r.display_name.split(", ");
-    return parts.slice(0, 4).join(", ");
+  // Strip trailing ", Indonesia" from Google's description for cleaner display
+  function shortDesc(desc: string) {
+    return desc.replace(/,\s*Indonesia$/, "");
   }
 
   const mapSrc = selected
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(selected.lon) - 0.006},${parseFloat(selected.lat) - 0.006},${parseFloat(selected.lon) + 0.006},${parseFloat(selected.lat) + 0.006}&layer=mapnik&marker=${selected.lat},${selected.lon}`
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${selected.lng - 0.006},${selected.lat - 0.006},${selected.lng + 0.006},${selected.lat + 0.006}&layer=mapnik&marker=${selected.lat},${selected.lng}`
     : null;
 
   return (
     <div
       style={{
-        position: "fixed", inset: 0, zIndex: 300,
+        position: "fixed", inset: 0, zIndex: zIndex,
         background: "rgba(0,0,0,0.50)",
         animation: "sheet-fade-in 0.2s ease both",
       }}
@@ -136,10 +157,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
         <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "12px auto 0" }} />
 
         {/* Header */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "16px 20px 0",
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 20px 0" }}>
           <MapPin size={20} color="var(--tk-accent, #2e8a5a)" />
           <p style={{
             flex: 1, margin: 0,
@@ -164,14 +182,14 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             border: "1.5px solid #e2e8f0", borderRadius: 14,
             background: "#f8fafc", padding: "0 12px",
           }}>
-            {loading
-              ? <Loader size={16} color="#94a3b8" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }} />
+            {loading || detailLoading
+              ? <Loader size={16} color="#94a3b8" style={{ animation: "rs-spin 1s linear infinite", flexShrink: 0 }} />
               : <Search size={16} color="#94a3b8" style={{ flexShrink: 0 }} />
             }
             <input
               ref={inputRef}
               type="text"
-              placeholder="Cari alamat, nama jalan, atau area…"
+              placeholder="Cari alamat, nama jalan, perumahan…"
               value={query}
               onChange={(e) => handleInputChange(e.target.value)}
               style={{
@@ -182,7 +200,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             />
             {query && (
               <ActionButton
-                onClick={() => { setQuery(""); setResults([]); setSelected(null); setError(""); }}
+                onClick={() => { setQuery(""); setPredictions([]); setSelected(null); setError(""); }}
                 style={{ background: "none", border: "none", padding: 4, flexShrink: 0 }}
               >
                 <X size={14} color="#94a3b8" />
@@ -202,17 +220,27 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             }}
           >
             {gpsLoading
-              ? <><Loader size={13} style={{ animation: "spin 1s linear infinite" }} /> Mencari lokasi…</>
+              ? <><Loader size={13} style={{ animation: "rs-spin 1s linear infinite" }} /> Mencari lokasi…</>
               : <><Navigation size={13} /> Gunakan Lokasiku</>
             }
           </ActionButton>
+
+          {/* Powered by Google */}
+          <p style={{
+            margin: "8px 0 0", fontSize: 10.5, color: "#94a3b8",
+            fontFamily: "var(--font-jakarta), sans-serif",
+            display: "flex", alignItems: "center", gap: 4,
+          }}>
+            Powered by Google Maps
+          </p>
         </div>
 
         {/* Scrollable results */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px 0" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "10px 20px 0" }}>
           {error && (
             <p style={{
-              fontSize: 12.5, color: "#ef4444", fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 12.5, color: "#ef4444",
+              fontFamily: "var(--font-jakarta), sans-serif",
               margin: "8px 0",
             }}>
               {error}
@@ -232,15 +260,11 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
             </div>
           )}
 
-          {/* Result list */}
-          {results.map((r, i) => (
+          {/* Prediction list */}
+          {predictions.map((pred, i) => (
             <ActionButton
-              key={r.place_id || i}
-              onClick={() => {
-                setSelected(r);
-                setQuery(r.display_name);
-                setResults([]);
-              }}
+              key={pred.place_id || i}
+              onClick={() => handleSelect(pred)}
               style={{
                 display: "flex", alignItems: "flex-start", gap: 10,
                 width: "100%", padding: "12px 14px", borderRadius: 12,
@@ -254,7 +278,7 @@ export function MapPicker({ initialAddress, onConfirm, onClose }: Props) {
                 fontSize: 13, color: "#1e293b", lineHeight: 1.45,
                 fontFamily: "var(--font-jakarta), sans-serif",
               }}>
-                {shortName(r)}
+                {shortDesc(pred.description)}
               </span>
             </ActionButton>
           ))}

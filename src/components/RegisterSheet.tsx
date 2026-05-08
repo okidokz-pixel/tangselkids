@@ -1,11 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { X, ChevronLeft, Navigation, Loader, Plus, Camera, User } from "lucide-react";
+import { X, ChevronLeft, Navigation, Loader, Plus, Camera, User, MapPin } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 import { ImageCropper } from "./ImageCropper";
+import { MapPicker } from "./MapPicker";
 
 type Step = "phone" | "otp" | "profile" | "done";
 
@@ -81,6 +82,7 @@ export function RegisterSheet() {
   const [dob, setDob]               = useState("");
   const [kids, setKids]             = useState<Kid[]>([]);
   const [showReveal, setShowReveal] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Photo
   const [profilePhoto, setProfilePhoto] = useState("");
@@ -105,6 +107,7 @@ export function RegisterSheet() {
       setLocLoading(false); setGeoError("");
       setDob(""); setKids([]);
       setShowReveal(false);
+      setShowMapPicker(false);
       setProfilePhoto(""); setCropperSrc(""); setShowCropper(false);
       setShowExitWarning(false);
       pendingData.current = null;
@@ -286,6 +289,15 @@ export function RegisterSheet() {
           from { transform: translateY(100%); }
           to   { transform: translateY(0); }
         }
+        @keyframes rs-shake {
+          0%,100% { transform: translateX(0); }
+          15%     { transform: translateX(-6px); }
+          30%     { transform: translateX(6px); }
+          45%     { transform: translateX(-5px); }
+          60%     { transform: translateX(5px); }
+          75%     { transform: translateX(-3px); }
+          90%     { transform: translateX(3px); }
+        }
         @keyframes rs-fadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
@@ -414,6 +426,21 @@ export function RegisterSheet() {
           zIndex={1100}
           onConfirm={(dataUrl) => { setProfilePhoto(dataUrl); setShowCropper(false); }}
           onCancel={() => setShowCropper(false)}
+        />
+      )}
+
+      {/* Map picker — rendered above the sheet (zIndex 1100) */}
+      {showMapPicker && (
+        <MapPicker
+          initialAddress={address}
+          zIndex={1100}
+          onConfirm={(addr, lat, lng) => {
+            setAddress(addr);
+            setAddressLat(lat);
+            setAddressLng(lng);
+            setShowMapPicker(false);
+          }}
+          onClose={() => setShowMapPicker(false)}
         />
       )}
 
@@ -694,8 +721,15 @@ export function RegisterSheet() {
                     type="text"
                     placeholder={t.obNamePlaceholder}
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    style={inputStyle}
+                    onChange={(e) => { setName(e.target.value); if (nameError) setNameError(""); }}
+                    style={{
+                      ...inputStyle,
+                      ...(nameError ? {
+                        border: "1.5px solid #ef4444",
+                        background: "#fff5f5",
+                        animation: "rs-shake 0.45s ease both",
+                      } : {}),
+                    }}
                   />
                   {nameError && <p style={errorStyle}>{t.obNameError}</p>}
                 </div>
@@ -716,25 +750,40 @@ export function RegisterSheet() {
                       Agar kami dapat menemukan tempat terdekat dari rumahmu.
                     </p>
                   </div>
-                  {/* Location button — always visible */}
-                  <ActionButton
-                    onClick={handleGetLocation}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      width: "100%", padding: "14px 20px", borderRadius: 14,
-                      background: address.trim()
-                        ? "#f1f5f9"
-                        : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
-                      color: address.trim() ? "#94a3b8" : "#fff",
-                      fontSize: 15, fontWeight: 700,
-                      boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
-                    }}
-                  >
-                    {locLoading
-                      ? <><Loader size={16} style={{ animation: "rs-spin 1s linear infinite" }} /> {t.obLocating}</>
-                      : <><Navigation size={16} /> {t.obUseLocation}</>
-                    }
-                  </ActionButton>
+                  {/* Location buttons */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <ActionButton
+                      onClick={handleGetLocation}
+                      style={{
+                        flex: 1, minWidth: 0,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        padding: "12px 10px", borderRadius: 14,
+                        background: address.trim() ? "#f1f5f9" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                        color: address.trim() ? "#94a3b8" : "#fff",
+                        fontSize: 13.5, fontWeight: 700,
+                        boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
+                      }}
+                    >
+                      {locLoading
+                        ? <><Loader size={14} style={{ animation: "rs-spin 1s linear infinite" }} /> {t.obLocating}</>
+                        : <><Navigation size={14} /> {t.obUseLocation}</>
+                      }
+                    </ActionButton>
+                    <ActionButton
+                      onClick={() => setShowMapPicker(true)}
+                      style={{
+                        flex: 1, minWidth: 0,
+                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        padding: "12px 10px", borderRadius: 14,
+                        background: address.trim() ? "#f1f5f9" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                        color: address.trim() ? "#94a3b8" : "#fff",
+                        fontSize: 13.5, fontWeight: 700,
+                        boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
+                      }}
+                    >
+                      <MapPin size={14} /> {t.obSearchOnMap}
+                    </ActionButton>
+                  </div>
 
                   {/* Detected status chip + editable address — only after location is set */}
                   {address && (

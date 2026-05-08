@@ -47,6 +47,15 @@ function TikTokIcon({ size = 20, color = "currentColor" }: { size?: number; colo
   );
 }
 
+// ── YouTube icon ──────────────────────────────────────────────────────────────
+function YouTubeIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
 // ── WhatsApp icon ─────────────────────────────────────────────────────────────
 function WhatsAppIcon({ size = 18, color = "#fff" }: { size?: number; color?: string }) {
   return (
@@ -384,23 +393,63 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             {[
               {
                 label: "Google Maps",
-                emoji: "🗺",
                 href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.address ?? "")}`,
-                color: "#4285F4",
+                logo: (
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <rect width="36" height="36" rx="8" fill="#fff" stroke="#e8e8e8" strokeWidth="1"/>
+                    {/* Pin body */}
+                    <path d="M18 6C13.03 6 9 10.03 9 15c0 7.2 8.25 15.4 8.6 15.75a.6.6 0 00.8 0C18.75 30.4 27 22.2 27 15c0-4.97-4.03-9-9-9z" fill="#EA4335"/>
+                    <circle cx="18" cy="15" r="4.2" fill="white"/>
+                    <circle cx="18" cy="15" r="2.2" fill="#4285F4"/>
+                  </svg>
+                ),
               },
               {
                 label: "Waze",
-                emoji: "🚗",
                 href: `https://waze.com/ul?q=${encodeURIComponent(place.address ?? "")}&navigate=yes`,
-                color: "#05C8F7",
+                logo: (
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <rect width="36" height="36" rx="8" fill="#33CCFF"/>
+                    {/* Head */}
+                    <ellipse cx="18" cy="20" rx="10" ry="9" fill="white"/>
+                    {/* Left horn */}
+                    <path d="M11 13c0-3 2-5 4-5 0 2-1 4-4 5z" fill="white"/>
+                    {/* Right horn */}
+                    <path d="M25 13c0-3-2-5-4-5 0 2 1 4 4 5z" fill="white"/>
+                    {/* Left eye */}
+                    <ellipse cx="14.5" cy="19" rx="2" ry="2.5" fill="#33CCFF"/>
+                    <circle cx="14.5" cy="18.5" r="1" fill="#1a1a1a"/>
+                    {/* Right eye */}
+                    <ellipse cx="21.5" cy="19" rx="2" ry="2.5" fill="#33CCFF"/>
+                    <circle cx="21.5" cy="18.5" r="1" fill="#1a1a1a"/>
+                    {/* Smile */}
+                    <path d="M13.5 23.5 Q18 27 22.5 23.5" stroke="#1a1a1a" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                  </svg>
+                ),
               },
               {
                 label: "Apple Maps",
-                emoji: "🍎",
                 href: `https://maps.apple.com/?q=${encodeURIComponent(place.address ?? "")}`,
-                color: "#2e8a5a",
+                logo: (
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+                    <rect width="36" height="36" rx="8" fill="url(#apple-maps-bg)"/>
+                    <defs>
+                      <linearGradient id="apple-maps-bg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="#3BC9F5"/>
+                        <stop offset="100%" stopColor="#2563EB"/>
+                      </linearGradient>
+                    </defs>
+                    {/* Map road horizontal */}
+                    <rect x="6" y="16" width="24" height="4" rx="2" fill="white" opacity="0.9"/>
+                    {/* Map road vertical */}
+                    <rect x="16" y="6" width="4" height="24" rx="2" fill="white" opacity="0.9"/>
+                    {/* Location pin */}
+                    <circle cx="18" cy="13" r="4" fill="#FF3B30"/>
+                    <circle cx="18" cy="13" r="2" fill="white"/>
+                  </svg>
+                ),
               },
-            ].map(({ label, emoji, href, color }) => (
+            ].map(({ label, href, logo }) => (
               <a
                 key={label}
                 href={href}
@@ -409,13 +458,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 onClick={() => setMapOpen(false)}
                 style={{
                   display: "flex", alignItems: "center", gap: 14,
-                  padding: "14px 16px", borderRadius: 16, marginBottom: 8,
-                  background: "#f6f1e8", border: "1px solid #e2e8f0",
+                  padding: "12px 16px", borderRadius: 16, marginBottom: 8,
+                  background: "#fff", border: "1.5px solid #e2e8f0",
                   textDecoration: "none",
                   touchAction: "manipulation",
                 }}
               >
-                <span style={{ fontSize: 22 }}>{emoji}</span>
+                {logo}
                 <span style={{
                   fontFamily: "var(--font-jakarta), sans-serif",
                   fontSize: 14, fontWeight: 600, color: "#0e1d4f", flex: 1,
@@ -595,16 +644,17 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               )}
               {/* Distance from home */}
-              {tier === "free" ? (
+              {tier === "free" && place.lat && place.lng ? (
                 <ActionButton
                   onClick={() => setShowSaveGate(true)}
                   style={{
                     margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
                     background: "none", border: "none", padding: 0, cursor: "pointer",
-                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b",
+                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                    color: "#16a34a", fontWeight: 700,
                   }}
                 >
-                  <MapPin size={12} color="#64748b" style={{ flexShrink: 0 }} />
+                  <MapPin size={12} color="#16a34a" style={{ flexShrink: 0 }} />
                   {t.distanceAnonPrompt}
                 </ActionButton>
               ) : homeKm !== null ? (
@@ -613,19 +663,21 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                   style={{
                     margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
                     background: "none", border: "none", padding: 0, cursor: "pointer",
-                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b",
+                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                    color: "#16a34a", fontWeight: 700,
                   }}
                 >
                   🏠 {t.distanceFromHome(homeKm)}
                 </ActionButton>
-              ) : (
+              ) : (place.lat && place.lng) ? (
+                // Place has coords but user hasn't set home address yet → prompt them
                 <p
                   style={{ margin: "3px 0 0", cursor: "pointer", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}
                   onClick={() => { window.location.href = "/profile"; }}
                 >
                   🏠 {t.distanceNoHome}
                 </p>
-              )}
+              ) : null /* place has no coords in DB → hide the line entirely */}
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                 <Clock size={12} style={{ color: "#64748b", flexShrink: 0 }} />
                 <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}>
@@ -1250,6 +1302,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               { key: "instagram", url: place.instagram, label: "Instagram", color: "#E1306C",  Icon: InstagramIcon },
               { key: "facebook",  url: place.facebook,  label: "Facebook",  color: "#1877F2",  Icon: FacebookIcon  },
               { key: "tiktok",    url: place.tiktok,    label: "TikTok",    color: "#010101",  Icon: TikTokIcon    },
+              { key: "youtube",   url: place.youtube,   label: "YouTube",   color: "#FF0000",  Icon: YouTubeIcon   },
               { key: "website",   url: place.website,   label: "Website",   color: "#2e8a5a",
                 Icon: ({ size, color }: { size: number; color: string }) => <Globe size={size} color={color} strokeWidth={1.75} /> },
             ] as const).map(({ key, url, label, color, Icon }) => {

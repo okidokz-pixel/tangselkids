@@ -509,7 +509,7 @@ function SchoolsContent() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => router.replace(toFilter())} style={{
+        <ActionButton onClick={() => router.push(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0,
