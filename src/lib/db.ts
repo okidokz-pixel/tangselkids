@@ -67,12 +67,13 @@ function mapRow(row: any, category: Place["category"]): Place {
         curriculumCategory: row.curriculum_category ?? undefined,
         grades:           (row.grades as import("./mockData").Grade[] | null) ?? undefined,
         uangPangkalMin:   row.uang_pangkal_min ?? undefined,
+        uangPangkalMax:   row.uang_pangkal_max ?? undefined,
         studentsPerClass: row.students_per_class ?? undefined,
         hasComputerLab:   row.has_computer_lab  ?? undefined,
         hasPool:          row.has_pool          ?? undefined,
         bahasa:           row.teaching_language ? [row.teaching_language] : undefined,
         priceMin:         row.price_min ?? 0,
-        priceMax:         row.price_min ?? 0,
+        priceMax:         row.price_max ?? row.price_min ?? 0,
       };
 
     case "learning-center":
@@ -84,7 +85,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         teacherStudentRatio:  row.teacher_student_ratio  ?? undefined,
         teachingLanguage:     row.teaching_language      ?? undefined,
         priceMin:             row.price_min ?? 0,
-        priceMax:             row.price_min ?? 0,
+        priceMax:             row.price_max ?? row.price_min ?? 0,
       };
 
     case "daycare":
@@ -96,7 +97,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         hasCctv:          row.has_cctv          ?? undefined,
         hasAccreditation: row.has_accreditation ?? undefined,
         priceMin:         row.price_min ?? 0,
-        priceMax:         row.price_min ?? 0,
+        priceMax:         row.price_max ?? row.price_min ?? 0,
       };
 
     case "playground":
@@ -112,7 +113,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         ...base,
         clinicServices: (row.services as string[] | null) ?? undefined,
         priceMin:       row.price_min ?? 0,
-        priceMax:       row.price_min ?? 0,
+        priceMax:       row.price_max ?? row.price_min ?? 0,
       };
 
     case "cafe":
@@ -134,7 +135,7 @@ function mapRow(row: any, category: Place["category"]): Place {
       return {
         ...base,
         priceMin: row.price_min ?? 0,
-        priceMax: row.price_min ?? 0,
+        priceMax: row.price_max ?? row.price_min ?? 0,
       };
 
     default:
