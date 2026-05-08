@@ -186,11 +186,10 @@ export default function OnboardingPage() {
         setAddressLat(lat);
         setAddressLng(lng);
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-          );
+          const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
           const data = await res.json();
-          if (data.display_name) setAddress(data.display_name);
+          const addr = data.results?.[0]?.formatted_address;
+          if (addr) setAddress(addr);
         } catch {}
         setLocLoading(false);
       },

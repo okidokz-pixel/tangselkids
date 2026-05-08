@@ -105,12 +105,10 @@ export default function ProfilePage() {
         setEditAddressLat(lat);
         setEditAddressLng(lng);
         try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-            { headers: { "Accept-Language": "id" } }
-          );
+          const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
           const data = await res.json();
-          setEditAddress(data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+          const addr = data.results?.[0]?.formatted_address;
+          setEditAddress(addr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
         } catch {
           setEditAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
         }
