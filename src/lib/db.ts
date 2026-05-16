@@ -85,6 +85,7 @@ function mapRow(row: any, category: Place["category"]): Place {
       return {
         ...base,
         slug:                   row.slug                ?? undefined,
+        jenjang:                row.jenjang             ?? undefined,
         curriculum:             row.curriculum          ?? undefined,
         curriculumCategory:     row.curriculum_category ?? undefined,
         grades:                 (row.grades as import("./mockData").Grade[] | null) ?? undefined,

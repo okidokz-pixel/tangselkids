@@ -162,6 +162,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [lightboxOpen,   setLightboxOpen]   = useState(false);
   const [isSaved,        setIsSaved]        = useState(false);
   const [videoOpen,      setVideoOpen]      = useState<string | null>(null);
+  const [feeImageOpen,   setFeeImageOpen]   = useState(false);
   const [mapOpen,        setMapOpen]        = useState(false);
   const [userReview,     setUserReview]     = useState<UserReview | null>(null);
   const [showReviewGate, setShowReviewGate] = useState(false);
@@ -197,7 +198,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const touchStartX   = useRef<number>(0);
 
   // Derived from place state — safe here (not a hook)
-  const allPhotos = place ? [place.photo, ...(place.photos ?? [])] : [];
+  const allPhotos = place
+    ? (place.photos && place.photos.length > 0 ? place.photos : [place.photo])
+    : [];
 
   // Fetch place from Supabase
   useEffect(() => {
@@ -541,6 +544,51 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         </div>
       )}
 
+      {/* ── Fee image lightbox ───────────────────────────────────────────── */}
+      {feeImageOpen && place?.feeImageUrl && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 60,
+            background: "rgba(0,0,0,0.92)",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            padding: "0 16px",
+            touchAction: "none",
+          }}
+          onClick={() => setFeeImageOpen(false)}
+        >
+          {/* Close */}
+          <button
+            onClick={() => setFeeImageOpen(false)}
+            style={{ position: "absolute", top: 52, right: 16, width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.18)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}
+          >
+            <X size={18} color="white" />
+          </button>
+          {/* Download */}
+          <a
+            href={place.feeImageUrl}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ position: "absolute", top: 52, left: 16, width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, textDecoration: "none" }}
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </a>
+          {/* Image */}
+          <img
+            src={place.feeImageUrl}
+            alt="Detail biaya"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 12, objectFit: "contain", display: "block" }}
+          />
+        </div>
+      )}
+
       {/* ── Hero slideshow ────────────────────────────────────────────────── */}
       <div
         style={{ position: "relative", height: 288, overflow: "clip", touchAction: "pan-y" }}
@@ -564,7 +612,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         }}>
           {allPhotos.map((src, i) => (
             <img
-              key={src}
+              key={i}
               src={src}
               alt={i === 0 ? place.name : ""}
               style={{
@@ -929,11 +977,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           );
 
           // ── Free info row (label left, value right)
-          const yearTag = <span style={{ fontSize: "0.7rem", color: "#9ca3af", fontWeight: 400, marginLeft: 4 }}>(26/27)</span>;
+          const yearTag = place.tahunBiaya
+            ? <span style={{ fontSize: "0.7rem", color: "#9ca3af", fontWeight: 400, marginLeft: 4 }}>({place.tahunBiaya})</span>
+            : null;
           const schoolYearSuffix: Record<string, React.ReactNode> = {
             ...(place.category === "school" ? {
               [t.pdChipUangPangkal]: yearTag,
               [t.pdChipSpp]:         yearTag,
+              [t.pdChipAnnualFee]:   yearTag,
             } : {}),
             ...(place.category === "learning-center" ? {
               [t.pdMonthlyFee]: yearTag,
@@ -987,15 +1038,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           let gatedRows: StrPair[] = [];
 
           if (place.category === "school") {
-            const tahun = place.tahunBiaya ? ` (${place.tahunBiaya})` : "";
             const fmtUp = place.uangPangkalMin !== undefined
-              ? `Rp ${formatPrice(place.uangPangkalMin)}${place.uangPangkalMax && place.uangPangkalMax !== place.uangPangkalMin ? ` – ${formatPrice(place.uangPangkalMax)}` : ""}${tahun}`
+              ? `Rp ${formatPrice(place.uangPangkalMin)}${place.uangPangkalMax && place.uangPangkalMax !== place.uangPangkalMin ? ` – ${formatPrice(place.uangPangkalMax)}` : ""}`
               : "—";
             const fmtSpp = place.priceMin > 0
-              ? `Rp ${formatPrice(place.priceMin)}${place.priceMax && place.priceMax !== place.priceMin ? ` – ${formatPrice(place.priceMax)}` : ""} / bln${tahun}`
+              ? `Rp ${formatPrice(place.priceMin)}${place.priceMax && place.priceMax !== place.priceMin ? ` – ${formatPrice(place.priceMax)}` : ""} / bln`
               : "—";
             const fmtAnnual = place.annualFeeMin !== undefined
-              ? `Rp ${formatPrice(place.annualFeeMin)}${place.annualFeeMax && place.annualFeeMax !== place.annualFeeMin ? ` – ${formatPrice(place.annualFeeMax)}` : ""}${tahun}`
+              ? `Rp ${formatPrice(place.annualFeeMin)}${place.annualFeeMax && place.annualFeeMax !== place.annualFeeMin ? ` – ${formatPrice(place.annualFeeMax)}` : ""}`
               : null;
             heroItems = [];
             freeRows = [
@@ -1129,7 +1179,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                         place.feeImageUrl ? (
                         <div
                           style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
-                          onClick={tier !== "premium" ? () => setShowPsbGate(true) : undefined}
+                          onClick={tier === "premium" ? () => setFeeImageOpen(true) : () => setShowPsbGate(true)}
                         >
                           <img
                             src={place.feeImageUrl}
@@ -1137,7 +1187,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                             style={{
                               width: "100%", borderRadius: 12, display: "block",
                               filter: tier === "premium" ? "none" : "blur(6px)",
-                              cursor: tier !== "premium" ? "pointer" : "default",
+                              cursor: "pointer",
                             }}
                           />
                           {tier !== "premium" && (
@@ -1209,10 +1259,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         {/* About */}
         <div>
           <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{place.description}</p>
-            {extraParas.map((para, i) => (
-              <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed">{para}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {(place.description ?? "").split(/\n+/).filter(Boolean).map((para, i) => (
+              <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed" style={{ margin: 0 }}>{para}</p>
             ))}
           </div>
         </div>
@@ -1396,50 +1445,23 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* Enrollment schedule box — schools only, now below About */}
         {place.category === "school" && (
-          <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "#e6f4ed" }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="text-xs font-jakarta text-[#3aab74] font-semibold uppercase tracking-wide mb-0.5">
-                {t.pdEnrollTitle}
-              </p>
-              <p className="text-base font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                {place.jadwalPendaftaran ?? t.pdEnrollSoon}
-              </p>
+          <div className="rounded-2xl p-4" style={{ background: "#e6f4ed" }}>
+            <p className="text-xs font-jakarta text-[#3aab74] font-semibold uppercase tracking-wide mb-0.5">
+              {t.pdEnrollTitle}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {(place.jadwalPendaftaran ?? t.pdEnrollSoon)
+                .split(/\n+/)
+                .filter(Boolean)
+                .map((line, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ color: "#3aab74", fontSize: 12, flexShrink: 0 }}>•</span>
+                    <span className="text-sm font-semibold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+                      {line.replace(/^[\s•\-\*·]+/, "")}
+                    </span>
+                  </div>
+                ))}
             </div>
-            {/* PSB notification button */}
-            <ActionButton
-              onClick={() => {
-                if (tier === "premium") {
-                  alert(t.pdPsbAlert);
-                } else {
-                  setShowPsbGate(true);
-                }
-              }}
-              style={{
-                position: "relative", flexShrink: 0,
-                display: "inline-flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                gap: 3, padding: "8px 14px", borderRadius: 12,
-                background: tier === "premium" ? "#2e8a5a" : "rgba(255,255,255,0.85)",
-                color: tier === "premium" ? "#fff" : "#1f6b43",
-                border: "1.5px solid rgba(59,130,246,0.35)",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              <span style={{ fontSize: 20, lineHeight: 1 }}>🔔</span>
-              <span style={{ fontSize: 9, fontWeight: 700, fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1, whiteSpace: "nowrap" }}>
-                {t.pdPsbBtn.split(" ").slice(0, 2).join(" ")}
-              </span>
-              {tier !== "premium" && (
-                <div style={{
-                  position: "absolute", top: -5, right: -5,
-                  width: 16, height: 16, borderRadius: 999,
-                  background: "#d97706",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <Lock size={8} strokeWidth={3} color="#fff" />
-                </div>
-              )}
-            </ActionButton>
           </div>
         )}
 

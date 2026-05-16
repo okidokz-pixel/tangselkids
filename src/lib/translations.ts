@@ -311,7 +311,7 @@ export const translations = {
     pdChipBahasa:         "Bahasa",
     pdChipUangPangkal:    "Uang Pangkal",
     pdChipSpp:            "SPP / Bulan",
-    pdChipAnnualFee:      "Annual Fee",
+    pdChipAnnualFee:      "Biaya Tahunan",
     pdStudentsPerClass:   "Murid / Kelas",
     pdComputerLab:        "Lab Komputer",
     pdSchoolPool:         "Kolam Renang",

@@ -63,6 +63,7 @@ export type Place = {
   yearFounded?: number;         // e.g., 2015
 
   // ── School-specific ─────────────────────────────────────────
+  jenjang?: string;             // primary grade level for filtering (Jenjang column)
   uangPangkalMin?: number;      // one-time enrollment / admission fee (min)
   uangPangkalMax?: number;      // one-time enrollment / admission fee (max)
   annualFeeMin?: number;        // annual fee (min)

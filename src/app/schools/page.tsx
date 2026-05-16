@@ -122,7 +122,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CURRICULA = ["Nasional","Nasional Plus","Nasional + Islam","Cambridge","Cambridge + IB","IB","International","Montessori","Nature / Play-based","Play-Based Learning","Lainnya"];
-const BAHASA = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang","Korea"];
+const BAHASA = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"];
 const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA"];
 
 const UP_LABELS: Record<string, string> = {
@@ -218,7 +218,7 @@ function SchoolsContent() {
 
   const filtered = allPlaces
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
-    .filter(s => grade === "all" || s.grades?.includes(grade as Grade))
+    .filter(s => grade === "all" || s.jenjang === grade)
     .filter(s => curricula.length === 0 || curricula.includes(s.curriculumCategory ?? ""))
     .filter(s => bahasaFilter.length === 0 || bahasaFilter.every(b => s.bahasa?.includes(b)))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))

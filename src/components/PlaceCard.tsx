@@ -28,13 +28,14 @@ export function PlaceCard({
       outlineOffset: selected ? -1 : undefined,
       boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)",
       overflow: "clip",
+      minHeight: 96,
     }}>
       {/* Photo thumbnail */}
-      <div style={{ width: 96, flexShrink: 0, alignSelf: "stretch", position: "relative" }}>
+      <div style={{ width: 96, flexShrink: 0, alignSelf: "stretch", position: "relative", overflow: "hidden" }}>
         <img
           src={place.photo}
           alt={place.name}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
         />
         {place.isFeatured && (
           <div style={{
