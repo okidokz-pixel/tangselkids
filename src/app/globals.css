@@ -92,6 +92,21 @@ button:active, a:active {
 }
 
 
+/* ─── Rail arrow chevron bounce animation ────────────────────────────────────
+   Inner span handles the nudge; outer span handles rotation for left arrows.
+   translateX is in the inner span's local coordinate space — after rotate(180deg)
+   on the outer span, local +X becomes visual leftward, so one keyframe works
+   for both directions.                                                        */
+@keyframes rail-nudge {
+  0%, 60%, 100% { transform: translateX(0); }
+  20%           { transform: translateX(5px); }
+  40%           { transform: translateX(2px); }
+}
+.rail-arrow-icon {
+  display: flex;
+  animation: rail-nudge 1.6s ease-in-out infinite;
+}
+
 /* ─── Dual-range slider (TK custom) ─────────────────────────────────────────
    Two overlapping <input type="range" class="tk-range"> stack on a shared
    container. Both inputs are pointer-events: none; only the thumbs are

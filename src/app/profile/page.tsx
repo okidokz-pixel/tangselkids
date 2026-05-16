@@ -4,7 +4,7 @@ import Link from "next/link";
 import {
   User, Globe, Bell, Info, MessageSquare, HelpCircle,
   ChevronRight, Heart, Pencil, LogOut, MapPin,
-  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera,
+  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera, Crown,
 } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -13,6 +13,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { useLoginSheet } from "@/context/LoginSheetContext";
 import { getReviews } from "@/lib/reviewsStorage";
 import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const { user, register, logout, tier } = useAuth();
   const router = useRouter();
   const { openRegisterSheet } = useRegisterSheet();
+  const { openLoginSheet } = useLoginSheet();
   const [savedCount,    setSavedCount]    = useState(0);
   const [reviewsCount,  setReviewsCount]  = useState(0);
   const [myNotes,       setMyNotes]       = useState<FacilityNote[]>([]);
@@ -210,6 +212,10 @@ export default function ProfilePage() {
           0%, 100% { transform: translateX(0); }
           50%       { transform: translateX(4px); }
         }
+        @keyframes upgrade-pulse {
+          0%, 100% { box-shadow: 0 4px 12px rgba(217,119,6,0.35); }
+          50%       { box-shadow: 0 4px 20px rgba(217,119,6,0.75), 0 0 0 6px rgba(245,158,11,0.18); }
+        }
         @keyframes edit-modal-backdrop {
           from { opacity: 0; }
           to   { opacity: 1; }
@@ -298,6 +304,20 @@ export default function ProfilePage() {
               Profile
             </ActionButton>
           )}
+          {!user && (
+            <ActionButton
+              onClick={() => openLoginSheet()}
+              style={{
+                display: "inline-flex", alignItems: "center",
+                padding: "7px 14px", borderRadius: 999, flexShrink: 0,
+                background: "rgba(255,255,255,0.20)", color: "#fff",
+                fontSize: 12, fontWeight: 700,
+                fontFamily: "var(--font-jakarta), sans-serif",
+              }}
+            >
+              Masuk &rsaquo;
+            </ActionButton>
+          )}
         </div>
       </div>
 
@@ -355,13 +375,16 @@ export default function ProfilePage() {
             <ActionButton
               onClick={() => router.push("/upgrade")}
               style={{
-                padding: "7px 12px", borderRadius: 999, flexShrink: 0,
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "10px 16px", borderRadius: 999, flexShrink: 0,
                 background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff", fontSize: 11, fontWeight: 800,
+                color: "#fff", fontSize: 13, fontWeight: 800,
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                 fontFamily: "var(--font-jakarta), sans-serif",
+                animation: "upgrade-pulse 1.8s ease-in-out infinite",
               }}
             >
+              <Crown size={14} strokeWidth={2.5} />
               {t.profileFreeUpgradeBtn}
             </ActionButton>
           </div>
@@ -697,39 +720,39 @@ export default function ProfilePage() {
                style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", display: "flex" }}>
 
             {/* Saved — all users can save (up to 5 for free) */}
-            <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
-              <Heart size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-              <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{user ? savedCount : "—"}</span>
-              <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatSaved}</span>
+            <Link href="/saved" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+              <Heart size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+              <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{user ? savedCount : "—"}</span>
+              <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatSaved}</span>
             </Link>
 
             {/* Reviews — premium only */}
             {tier === "premium" ? (
-              <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{reviewsCount}</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
+              <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{reviewsCount}</span>
+                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatReviews}</span>
               </Link>
             ) : (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatReviews}</span>
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
+                <Pencil size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>—</span>
+                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatReviews}</span>
               </ActionButton>
             )}
 
             {/* Notes — premium only */}
             {tier === "premium" ? (
-              <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", textDecoration: "none" }}>
-                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>{myNotes.length}</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
+              <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none" }}>
+                <FileText size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{myNotes.length}</span>
+                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
               </Link>
             ) : (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "16px 8px", background: "transparent" }}>
-                <FileText size={18} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span className="font-bold text-lg" style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1 }}>—</span>
-                <span className="font-jakarta text-xs font-semibold" style={{ color: "var(--tk-muted)" }}>{t.profileStatNotes}</span>
+              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", background: "transparent" }}>
+                <FileText size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>—</span>
+                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
               </ActionButton>
             )}
           </div>

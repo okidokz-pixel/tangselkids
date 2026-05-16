@@ -35,6 +35,25 @@ function Chip({ name, value, checked, onChange, children }: {
   );
 }
 
+// ── Multi-select chip (checkbox) ──────────────────────────────────────────────
+function MultiChip({ checked, onChange, children }: {
+  checked: boolean; onChange: () => void; children: React.ReactNode;
+}) {
+  return (
+    <label style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}>
+      <input type="checkbox" checked={checked} onChange={onChange} style={HI} />
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "6px 13px", borderRadius: 999,
+        fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#2e8a5a" : "#fff", color: checked ? "#fff" : "#374151" }}>
+        {checked && <Check size={10} color="white" strokeWidth={3} />}
+        {children}
+      </span>
+    </label>
+  );
+}
+
 // ── Filter dropdown ───────────────────────────────────────────────────────────
 function FilterDropdown({ value, onChange, options }: {
   value: string;
@@ -103,30 +122,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CURRICULA = ["Nasional","Nasional Plus","Nasional + Islam","Cambridge","Cambridge + IB","IB","International","Montessori","Nature / Play-based","Play-Based Learning","Lainnya"];
-const BAHASA    = ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+AR)","Bilingual (EN+CN)","Bilingual (DE+EN)","Japanese","Trilingual (ID+EN+CN)"];
-
-const BAHASA_PILL_LABELS: Record<"id" | "en", Record<string, string>> = {
-  id: {
-    "Indonesian":            "Indonesia",
-    "English":               "Inggris",
-    "Bilingual (ID+EN)":     "ID+Inggris",
-    "Bilingual (ID+AR)":     "ID+Arabic",
-    "Bilingual (EN+CN)":     "ID+Mandarin",
-    "Bilingual (DE+EN)":     "Jerman",
-    "Japanese":              "Jepang",
-    "Trilingual (ID+EN+CN)": "ID+EN+CN",
-  },
-  en: {
-    "Indonesian":            "Indonesian",
-    "English":               "English",
-    "Bilingual (ID+EN)":     "ID+EN",
-    "Bilingual (ID+AR)":     "ID+AR",
-    "Bilingual (EN+CN)":     "EN+CN",
-    "Bilingual (DE+EN)":     "DE+EN",
-    "Japanese":              "Japanese",
-    "Trilingual (ID+EN+CN)": "ID+EN+CN",
-  },
-};
+const BAHASA = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang","Korea"];
 const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA"];
 
 const UP_LABELS: Record<string, string> = {
@@ -156,7 +152,6 @@ const CLASS_SIZE_LABELS: Record<string, string> = {
   xlarge: "26+ murid",
 };
 
-const ADA_LABELS: Record<string, string> = { all: "Semua", yes: "Ada", no: "Tidak Ada" };
 
 const HEADER_STYLE = {
   background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
@@ -206,13 +201,17 @@ function SchoolsContent() {
 
   const [area,       setArea]       = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
   const [grade,      setGrade]      = useState(searchParams.get("grade") ?? "all");
-  const [curriculum, setCurriculum] = useState(searchParams.get("cur") ?? "all");
-  const [bahasa,     setBahasa]     = useState(searchParams.get("bhs") ?? "all");
+  const [curricula,  setCurricula]  = useState<string[]>(() => {
+    const v = searchParams.get("cur");
+    return v && v !== "all" ? v.split(",") : [];
+  });
+  const [bahasaFilter, setBahasaFilter] = useState<string[]>(() => {
+    const v = searchParams.get("bhs");
+    return v && v !== "all" ? v.split(",") : [];
+  });
   const [upBucket,      setUpBucket]      = useState(searchParams.get("up") ?? "all");
   const [sppBucket,     setSppBucket]     = useState(searchParams.get("spp") ?? "all");
   const [classSizeBucket, setClassSizeBucket] = useState(searchParams.get("cs") ?? "all");
-  const [computerLab,   setComputerLab]   = useState(searchParams.get("lab") ?? "all");
-  const [schoolPool,    setSchoolPool]    = useState(searchParams.get("pool") ?? "all");
   const [sortBy,     setSortBy]     = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
@@ -220,8 +219,8 @@ function SchoolsContent() {
   const filtered = allPlaces
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
     .filter(s => grade === "all" || s.grades?.includes(grade as Grade))
-    .filter(s => curriculum === "all" || s.curriculumCategory === curriculum)
-    .filter(s => bahasa === "all" || s.bahasa?.includes(bahasa))
+    .filter(s => curricula.length === 0 || curricula.includes(s.curriculumCategory ?? ""))
+    .filter(s => bahasaFilter.length === 0 || bahasaFilter.every(b => s.bahasa?.includes(b)))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
     .filter(s => matchesSppBucket(s.priceMin, sppBucket))
     .filter(s => {
@@ -233,8 +232,6 @@ function SchoolsContent() {
       if (classSizeBucket === "xlarge") return s.studentsPerClass >= 26;
       return true;
     })
-    .filter(s => computerLab === "all" || (computerLab === "yes" ? s.hasComputerLab === true : s.hasComputerLab === false))
-    .filter(s => schoolPool === "all"  || (schoolPool  === "yes" ? s.hasPool === true        : s.hasPool === false))
     .sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
@@ -242,28 +239,26 @@ function SchoolsContent() {
   });
 
   const activeCount = [
-    area !== "all", grade !== "all", curriculum !== "all",
-    bahasa !== "all", upBucket !== "all", sppBucket !== "all",
-    classSizeBucket !== "all", computerLab !== "all", schoolPool !== "all",
+    area !== "all", grade !== "all", curricula.length > 0,
+    bahasaFilter.length > 0, upBucket !== "all", sppBucket !== "all",
+    classSizeBucket !== "all",
   ].filter(Boolean).length;
 
   function resetFilters() {
-    setArea("all"); setGrade("all"); setCurriculum("all");
-    setBahasa("all"); setUpBucket("all"); setSppBucket("all");
-    setClassSizeBucket("all"); setComputerLab("all"); setSchoolPool("all");
+    setArea("all"); setGrade("all"); setCurricula([]);
+    setBahasaFilter([]); setUpBucket("all"); setSppBucket("all");
+    setClassSizeBucket("all");
   }
 
   function toResults() {
     const p = new URLSearchParams({ view: "results" });
     if (area !== "all") p.set("area", area);
     if (grade !== "all") p.set("grade", grade);
-    if (curriculum !== "all") p.set("cur", curriculum);
-    if (bahasa !== "all") p.set("bhs", bahasa);
+    if (curricula.length > 0) p.set("cur", curricula.join(","));
+    if (bahasaFilter.length > 0) p.set("bhs", bahasaFilter.join(","));
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
     if (classSizeBucket !== "all") p.set("cs", classSizeBucket);
-    if (computerLab !== "all") p.set("lab", computerLab);
-    if (schoolPool !== "all") p.set("pool", schoolPool);
     if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
@@ -271,13 +266,11 @@ function SchoolsContent() {
     const p = new URLSearchParams();
     if (area !== "all") p.set("area", area);
     if (grade !== "all") p.set("grade", grade);
-    if (curriculum !== "all") p.set("cur", curriculum);
-    if (bahasa !== "all") p.set("bhs", bahasa);
+    if (curricula.length > 0) p.set("cur", curricula.join(","));
+    if (bahasaFilter.length > 0) p.set("bhs", bahasaFilter.join(","));
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
     if (classSizeBucket !== "all") p.set("cs", classSizeBucket);
-    if (computerLab !== "all") p.set("lab", computerLab);
-    if (schoolPool !== "all") p.set("pool", schoolPool);
     if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
@@ -295,12 +288,9 @@ function SchoolsContent() {
 
   // Dropdown option builders
   const gradeOptions    = [{ value: "all", label: "Semua" }, ...GRADES.map(g => ({ value: g, label: g }))];
-  const curriculumOpts  = [{ value: "all", label: "Semua" }, ...CURRICULA.map(c => ({ value: c, label: c }))];
-  const bahasaOptions   = [{ value: "all", label: "Semua" }, ...BAHASA.map(b => ({ value: b, label: BAHASA_PILL_LABELS[lang][b] ?? b }))];
   const upOptions         = Object.entries(UP_LABELS).map(([v, l]) => ({ value: v, label: l }));
   const sppOptions        = Object.entries(SPP_LABELS).map(([v, l]) => ({ value: v, label: l }));
   const classSizeOptions  = Object.entries(CLASS_SIZE_LABELS).map(([v, l]) => ({ value: v, label: l }));
-  const adaOptions        = Object.entries(ADA_LABELS).map(([v, l]) => ({ value: v, label: l }));
 
   // ── Filter View ──────────────────────────────────────────────────────────────
   if (view === "filter") {
@@ -353,24 +343,60 @@ function SchoolsContent() {
           </div>
 
           {/* Bahasa — free for all */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-              {t.filterBahasa}
-            </p>
-            <div style={{ flex: 1 }}>
-              <FilterDropdown value={bahasa} onChange={setBahasa} options={bahasaOptions} />
+          <div style={{ marginBottom: 18 }}>
+            <SectionHead>{t.filterBahasa}</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {BAHASA.map(b => (
+                <MultiChip
+                  key={b}
+                  checked={bahasaFilter.includes(b)}
+                  onChange={() => setBahasaFilter(prev =>
+                    prev.includes(b) ? prev.filter(x => x !== b) : [...prev, b]
+                  )}
+                >
+                  {b}
+                </MultiChip>
+              ))}
             </div>
           </div>
 
-          {/* Kurikulum — free for all */}
+          {/* Kurikulum — multi-select chips */}
+          <div style={{ marginBottom: 18 }}>
+            <SectionHead>Kurikulum</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {CURRICULA.map(c => (
+                <MultiChip
+                  key={c}
+                  checked={curricula.includes(c)}
+                  onChange={() => setCurricula(prev =>
+                    prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+                  )}
+                >
+                  {c}
+                </MultiChip>
+              ))}
+            </div>
+          </div>
+
+          {/* Uang Pangkal — free for all */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
               color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-              Kurikulum
+              {t.filterUangPangkal}
             </p>
             <div style={{ flex: 1 }}>
-              <FilterDropdown value={curriculum} onChange={setCurriculum} options={curriculumOpts} />
+              <FilterDropdown value={upBucket} onChange={setUpBucket} options={upOptions} />
+            </div>
+          </div>
+
+          {/* SPP / Bulan — free for all */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+              SPP / Bulan
+            </p>
+            <div style={{ flex: 1 }}>
+              <FilterDropdown value={sppBucket} onChange={setSppBucket} options={sppOptions} />
             </div>
           </div>
 
@@ -409,50 +435,35 @@ function SchoolsContent() {
               background: "#fff",
             }}>
               {tier === "premium" ? (
-                <>
-                  {([
-                    { label: t.filterUangPangkal,  value: upBucket,        set: setUpBucket,        opts: upOptions        },
-                    { label: "SPP / Bulan",        value: sppBucket,       set: setSppBucket,       opts: sppOptions       },
-                    { label: "Murid / Kelas",      value: classSizeBucket, set: setClassSizeBucket, opts: classSizeOptions },
-                    { label: "Lab Komputer",       value: computerLab,     set: setComputerLab,     opts: adaOptions       },
-                    { label: "Kolam Renang",       value: schoolPool,      set: setSchoolPool,      opts: adaOptions       },
-                  ] as const).map(({ label, value, set, opts }) => (
-                    <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                        {label}
-                      </p>
-                      <div style={{ flex: 1 }}>
-                        <FilterDropdown value={value} onChange={set} options={opts as { value: string; label: string }[]} />
-                      </div>
-                    </div>
-                  ))}
-                </>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                    Murid / Kelas
+                  </p>
+                  <div style={{ flex: 1 }}>
+                    <FilterDropdown value={classSizeBucket} onChange={setClassSizeBucket} options={classSizeOptions} />
+                  </div>
+                </div>
               ) : (
-                <>
-                  {([t.filterUangPangkal, "SPP / Bulan", "Murid / Kelas", "Lab Komputer", "Kolam Renang"] as const).map((label) => (
-                    <ActionButton
-                      key={String(label)}
-                      onClick={() => setShowFilterGate(true)}
-                      style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
-                        width: "100%", padding: 0, background: "transparent" }}
-                    >
-                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                        {label}
-                      </p>
-                      <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                        fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                        color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                        display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span>Premium only</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </div>
-                    </ActionButton>
-                  ))}
-                </>
+                <ActionButton
+                  onClick={() => setShowFilterGate(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
+                    width: "100%", padding: 0, background: "transparent" }}
+                >
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                    Murid / Kelas
+                  </p>
+                  <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
+                    fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+                    color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
+                    display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span>Premium only</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                </ActionButton>
               )}
             </div>
           )}
@@ -537,15 +548,13 @@ function SchoolsContent() {
       {/* Active filter tags */}
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
-          {area !== "all"       && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"}          onRemove={() => setArea("all")} />}
-          {grade !== "all"      && <FTag label={`Jenjang: ${grade}`}                             onRemove={() => setGrade("all")} />}
-          {curriculum !== "all" && <FTag label={`Kurikulum: ${curriculum}`}                      onRemove={() => setCurriculum("all")} />}
-          {bahasa !== "all"     && <FTag label={`Bahasa: ${bahasa}`}                             onRemove={() => setBahasa("all")} />}
+          {area !== "all"   && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
+          {grade !== "all"  && <FTag label={`Jenjang: ${grade}`}                   onRemove={() => setGrade("all")} />}
+          {curricula.map(c  => <FTag key={c} label={`Kurikulum: ${c}`}             onRemove={() => setCurricula(prev => prev.filter(x => x !== c))} />)}
+          {bahasaFilter.map(b => <FTag key={b} label={`Bahasa: ${b}`}              onRemove={() => setBahasaFilter(prev => prev.filter(x => x !== b))} />)}
           {upBucket !== "all"         && <FTag label={`UP: ${UP_LABELS[upBucket]}`}                            onRemove={() => setUpBucket("all")} />}
           {sppBucket !== "all"        && <FTag label={`SPP: ${SPP_LABELS[sppBucket]}`}                         onRemove={() => setSppBucket("all")} />}
           {classSizeBucket !== "all"  && <FTag label={`Kelas: ${CLASS_SIZE_LABELS[classSizeBucket]}`}          onRemove={() => setClassSizeBucket("all")} />}
-          {computerLab !== "all"      && <FTag label={`Lab Komputer: ${ADA_LABELS[computerLab]}`}              onRemove={() => setComputerLab("all")} />}
-          {schoolPool !== "all"       && <FTag label={`Kolam Renang: ${ADA_LABELS[schoolPool]}`}               onRemove={() => setSchoolPool("all")} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>
@@ -587,7 +596,7 @@ function SchoolsContent() {
             const isSelected = compareIds.includes(school.id);
             return (
               <div key={school.id} style={{ position: "relative" }}>
-                <Link href={`/place/${school.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <Link href={`/place/${school.slug ?? school.id}`} style={{ textDecoration: "none", display: "block" }}>
                   <PlaceCard place={school} selected={isSelected} />
                 </Link>
                 {tier === "premium" && (

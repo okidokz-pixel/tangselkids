@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import type { Place } from "./mockData";
+import { places as mockPlaces, type Place } from "./mockData";
 
 // ── Table routing ────────────────────────────────────────────────────────────
 const TABLE: Record<Place["category"], string> = {
@@ -30,8 +30,22 @@ const ICON: Record<Place["category"], string> = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRow(row: any, category: Place["category"]): Place {
+  const photoColumns = ["photo_1","photo_2","photo_3","photo_4","photo_5",
+                        "photo_6","photo_7","photo_8","photo_9","photo_10"];
+  const photos = photoColumns
+    .map((c) => row[c])
+    .filter((v): v is string => !!v);
+
+  const videoColumns = ["video_1","video_2","video_3","video_4"];
+  const videos = videoColumns
+    .map((c) => row[c])
+    .filter((v): v is string => !!v);
+
+  const firstPhoto = photos[0] ?? row.image_url ?? `https://picsum.photos/seed/${row.id}/800/500`;
+
   const base: Place = {
     id:             row.id,
+    slug:           row.slug           ?? undefined,
     category,
     name:           row.name,
     area:           row.area ?? "",
@@ -43,7 +57,7 @@ function mapRow(row: any, category: Place["category"]): Place {
     reviews:        0,
     ageRange:       "",
     hours:          row.hours ?? "",
-    description:    "",
+    description:    row.about ?? "",
     phone:          row.phone ?? "",
     whatsapp:       row.whatsapp   ?? undefined,
     email:          row.email      ?? undefined,
@@ -51,11 +65,18 @@ function mapRow(row: any, category: Place["category"]): Place {
     priceMax:       row.price_max  ?? row.price_min ?? 0,
     isFeatured:     row.is_featured ?? false,
     icon:           ICON[category],
-    photo:          row.image_url  ?? `https://picsum.photos/seed/${row.id}/800/500`,
+    logo:           row.logo_url        ?? undefined,
+    facilities:     row.facilities      ?? undefined,
+    extracurriculars: row.extracurriculars ?? undefined,
+    feeImageUrl:    row.fee_image_url   ?? undefined,
+    photo:          firstPhoto,
+    photos:         photos.length > 0 ? photos : undefined,
+    videos:         videos.length > 0 ? videos : undefined,
     instagram:      normalizeSocial(row.instagram, "instagram"),
     facebook:       normalizeSocial(row.facebook,  "facebook"),
     tiktok:         normalizeSocial(row.tiktok,    "tiktok"),
     website:        normalizeSocial(row.website,   "website"),
+    youtube:        row.youtube ?? undefined,
     yearFounded:    row.year_founded ?? undefined,
   };
 
@@ -63,17 +84,21 @@ function mapRow(row: any, category: Place["category"]): Place {
     case "school":
       return {
         ...base,
-        curriculum:         row.curriculum         ?? undefined,
-        curriculumCategory: row.curriculum_category ?? undefined,
-        grades:           (row.grades as import("./mockData").Grade[] | null) ?? undefined,
-        uangPangkalMin:   row.uang_pangkal_min ?? undefined,
-        uangPangkalMax:   row.uang_pangkal_max ?? undefined,
-        studentsPerClass: row.students_per_class ?? undefined,
-        hasComputerLab:   row.has_computer_lab  ?? undefined,
-        hasPool:          row.has_pool          ?? undefined,
-        bahasa:           row.teaching_language ? [row.teaching_language] : undefined,
-        priceMin:         row.price_min ?? 0,
-        priceMax:         row.price_max ?? row.price_min ?? 0,
+        slug:                   row.slug                ?? undefined,
+        curriculum:             row.curriculum          ?? undefined,
+        curriculumCategory:     row.curriculum_category ?? undefined,
+        grades:                 (row.grades as import("./mockData").Grade[] | null) ?? undefined,
+        uangPangkalMin:         row.uang_pangkal_min    ?? undefined,
+        uangPangkalMax:         row.uang_pangkal_max    ?? undefined,
+        annualFeeMin:           row.annual_fee_min      ?? undefined,
+        annualFeeMax:           row.annual_fee_max      ?? undefined,
+        tahunBiaya:             row.tahun_biaya         ?? undefined,
+        bahasa:                 (row.kategori_bahasa as string[] | null) ?? undefined,
+        teachingLanguageDisplay: row.teaching_language  ?? undefined,
+        studentsPerClass:       row.students_per_class  ?? undefined,
+        jadwalPendaftaran:      row.jadwal_pendaftaran  ?? undefined,
+        priceMin:               row.price_min ?? 0,
+        priceMax:               row.price_max ?? row.price_min ?? 0,
       };
 
     case "learning-center":
@@ -220,7 +245,38 @@ export async function fetchPlaceById(id: string): Promise<Place | null> {
       return data ? mapRow(data, category) : null;
     }),
   );
+  return results.find(Boolean) ?? mockPlaces.find(p => p.id === id) ?? null;
+}
+
+export async function fetchPlaceBySlug(slug: string): Promise<Place | null> {
+  const categories = Object.keys(TABLE) as Place["category"][];
+  const results = await Promise.all(
+    categories.map(async (category) => {
+      const { data } = await supabase
+        .from(TABLE[category])
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+      return data ? mapRow(data, category) : null;
+    }),
+  );
   return results.find(Boolean) ?? null;
+}
+
+export async function fetchAllSlugs(): Promise<{ slug: string; category: Place["category"] }[]> {
+  const categories = Object.keys(TABLE) as Place["category"][];
+  const results = await Promise.all(
+    categories.map(async (category) => {
+      const { data } = await supabase
+        .from(TABLE[category])
+        .select("slug")
+        .not("slug", "is", null);
+      return (data ?? [])
+        .map((r) => ({ slug: r.slug as string, category }))
+        .filter((r) => r.slug);
+    }),
+  );
+  return results.flat();
 }
 
 export async function fetchPlacesByIds(ids: string[]): Promise<Place[]> {

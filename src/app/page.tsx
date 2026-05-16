@@ -7,6 +7,8 @@ import { LangToggle } from "@/components/LangToggle";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { BottomNav } from "@/components/BottomNav";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
+import { useLoginSheet } from "@/context/LoginSheetContext";
+import { ActionButton } from "@/components/ActionButton";
 import { getAreaGroup } from "@/lib/mockData";
 import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, getCachedCategory, getCachedCounts } from "@/lib/db";
 import type { Place } from "@/lib/mockData";
@@ -408,7 +410,8 @@ function StickyHeader({ visible }: { visible: boolean }) {
 // ─── Masthead ─────────────────────────────────────────────────────────────────
 function Masthead({ userInitial }: { userInitial: string }) {
   const { lang, t } = useLang();
-  const { tier } = useAuth();
+  const { tier, user } = useAuth();
+  const { openLoginSheet } = useLoginSheet();
   return (
     <>
       <div style={{ padding: "20px 22px 0" }}>
@@ -444,18 +447,49 @@ function Masthead({ userInitial }: { userInitial: string }) {
             alignItems: "flex-end", gap: 6, flexShrink: 0,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <Link href="/profile" style={{
-                width: 26, height: 26, borderRadius: 999, background: "#0e1d4f",
-                color: "#fff", display: "flex", alignItems: "center",
-                justifyContent: "center", fontSize: 11, fontWeight: 700,
-                textDecoration: "none",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                touchAction: "manipulation",
-                flexShrink: 0,
-              }}>
-                {userInitial}
-              </Link>
-              {tier === "premium" && <PremiumBadge />}
+              {!user ? (
+                <ActionButton
+                  onClick={() => openLoginSheet()}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1,
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                  }}
+                >
+                  <span style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500, lineHeight: 1 }}>
+                    {t.loginHaveAccount}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#0e1d4f", lineHeight: 1 }}>
+                      {t.loginSignIn}
+                    </span>
+                    <svg
+                      width="22" height="10" viewBox="0 0 22 10" fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{ flexShrink: 0 }}
+                    >
+                      <path d="M0 5H16M16 5L11 1M16 5L11 9"
+                        stroke="#0e1d4f" strokeWidth="1.6"
+                        strokeLinecap="round" strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </ActionButton>
+              ) : (
+                <>
+                  <Link href="/profile" style={{
+                    width: 26, height: 26, borderRadius: 999, background: "#0e1d4f",
+                    color: "#fff", display: "flex", alignItems: "center",
+                    justifyContent: "center", fontSize: 11, fontWeight: 700,
+                    textDecoration: "none",
+                    fontFamily: "var(--font-jakarta), sans-serif",
+                    touchAction: "manipulation",
+                    flexShrink: 0,
+                  }}>
+                    {userInitial}
+                  </Link>
+                  {tier === "premium" && <PremiumBadge />}
+                </>
+              )}
             </div>
             <LangToggle variant="dark" />
           </div>
@@ -573,14 +607,13 @@ function AreaPills({
 }) {
   const { t } = useLang();
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flexShrink: 0 }}>
+        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35 }}>
           {t.homeAltAreaWhere}
-        </span>
-        <AreaCoverageButton />
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, flex: 1 }}>
         {areas.map((a) => {
           const active = value === a.key;
           const displayLabel = a.key === "Semua" ? t.homeAltAreaAll : a.key;
@@ -591,27 +624,27 @@ function AreaPills({
               onClick={() => onPick(a.key)}
               style={{
                 flex: 1,
-                padding: "11px 14px",
+                padding: "7px 12px",
                 borderRadius: 999,
                 border: active
                   ? "1px solid #0e1d4f"
                   : "1px solid rgba(15,23,42,0.14)",
                 background: active ? "#0e1d4f" : "#fff",
                 display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 6,
+                justifyContent: "center", gap: 5,
                 transition: "background .2s ease, border-color .2s ease",
               }}
             >
               <span style={{
                 fontFamily: "var(--font-fraunces), Georgia, serif",
-                fontSize: 17, fontWeight: 700, letterSpacing: -0.2,
+                fontSize: 14, fontWeight: 700, letterSpacing: -0.2,
                 color: active ? "#fff" : "#0e1d4f",
                 whiteSpace: "nowrap",
               }}>
                 {displayLabel}
               </span>
               <span style={{
-                fontSize: 11, fontWeight: 700,
+                fontSize: 10, fontWeight: 700,
                 color: active ? "rgba(255,255,255,0.8)" : "#94a3b8",
                 fontVariantNumeric: "tabular-nums",
               }}>
@@ -658,11 +691,10 @@ function RailArrow({
         marginTop: -4,
       } as React.CSSProperties}
     >
-      <span style={{
-        display: "flex",
-        transform: side === "left" ? "rotate(180deg)" : "none",
-      }}>
-        <Chev size={13} color="#0e1d4f" stroke={2.2} />
+      <span style={{ display: "flex", transform: side === "left" ? "rotate(180deg)" : "none" }}>
+        <span className="rail-arrow-icon">
+          <Chev size={13} color="#0e1d4f" stroke={2.2} />
+        </span>
       </span>
     </button>
   );
@@ -706,16 +738,18 @@ const BAHASA_PILL_LABELS: Record<"id" | "en", Record<string, string>> = {
 
 // ─── CourseTypePills ──────────────────────────────────────────────────────────
 function CourseTypePills({
-  ageKey, area,
+  ageKey, area, lcs,
 }: {
   ageKey: string;
   area: AreaKey;
+  lcs: Place[];
 }) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
   const areaParam = area === "Semua" ? "all" : area.toLowerCase();
   const railRef = useRef<HTMLDivElement>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<string | null | "ALL">(null);
 
   const updateArrows = () => {
     const el = railRef.current;
@@ -729,146 +763,173 @@ function CourseTypePills({
     return () => cancelAnimationFrame(id);
   }, [ageKey, area]);
 
+  useEffect(() => {
+    if (!selectedCourse || !railRef.current) return;
+    const selected = railRef.current.querySelector<HTMLElement>("[data-course-selected='true']");
+    if (selected) {
+      const railRect = railRef.current.getBoundingClientRect();
+      const elRect = selected.getBoundingClientRect();
+      if (elRect.right > railRect.right || elRect.left < railRect.left) {
+        selected.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      }
+    }
+  }, [selectedCourse]);
+
   const nudge = (dir: number) => {
     railRef.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
   };
 
-  const courseTypes: { value: string; label: string; color: string; icon: React.ReactNode }[] = [
-    {
-      value: "Bahasa Inggris", label: t.courseTypeEnglish, color: "#3b82f6",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Matematika", label: t.courseTypeMath, color: "#f97316",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/>
-          <line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Seni", label: t.courseTypeArts, color: "#ec4899",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="13.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-          <circle cx="17.5" cy="10.5" r="1" fill="currentColor" stroke="none"/>
-          <circle cx="8.5" cy="7.5" r="1" fill="currentColor" stroke="none"/>
-          <circle cx="6.5" cy="12.5" r="1" fill="currentColor" stroke="none"/>
-          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Musik", label: t.courseTypeMusic, color: "#a855f7",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 18V5l12-2v13"/>
-          <circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Coding/Robotik", label: t.courseTypeCoding, color: "#10b981",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Tari & Balet", label: t.courseTypeDance, color: "#f43f5e",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4L8.2 14 2 9.4h7.6z"/>
-        </svg>
-      ),
-    },
-    {
-      value: "Gimnastik", label: t.courseTypeGymnastics, color: "#f59e0b",
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="4" r="2"/>
-          <path d="M4 13l4-4 3 3 3-3 4 4"/>
-          <path d="M7 21l2.5-5 2.5 2 2.5-2 2.5 5"/>
-        </svg>
-      ),
-    },
+  const courseTypes: { value: string; label: string }[] = [
+    { value: "Bahasa Inggris",  label: t.courseTypeEnglish },
+    { value: "Matematika",      label: t.courseTypeMath },
+    { value: "Seni",            label: t.courseTypeArts },
+    { value: "Musik",           label: t.courseTypeMusic },
+    { value: "Coding/Robotik",  label: t.courseTypeCoding },
+    { value: "Tari & Balet",    label: t.courseTypeDance },
+    { value: "Gimnastik",       label: t.courseTypeGymnastics },
   ];
 
-  function navigate(course: string | null) {
+  function countByCourse(course: string | null): number {
+    return lcs.filter(p =>
+      p.ageGroups?.includes(ageKey) &&
+      (area === "Semua" || p.area === area) &&
+      (course === null || p.courseTypes?.some(c => c.toLowerCase().includes(course.toLowerCase()) || course.toLowerCase().includes(c.toLowerCase())))
+    ).length;
+  }
+
+  function goResults(course: string | null) {
     const q = course ? `&course=${encodeURIComponent(course)}` : "";
     window.location.href = `/learning-centers?age=${ageKey}&area=${areaParam}${q}&view=results`;
   }
 
+  function goFilter(course: string | null) {
+    const q = course ? `&course=${encodeURIComponent(course)}` : "";
+    window.location.href = `/learning-centers?age=${ageKey}&area=${areaParam}${q}`;
+  }
+
   const pillStyle: React.CSSProperties = {
     flexShrink: 0,
-    padding: "11px 14px",
+    padding: "7px 12px",
     borderRadius: 999,
     border: "1px solid rgba(15,23,42,0.14)",
     background: "#fff",
-    display: "flex", alignItems: "center", gap: 7, justifyContent: "center",
+    display: "flex", alignItems: "center", gap: 5, justifyContent: "center",
   };
   const labelStyle: React.CSSProperties = {
     fontFamily: "var(--font-fraunces), Georgia, serif",
-    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    fontSize: 13, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
     whiteSpace: "nowrap",
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
-        {t.filterCourseType.toUpperCase()}
-      </div>
-      <div style={{ position: "relative" }}>
-        {/* Scrollable rail */}
-        <div
-          ref={railRef}
-          onScroll={updateArrows}
-          className="tk-age-rail"
-          style={{
-            display: "flex", gap: 8,
-            overflowX: "auto", overflowY: "hidden",
-            padding: "4px 2px 8px",
-            scrollbarWidth: "none",
-            margin: "0 -22px",
-            paddingLeft: 22, paddingRight: 22,
-          } as React.CSSProperties}
-        >
-          <Pressable scale={0.94} onClick={() => navigate(null)} style={pillStyle}>
-            <span style={{ color: "#64748b", display: "flex", alignItems: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
-                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-                <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
-              </svg>
-            </span>
-            <span style={labelStyle}>{t.homeAltCourseTypeAll}</span>
-          </Pressable>
-          {courseTypes.map(({ value, label, color, icon }) => (
-            <Pressable key={value} scale={0.94} onClick={() => navigate(value)} style={pillStyle}>
-              <span style={{ color, display: "flex", alignItems: "center" }}>{icon}</span>
-              <span style={labelStyle}>{label}</span>
-            </Pressable>
-          ))}
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Label + scrollable rail row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35, whiteSpace: "pre-line" }}>
+          {t.filterCourseType.toUpperCase().replace(" ", "\n")}
         </div>
-        {/* Edge fades */}
-        <div style={{
-          position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
-          background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
-          opacity: canL ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
-          background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
-          opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
-        }} />
-        <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
-        <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+        <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+          <div
+            ref={railRef}
+            onScroll={updateArrows}
+            className="tk-age-rail"
+            style={{
+              display: "flex", gap: 8,
+              overflowX: "auto", overflowY: "hidden",
+              paddingTop: 0, paddingBottom: 0,
+              paddingLeft: 0, paddingRight: 22,
+              scrollbarWidth: "none",
+              margin: "0 -22px 0 0",
+            } as React.CSSProperties}
+          >
+            <Pressable scale={0.94} onClick={() => setSelectedCourse("ALL")}
+              data-course-selected={selectedCourse === "ALL" ? "true" : undefined}
+              style={{
+                ...pillStyle,
+                border: selectedCourse === "ALL" ? "1px solid #0e1d4f" : pillStyle.border,
+                background: selectedCourse === "ALL" ? "#0e1d4f" : pillStyle.background,
+              }}>
+              <span style={{ ...labelStyle, color: selectedCourse === "ALL" ? "#fff" : labelStyle.color }}>{t.homeAltCourseTypeAll}</span>
+            </Pressable>
+            {courseTypes.map(({ value, label }) => (
+              <Pressable key={value} scale={0.94} onClick={() => setSelectedCourse(value)}
+                data-course-selected={selectedCourse === value ? "true" : undefined}
+                style={{
+                  ...pillStyle,
+                  border: selectedCourse === value ? "1px solid #0e1d4f" : pillStyle.border,
+                  background: selectedCourse === value ? "#0e1d4f" : pillStyle.background,
+                }}>
+                <span style={{ ...labelStyle, color: selectedCourse === value ? "#fff" : labelStyle.color }}>{label}</span>
+              </Pressable>
+            ))}
+          </div>
+          <div style={{
+            position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
+            background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
+            opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+          }} />
+          <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
+          <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+        </div>
+      </div>
+
+      {/* CTA row — slides in below after a course type is tapped */}
+      <div style={{
+        marginTop: selectedCourse ? 8 : 0,
+        maxHeight: selectedCourse ? 60 : 0,
+        opacity: selectedCourse ? 1 : 0,
+        overflow: "clip",
+        transition: "max-height .35s ease, opacity .25s ease, margin-top .25s ease",
+      }}>
+        {selectedCourse && (() => {
+          const course = selectedCourse === "ALL" ? null : selectedCourse;
+          const n = countByCourse(course);
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 2 }}>
+              <button
+                onClick={() => goFilter(course)}
+                onTouchEnd={(e) => { e.preventDefault(); goFilter(course); }}
+                style={{
+                  background: "none", border: "none", padding: 0,
+                  fontSize: 12, fontWeight: 600, color: "#64748b",
+                  textDecoration: "underline", textDecorationStyle: "dotted",
+                  textUnderlineOffset: 3, cursor: "pointer",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {lang === "id" ? "Filter lebih dalam?" : "More filters?"}
+              </button>
+              <button
+                onClick={() => goResults(course)}
+                onTouchEnd={(e) => { e.preventDefault(); goResults(course); }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 999,
+                  background: "#2e8a5a",
+                  border: "none",
+                  color: "#fff",
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: 14, fontWeight: 700, letterSpacing: -0.2,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  transition: "background .15s ease",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                {lang === "id" ? `Tampilkan ${n} Tempat` : `Show ${n} Places`}
+                <span className="rail-arrow-icon" style={{ display: "flex", alignItems: "center" }}>
+                  <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="5" x2="13" y2="5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+                    <path d="M9 1L13.5 5L9 9" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  </svg>
+                </span>
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -876,14 +937,16 @@ function CourseTypePills({
 
 // ─── LangPills ────────────────────────────────────────────────────────────────
 function LangPills({
-  grade, area,
+  grade, area, schools,
 }: {
   grade: string;
   area: AreaKey;
+  schools: Place[];
 }) {
   const { lang, t } = useLang();
   const areaParam = area === "Semua" ? "all" : area.toLowerCase();
   const labelMap = BAHASA_PILL_LABELS[lang];
+  const [selectedLang, setSelectedLang] = useState<string | null | "ALL">(null);
   const railRef = useRef<HTMLDivElement>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(true);
@@ -900,13 +963,40 @@ function LangPills({
     return () => cancelAnimationFrame(id);
   }, [grade, area]);
 
+  // Scroll selected pill into view when language changes
+  useEffect(() => {
+    if (!selectedLang || !railRef.current) return;
+    const rail = railRef.current;
+    const selected = rail.querySelector<HTMLElement>("[data-lang-selected='true']");
+    if (selected) {
+      const railRect = rail.getBoundingClientRect();
+      const elRect = selected.getBoundingClientRect();
+      if (elRect.right > railRect.right || elRect.left < railRect.left) {
+        selected.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      }
+    }
+  }, [selectedLang]);
+
   const nudge = (dir: number) => {
     railRef.current?.scrollBy({ left: dir * 140, behavior: "smooth" });
   };
 
-  function navigate(bhs: string | null) {
+  function countByLang(bhs: string | null): number {
+    return schools.filter(p =>
+      p.grades?.includes(grade as never) &&
+      (area === "Semua" || p.area === area) &&
+      (bhs === null || p.bahasa?.includes(bhs))
+    ).length;
+  }
+
+  function goResults(bhs: string | null) {
     const q = bhs ? `&bhs=${encodeURIComponent(bhs)}` : "";
     window.location.href = `/schools?grade=${grade}&area=${areaParam}${q}&view=results`;
+  }
+
+  function goFilter(bhs: string | null) {
+    const q = bhs ? `&bhs=${encodeURIComponent(bhs)}` : "";
+    window.location.href = `/schools?grade=${grade}&area=${areaParam}${q}`;
   }
 
   const bahasaIcons: Record<string, { code: string; color: string }> = {
@@ -922,15 +1012,15 @@ function LangPills({
 
   const pillStyle: React.CSSProperties = {
     flexShrink: 0,
-    padding: "11px 14px",
+    padding: "7px 12px",
     borderRadius: 999,
     border: "1px solid rgba(15,23,42,0.14)",
     background: "#fff",
-    display: "flex", alignItems: "center", gap: 7, justifyContent: "center",
+    display: "flex", alignItems: "center", gap: 5, justifyContent: "center",
   };
   const labelStyle: React.CSSProperties = {
     fontFamily: "var(--font-fraunces), Georgia, serif",
-    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    fontSize: 13, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
     whiteSpace: "nowrap",
   };
 
@@ -952,55 +1042,116 @@ function LangPills({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, color: "#94a3b8" }}>
-        {t.homeAltSchoolLang}
-      </div>
-      <div style={{ position: "relative" }}>
-        {/* Scrollable rail */}
-        <div
-          ref={railRef}
-          onScroll={updateArrows}
-          className="tk-age-rail"
-          style={{
-            display: "flex", gap: 8,
-            overflowX: "auto", overflowY: "hidden",
-            padding: "4px 2px 8px",
-            scrollbarWidth: "none",
-            margin: "0 -22px",
-            paddingLeft: 22, paddingRight: 22,
-          } as React.CSSProperties}
-        >
-          <Pressable scale={0.94} onClick={() => navigate(null)} style={pillStyle}>
-            <span style={{ color: "#64748b", display: "flex", alignItems: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
-                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-                <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
-              </svg>
-            </span>
-            <span style={labelStyle}>{t.homeAltSchoolLangAll}</span>
-          </Pressable>
-          {BAHASA_LIST.map((key) => (
-            <Pressable key={key} scale={0.94} onClick={() => navigate(key)} style={pillStyle}>
-              <LangBadge langKey={key} />
-              <span style={labelStyle}>{labelMap[key] ?? key}</span>
-            </Pressable>
-          ))}
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {/* Label + scrollable rail row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35, whiteSpace: "pre-line" }}>
+          {t.homeAltSchoolLang.replace(" ", "\n")}
         </div>
-        {/* Edge fades */}
-        <div style={{
-          position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
-          background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
-          opacity: canL ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
-        }} />
-        <div style={{
-          position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
-          background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
-          opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
-        }} />
-        <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
-        <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+        <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+          {/* Scrollable rail */}
+          <div
+            ref={railRef}
+            onScroll={updateArrows}
+            className="tk-age-rail"
+            style={{
+              display: "flex", gap: 8,
+              overflowX: "auto", overflowY: "hidden",
+              paddingTop: 0, paddingBottom: 0,
+              paddingLeft: 0, paddingRight: 22,
+              scrollbarWidth: "none",
+              margin: "0 -22px 0 0",
+            } as React.CSSProperties}
+          >
+            <Pressable scale={0.94} onClick={() => setSelectedLang("ALL")}
+              data-lang-selected={selectedLang === "ALL" ? "true" : undefined}
+              style={{
+                ...pillStyle,
+                border: selectedLang === "ALL" ? "1px solid #0e1d4f" : pillStyle.border,
+                background: selectedLang === "ALL" ? "#0e1d4f" : pillStyle.background,
+              }}>
+              <span style={{ ...labelStyle, color: selectedLang === "ALL" ? "#fff" : labelStyle.color }}>{t.homeAltSchoolLangAll}</span>
+            </Pressable>
+            {BAHASA_LIST.map((key) => (
+              <Pressable key={key} scale={0.94} onClick={() => setSelectedLang(key)}
+                data-lang-selected={selectedLang === key ? "true" : undefined}
+                style={{
+                  ...pillStyle,
+                  border: selectedLang === key ? "1px solid #0e1d4f" : pillStyle.border,
+                  background: selectedLang === key ? "#0e1d4f" : pillStyle.background,
+                }}>
+                <span style={{ ...labelStyle, color: selectedLang === key ? "#fff" : labelStyle.color }}>{labelMap[key] ?? key}</span>
+              </Pressable>
+            ))}
+          </div>
+          {/* Edge fades */}
+          <div style={{
+            position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
+            background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
+            opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+          }} />
+          <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
+          <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
+        </div>
+      </div>
+
+      {/* CTA row — slides in below the full band after a language pill is tapped */}
+      <div style={{
+        marginTop: selectedLang ? 8 : 0,
+        maxHeight: selectedLang ? 60 : 0,
+        opacity: selectedLang ? 1 : 0,
+        overflow: "clip",
+        transition: "max-height .35s ease, opacity .25s ease, margin-top .25s ease",
+      }}>
+        {selectedLang && (() => {
+          const bhs = selectedLang === "ALL" ? null : selectedLang;
+          const n = countByLang(bhs);
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 2 }}>
+              <button
+                onClick={() => goFilter(bhs)}
+                onTouchEnd={(e) => { e.preventDefault(); goFilter(bhs); }}
+                style={{
+                  background: "none", border: "none", padding: 0,
+                  fontSize: 12, fontWeight: 600, color: "#64748b",
+                  textDecoration: "underline", textDecorationStyle: "dotted",
+                  textUnderlineOffset: 3, cursor: "pointer",
+                  whiteSpace: "nowrap", flexShrink: 0,
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {lang === "id" ? "Filter lebih dalam?" : "More filters?"}
+              </button>
+              <button
+                onClick={() => goResults(bhs)}
+                onTouchEnd={(e) => { e.preventDefault(); goResults(bhs); }}
+                style={{
+                  flex: 1,
+                  padding: "10px 16px",
+                  borderRadius: 999,
+                  background: "#2e8a5a",
+                  border: "none",
+                  color: "#fff",
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: 14, fontWeight: 700, letterSpacing: -0.2,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                  transition: "background .15s ease",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                }}
+              >
+                {lang === "id" ? `Tampilkan ${n} Sekolah` : `Show ${n} Schools`}
+                <span className="rail-arrow-icon" style={{ display: "flex", alignItems: "center" }}>
+                  <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="0" y1="5" x2="13" y2="5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+                    <path d="M9 1L13.5 5L9 9" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                  </svg>
+                </span>
+              </button>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -1048,14 +1199,11 @@ function AgeBands({
   const lcBands     = LC_AGE_BANDS[lang];
 
   return (
-    <div style={{ position: "relative" }}>
-      <div style={{
-        fontSize: 13, fontWeight: 800, letterSpacing: 1,
-        color: "#94a3b8", marginBottom: 8,
-      }}>
-        {eyebrow}
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35, whiteSpace: "pre-line" }}>
+        {eyebrow.replace(" ", "\n")}
       </div>
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
         {/* scrollable rail */}
         <div
           ref={railRef}
@@ -1064,10 +1212,10 @@ function AgeBands({
           style={{
             display: "flex", gap: 10,
             overflowX: "auto", overflowY: "hidden",
-            padding: "4px 2px 8px",
+            padding: "4px 2px 2px",
             scrollbarWidth: "none",
-            margin: "0 -22px",
-            paddingLeft: 22, paddingRight: 22,
+            margin: "0 -22px 0 0",
+            paddingLeft: 0, paddingRight: 22,
           } as React.CSSProperties}
         >
           {isSchool
@@ -1076,29 +1224,29 @@ function AgeBands({
                 const active = selected === b.key;
                 const inner = (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                       <span style={{
-                        width: 8, height: 8, borderRadius: 999, background: b.dot,
-                        boxShadow: `0 0 0 3px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
+                        width: 6, height: 6, borderRadius: 999, background: b.dot,
+                        boxShadow: `0 0 0 2px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 17, fontWeight: 700,
+                        fontSize: 14, fontWeight: 700,
                         color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
                         {b.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
+                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
                       color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
                       {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b>
                     </div>
                   </>
                 );
                 const cardStyle: React.CSSProperties = {
-                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
-                  padding: "11px 14px", borderRadius: 12, minWidth: 96,
+                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 3,
+                  padding: "7px 12px", borderRadius: 10, minWidth: 80,
                   border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
                   background: active ? "#0e1d4f" : "#fff",
                   transition: "background .2s ease, border-color .2s ease",
@@ -1131,29 +1279,29 @@ function AgeBands({
                 const active = selected === b.key;
                 const inner = (
                   <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                       <span style={{
-                        width: 8, height: 8, borderRadius: 999, background: b.dot,
-                        boxShadow: `0 0 0 3px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
+                        width: 6, height: 6, borderRadius: 999, background: b.dot,
+                        boxShadow: `0 0 0 2px ${b.dot}${active ? "55" : "22"}`, flexShrink: 0,
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 17, fontWeight: 700,
+                        fontSize: 14, fontWeight: 700,
                         color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
-                        {b.label}
+                        {b.sub}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap",
+                    <div style={{ fontSize: 10, fontWeight: 500, whiteSpace: "nowrap",
                       color: active ? "rgba(255,255,255,0.65)" : "#94a3b8" }}>
-                      {b.sub} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b>
+                      {b.label} · <b style={{ color: active ? "rgba(255,255,255,0.9)" : "#475569", fontWeight: 700 }}>{n}</b>
                     </div>
                   </>
                 );
                 const cardStyle: React.CSSProperties = {
-                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 4,
-                  padding: "11px 14px", borderRadius: 12, minWidth: 96,
+                  flexShrink: 0, display: "flex", flexDirection: "column", gap: 3,
+                  padding: "7px 12px", borderRadius: 10, minWidth: 80,
                   border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
                   background: active ? "#0e1d4f" : "#fff",
                   transition: "background .2s ease, border-color .2s ease",
@@ -1184,12 +1332,6 @@ function AgeBands({
           }
         </div>
 
-        {/* edge fade — left. Warm cream bg. */}
-        <div style={{
-          position: "absolute", top: 0, bottom: 0, left: -22, width: 28,
-          background: "linear-gradient(90deg, #f6f1e8, rgba(246,241,232,0))",
-          opacity: canL ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
-        }} />
         {/* edge fade — right */}
         <div style={{
           position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
@@ -1321,7 +1463,7 @@ function FeaturePair() {
 
       {/* Tier 1: area pills — slides in when a card is tapped */}
       <div style={{
-        marginTop: open ? 14 : 0,
+        marginTop: open ? 8 : 0,
         maxHeight: open ? 90 : 0,
         opacity: open ? 1 : 0,
         overflow: "clip",
@@ -1340,7 +1482,7 @@ function FeaturePair() {
 
       {/* Tier 2: age bands — slides in after an area is picked */}
       <div ref={tier2Ref} style={{
-        marginTop: open && area ? 14 : 0,
+        marginTop: open && area ? 8 : 0,
         maxHeight: open && area ? 160 : 0,
         opacity: open && area ? 1 : 0,
         overflow: "clip",
@@ -1360,27 +1502,27 @@ function FeaturePair() {
 
       {/* Tier 3: language pills (schools) — slides in after a grade is picked */}
       <div ref={tier3Ref} style={{
-        marginTop: open === "sekolah" && area && grade ? 14 : 0,
-        maxHeight: open === "sekolah" && area && grade ? 200 : 0,
+        marginTop: open === "sekolah" && area && grade ? 8 : 0,
+        maxHeight: open === "sekolah" && area && grade ? 280 : 0,
         opacity: open === "sekolah" && area && grade ? 1 : 0,
         overflow: "clip",
         transition: "max-height .4s ease, opacity .3s ease, margin-top .3s ease",
       }}>
         {open === "sekolah" && area && grade && (
-          <LangPills grade={grade} area={area} />
+          <LangPills grade={grade} area={area} schools={allSchools} />
         )}
       </div>
 
       {/* Tier 3: course type pills (learning centers) — slides in after an age is picked */}
       <div ref={open === "kursus" ? tier3Ref : undefined} style={{
-        marginTop: open === "kursus" && area && grade ? 14 : 0,
-        maxHeight: open === "kursus" && area && grade ? 220 : 0,
+        marginTop: open === "kursus" && area && grade ? 8 : 0,
+        maxHeight: open === "kursus" && area && grade ? 280 : 0,
         opacity: open === "kursus" && area && grade ? 1 : 0,
         overflow: "clip",
         transition: "max-height .4s ease, opacity .3s ease, margin-top .3s ease",
       }}>
         {open === "kursus" && area && grade && (
-          <CourseTypePills ageKey={grade} area={area} />
+          <CourseTypePills ageKey={grade} area={area} lcs={allLCs} />
         )}
       </div>
     </div>
@@ -1472,7 +1614,7 @@ function IndexList() {
 function CoverStoryCard({
   place, saved, onToggleSave,
 }: {
-  place: { id: string; name: string; area: string; photo: string; rating: number; reviews: number };
+  place: { id: string; slug?: string; name: string; area: string; photo: string; rating: number; reviews: number };
   saved: boolean;
   onToggleSave: () => void;
 }) {
@@ -1490,7 +1632,7 @@ function CoverStoryCard({
     }}>
       {/* full-bleed photo — no white body below */}
       <div style={{ aspectRatio: "4/3", position: "relative", overflow: "clip" }}>
-        <Link href={`/place/${place.id}`} style={{ display: "block", height: "100%", textDecoration: "none" }}>
+        <Link href={`/place/${place.slug ?? place.id}`} style={{ display: "block", height: "100%", textDecoration: "none" }}>
           <img src={place.photo} alt={place.name} style={{
             position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
           }} />

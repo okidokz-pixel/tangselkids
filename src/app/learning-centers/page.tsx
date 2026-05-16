@@ -276,8 +276,9 @@ function LearningCentersContent() {
 
           {/* Free filters */}
           {([
-            { label: t.filterAgeGroup,   value: ageGroup,   set: setAgeGroup,   opts: ageGroupOptions },
-            { label: t.filterCourseType, value: courseType, set: setCourseType, opts: COURSE_TYPE_OPTIONS },
+            { label: t.filterAgeGroup,   value: ageGroup,    set: setAgeGroup,    opts: ageGroupOptions    },
+            { label: t.filterCourseType, value: courseType,  set: setCourseType,  opts: COURSE_TYPE_OPTIONS },
+            { label: t.filterPrice,      value: priceBucket, set: setPriceBucket, opts: PRICE_OPTIONS       },
           ] as const).map(({ label, value, set, opts }) => (
             <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
               <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
@@ -325,7 +326,6 @@ function LearningCentersContent() {
               {tier === "premium" ? (
                 <>
                   {([
-                    { label: t.filterPrice,      value: priceBucket,  set: setPriceBucket,  opts: PRICE_OPTIONS       },
                     { label: "Free Trial",        value: freeTrial,    set: setFreeTrial,    opts: adaOptionsLC        },
                     { label: "Rasio Guru:Murid",  value: teacherRatio, set: setTeacherRatio, opts: teacherRatioOptions },
                     { label: "Bahasa Pengantar",  value: teachingLang, set: setTeachingLang, opts: teachingLangOptions },
@@ -341,7 +341,7 @@ function LearningCentersContent() {
                 </>
               ) : (
                 <>
-                  {([t.filterPrice, "Free Trial", "Rasio Guru:Murid", "Bahasa Pengantar"] as const).map((label) => (
+                  {(["Free Trial", "Rasio Guru:Murid", "Bahasa Pengantar"] as const).map((label) => (
                     <ActionButton
                       key={String(label)}
                       onClick={() => setShowFilterGate(true)}

@@ -103,7 +103,21 @@
       "Bash(pip install *)",
       "Bash(python -c \"import pandas; print\\('ok'\\)\")",
       "Bash(python -c ' *)",
-      "Bash(vercel env *)"
+      "Bash(vercel env *)",
+      "Bash(taskkill /PID 14492 /F)",
+      "Bash(taskkill /PID 12200 /F)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\USER\\\\Desktop\\\\BintaroKids\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(findstr :3001)",
+      "Bash(findstr LISTENING)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\USER\\\\Desktop\\\\BintaroKids\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(xargs ls -lh)",
+      "Bash(awk '{print $9, $5}')",
+      "Bash(python -c \"import sys; data=sys.stdin.buffer.read\\(\\); print\\(data.decode\\('utf-8','replace'\\)\\)\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\USER\\\\Desktop\\\\BintaroKids\\\\src\\\\app\\\\place\\\\[slug]\")",
+      "Bash(cp \"C:\\\\Users\\\\USER\\\\Desktop\\\\BintaroKids\\\\src\\\\app\\\\place\\\\[id]\\\\page.tsx\" \"C:\\\\Users\\\\USER\\\\Desktop\\\\BintaroKids\\\\src\\\\app\\\\place\\\\[slug]\\\\page.tsx\")"
     ]
   }
 }

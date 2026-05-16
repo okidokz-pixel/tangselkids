@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;1,500&display=swap" rel="stylesheet">
+  <style>
+    body { background: #888; padding: 20px; font-family: sans-serif; }
+    .preview { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+    .preview-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .preview-item span { color: #fff; font-size: 11px; }
+    canvas { background: transparent; }
+    button { padding: 8px 14px; font-size: 14px; cursor: pointer; margin: 4px; border-radius: 6px; border: 1px solid #ccc; }
+    h3 { color: #fff; margin: 0 0 12px; }
+    h4 { color: #fff; margin: 16px 0 4px; }
+  </style>
+</head>
+<body>
+<h3>TangselKids Logo Export</h3>
+
+<h4>Wordmark (icon + text) — transparent PNG</h4>
+<div class="preview" id="wordmark-previews"></div>
+<div id="wordmark-buttons"></div>
+
+<h4>Icon only — transparent PNG</h4>
+<div class="preview" id="icon-previews"></div>
+<div id="icon-buttons"></div>
+
+<script>
+const iconSvgSrc = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" width="52" height="52">
+  <g transform="rotate(-6 26 26)">
+    <rect x="3" y="3" width="46" height="46" rx="4" fill="#2e8a5a" />
+    <rect x="18" y="-2" width="16" height="6" rx="1"
+      fill="#c47a14" opacity="0.9" transform="rotate(8 26 1)" />
+  </g>
+  <g stroke="#fff7ec" stroke-width="2" stroke-linecap="round" fill="none">
+    <path d="M26 8 v3"/><path d="M26 41 v3"/>
+    <path d="M8 26 h3"/><path d="M41 26 h3"/>
+    <path d="M14 14 l2 2"/><path d="M36 36 l2 2"/>
+    <path d="M38 14 l-2 2"/><path d="M16 36 l-2 2"/>
+  </g>
+  <g transform="translate(26 26)">
+    <path d="M0 -10 l2.6 6 l6.4 .9 l-4.7 4.4 l1.2 6.4 l-5.5 -3.2 l-5.5 3.2 l1.2 -6.4 l-4.7 -4.4 l6.4 -.9 z"
+      fill="#0e1d4f" />
+    <circle cx="-2" cy="-2" r="0.9" fill="#fff7ec" />
+    <circle cx="2" cy="-2" r="0.9" fill="#fff7ec" />
+    <path d="M-2 1.5 q2 1.6 4 0" stroke="#fff7ec" stroke-width="0.9"
+      fill="none" stroke-linecap="round" />
+  </g>
+</svg>`;
+
+// Exact computed values from live app
+const TANGSEL = {
+  fontSize:      38,      // px
+  fontWeight:    700,
+  lineHeight:    36.1,    // px (computed: 0.95 * 38)
+  letterSpacing: -1.4,    // px
+  color:         '#0e1d4f',
+};
+const DOT = {
+  color: '#2e8a5a',
+};
+const KIDS = {
+  fontSize:      24,      // px
+  fontWeight:    500,
+  lineHeight:    36,      // px (computed)
+  letterSpacing: 4,       // px
+  marginTop:     -2,      // px
+  color:         'rgba(14,29,79,0.7)',
+  fontStyle:     'italic',
+};
+
+document.fonts.ready.then(() => {
+  const blob = new Blob([iconSvgSrc], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => { render(img); URL.revokeObjectURL(url); };
+  img.src = url;
+});
+
+function makeWordmarkCanvas(img, scale) {
+  const iconSize = Math.round(52 * scale);
+  const gap      = Math.round(14 * scale);
+
+  const tFontSize = TANGSEL.fontSize * scale;
+  const tLineH    = TANGSEL.lineHeight * scale;
+  const tSpacing  = TANGSEL.letterSpacing * scale;
+  const kFontSize = KIDS.fontSize * scale;
+  const kLineH    = KIDS.lineHeight * scale;
+  const kSpacing  = KIDS.letterSpacing * scale;
+  const kMarginT  = KIDS.marginTop * scale;
+
+  // Measure text widths
+  const tmp = document.createElement('canvas').getContext('2d');
+  tmp.font = `${TANGSEL.fontWeight} ${tFontSize}px 'Fraunces', Georgia, serif`;
+  tmp.letterSpacing = `${tSpacing}px`;
+  const tangselW = tmp.measureText('Tangsel').width;
+  const dotW     = tmp.measureText('.').width;
+  tmp.font = `${KIDS.fontStyle} ${KIDS.fontWeight} ${kFontSize}px 'Fraunces', Georgia, serif`;
+  tmp.letterSpacing = `${kSpacing}px`;
+  const kidsW = tmp.measureText('Kids').width + kSpacing * 3; // trailing spacing on 4 chars
+
+  const textBlockW = Math.max(tangselW + dotW, kidsW) + Math.round(6 * scale);
+  const totalW     = iconSize + gap + textBlockW;
+
+  // Wordmark height: tangsel line + kids (with negative margin)
+  const wordmarkH = tLineH + kMarginT + kFontSize * 1.1;
+  const totalH    = Math.ceil(Math.max(iconSize, wordmarkH));
+  const padV      = Math.round(3 * scale);
+  const canvasH   = totalH + padV * 2;
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = totalW;
+  canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+
+  // Draw icon — vertically centered
+  const iconY = padV + (totalH - iconSize) / 2;
+  ctx.drawImage(img, 0, iconY, iconSize, iconSize);
+
+  const textX = iconSize + gap;
+  // Center wordmark block vertically
+  const wordmarkY = padV + (totalH - wordmarkH) / 2;
+
+  // "Tangsel"
+  ctx.font          = `${TANGSEL.fontWeight} ${tFontSize}px 'Fraunces', Georgia, serif`;
+  ctx.letterSpacing = `${tSpacing}px`;
+  ctx.textBaseline  = 'top';
+  ctx.fillStyle     = TANGSEL.color;
+  ctx.fillText('Tangsel', textX, wordmarkY);
+
+  // "."
+  ctx.fillStyle = DOT.color;
+  ctx.fillText('.', textX + tangselW, wordmarkY);
+
+  // "Kids"
+  const kidsY = wordmarkY + tLineH + kMarginT;
+  ctx.font          = `${KIDS.fontStyle} ${KIDS.fontWeight} ${kFontSize}px 'Fraunces', Georgia, serif`;
+  ctx.letterSpacing = `${kSpacing}px`;
+  ctx.fillStyle     = KIDS.color;
+  ctx.fillText('Kids', textX, kidsY);
+  ctx.letterSpacing = '0px';
+
+  return canvas;
+}
+
+function makeIconCanvas(img, size) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  canvas.getContext('2d').drawImage(img, 0, 0, size, size);
+  return canvas;
+}
+
+function download(canvas, filename) {
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+function make1920Canvas(img) {
+  // Render at scale=1 to get natural width, then scale up to exactly 1920px
+  const natural = makeWordmarkCanvas(img, 1);
+  const scale = 1920 / natural.width;
+  return makeWordmarkCanvas(img, scale);
+}
+
+function render(img) {
+  const wordmarkScales = [
+    { label: '1× (52px icon)',   scale: 1  },
+    { label: '2× (104px icon)',  scale: 2  },
+    { label: '4× (208px icon)',  scale: 4  },
+    { label: '8× (416px icon)',  scale: 8  },
+    { label: '16× (832px icon)', scale: 16 },
+  ];
+  const wmPreviews = document.getElementById('wordmark-previews');
+  const wmButtons  = document.getElementById('wordmark-buttons');
+
+  wordmarkScales.forEach(({ label, scale }) => {
+    const canvas = makeWordmarkCanvas(img, scale);
+    // Show scaled-down preview
+    const previewCanvas = document.createElement('canvas');
+    const maxW = 280, ratio = Math.min(1, maxW / canvas.width);
+    previewCanvas.width  = Math.round(canvas.width  * ratio);
+    previewCanvas.height = Math.round(canvas.height * ratio);
+    previewCanvas.getContext('2d').drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.appendChild(previewCanvas);
+    const lbl = document.createElement('span');
+    lbl.textContent = label;
+    item.appendChild(lbl);
+    wmPreviews.appendChild(item);
+
+    const btn = document.createElement('button');
+    btn.textContent = `⬇ Wordmark ${label}`;
+    btn.onclick = () => download(canvas, `tangselkids-wordmark-${scale}x.png`);
+    wmButtons.appendChild(btn);
+  });
+
+  // 1920px wide wordmark
+  const canvas1920 = make1920Canvas(img);
+  const preview1920 = document.createElement('canvas');
+  const ratio1920 = 280 / canvas1920.width;
+  preview1920.width  = 280;
+  preview1920.height = Math.round(canvas1920.height * ratio1920);
+  preview1920.getContext('2d').drawImage(canvas1920, 0, 0, preview1920.width, preview1920.height);
+  const item1920 = document.createElement('div');
+  item1920.className = 'preview-item';
+  item1920.appendChild(preview1920);
+  const lbl1920 = document.createElement('span');
+  lbl1920.textContent = '1920px wide';
+  item1920.appendChild(lbl1920);
+  wmPreviews.appendChild(item1920);
+  const btn1920 = document.createElement('button');
+  btn1920.textContent = '⬇ Wordmark 1920px wide';
+  btn1920.style.fontWeight = 'bold';
+  btn1920.onclick = () => download(canvas1920, 'tangselkids-wordmark-1920w.png');
+  wmButtons.appendChild(btn1920);
+
+  const iconSizes = [512, 256, 128, 64];
+  const iconPreviews = document.getElementById('icon-previews');
+  const iconButtons  = document.getElementById('icon-buttons');
+
+  iconSizes.forEach(size => {
+    const canvas = makeIconCanvas(img, size);
+    const previewCanvas = document.createElement('canvas');
+    const maxW = 120, ratio = Math.min(1, maxW / size);
+    previewCanvas.width = previewCanvas.height = Math.round(size * ratio);
+    previewCanvas.getContext('2d').drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.appendChild(previewCanvas);
+    const lbl = document.createElement('span');
+    lbl.textContent = `${size}px`;
+    item.appendChild(lbl);
+    iconPreviews.appendChild(item);
+
+    const btn = document.createElement('button');
+    btn.textContent = `⬇ Icon ${size}px`;
+    btn.onclick = () => download(canvas, `tangselkids-logo-${size}.png`);
+    iconButtons.appendChild(btn);
+  });
+}
+</script>
+</body>
+</html>

@@ -120,15 +120,26 @@ export function PlaceCard({
 
         {/* Bottom info row */}
         {bottomRow && (
-          <p style={{
-            margin: 0,
-            fontSize: 13,
-            fontWeight: 700,
-            color: "var(--tk-blue-700)",
-            fontFamily: "var(--font-jakarta, sans-serif)",
-          }}>
-            {bottomRow}
-          </p>
+          place.category === "school" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                Kurikulum:
+              </span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-blue-700)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {bottomRow}
+              </span>
+            </div>
+          ) : (
+            <p style={{
+              margin: 0,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "var(--tk-blue-700)",
+              fontFamily: "var(--font-jakarta, sans-serif)",
+            }}>
+              {bottomRow}
+            </p>
+          )
         )}
       </div>
     </div>

@@ -10,7 +10,7 @@ import {
   CreditCard, Activity, Baby,
 } from "lucide-react";
 import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } from "@/lib/mockData";
-import { fetchPlaceById } from "@/lib/db";
+import { fetchPlaceBySlug, fetchPlaceById } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
@@ -149,8 +149,8 @@ const aboutExtra: Partial<Record<string, string[]>> = {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function PlaceDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id }  = use(params);
+export default function PlaceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug }  = use(params);
   const router  = useRouter();
   const { t, lang } = useLang();
   const { tier, loaded, user } = useAuth();
@@ -179,6 +179,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   const [favTooltip, setFavTooltip] = useState<"add" | "remove" | null>(null);
   const favTooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Contact N/A tooltip state ─────────────────────────────────────────────
+  const [contactTooltip, setContactTooltip] = useState<"phone" | "wa" | "email" | null>(null);
+  const contactTooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function showContactNA(target: "phone" | "wa" | "email") {
+    if (contactTooltipTimer.current) clearTimeout(contactTooltipTimer.current);
+    setContactTooltip(target);
+    contactTooltipTimer.current = setTimeout(() => setContactTooltip(null), 1500);
+  }
+
   // ── Personal note state ─────────────────────────────────────────────────────
   const NOTE_MAX = 500;
   const [noteText,      setNoteText]      = useState("");
@@ -193,22 +202,27 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
   // Fetch place from Supabase
   useEffect(() => {
     setLoadingPlace(true);
-    fetchPlaceById(id).then(p => { setPlace(p); setLoadingPlace(false); });
-  }, [id]);
+    fetchPlaceBySlug(slug).then(p => {
+      if (p) { setPlace(p); setLoadingPlace(false); return; }
+      fetchPlaceById(slug).then(p2 => { setPlace(p2); setLoadingPlace(false); });
+    });
+  }, [slug]);
 
   useEffect(() => {
+    if (!place?.id) return;
+    const placeId = place.id;
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    setIsSaved(ids.includes(id));
+    setIsSaved(ids.includes(placeId));
 
     function loadUserReview() {
-      const found = getReviewForPlace(id);
+      const found = getReviewForPlace(placeId);
       setUserReview(found ?? null);
     }
     loadUserReview();
     window.addEventListener("focus", loadUserReview);
 
     // Load existing note
-    const existing = getNote(id);
+    const existing = getNote(placeId);
     if (existing) {
       setNoteText(existing.noteText);
       setNoteUpdatedAt(existing.updatedAt);
@@ -218,7 +232,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
     }
 
     return () => window.removeEventListener("focus", loadUserReview);
-  }, [id]);
+  }, [place?.id]);
 
   // Guests can freely view place detail pages (no gate)
 
@@ -236,13 +250,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       setShowSaveGate(true);
       return;
     }
+    const placeId = place?.id ?? slug;
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
-    const adding = !ids.includes(id);
-    const next = adding ? [...ids, id] : ids.filter((x) => x !== id);
+    const adding = !ids.includes(placeId);
+    const next = adding ? [...ids, placeId] : ids.filter((x) => x !== placeId);
     localStorage.setItem("savedIds", JSON.stringify(next));
-    setIsSaved(next.includes(id));
-    if (adding) addSaved(id, user?.phone);
-    else removeSaved(id, user?.phone);
+    setIsSaved(next.includes(placeId));
+    if (adding) addSaved(placeId, user?.phone);
+    else removeSaved(placeId, user?.phone);
     if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
     setFavTooltip(adding ? "add" : "remove");
     favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
@@ -539,20 +554,28 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           }
         }}
       >
-        {allPhotos.map((src, i) => (
-          <img
-            key={src}
-            src={src}
-            alt={i === 0 ? place.name : ""}
-            style={{
-              position: "absolute", inset: 0,
-              width: "100%", height: "100%", objectFit: "cover",
-              opacity: heroIndex === i ? 1 : 0,
-              transition: "opacity 0.6s ease-in-out",
-              cursor: "pointer",
-            }}
-          />
-        ))}
+        <div style={{
+          display: "flex",
+          width: `${allPhotos.length * 100}%`,
+          height: "100%",
+          transform: `translateX(-${heroIndex * (100 / allPhotos.length)}%)`,
+          transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+          willChange: "transform",
+        }}>
+          {allPhotos.map((src, i) => (
+            <img
+              key={src}
+              src={src}
+              alt={i === 0 ? place.name : ""}
+              style={{
+                width: `${100 / allPhotos.length}%`,
+                flexShrink: 0,
+                height: "100%", objectFit: "cover",
+                cursor: "pointer",
+              }}
+            />
+          ))}
+        </div>
 
         {/* Gradient overlay */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.28) 0%, transparent 50%)", pointerEvents: "none" }} />
@@ -575,7 +598,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Dot indicators */}
         {allPhotos.length > 1 && (
-          <div style={{ position: "absolute", bottom: 14, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, zIndex: 10, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", bottom: 42, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, zIndex: 10, pointerEvents: "none" }}>
             {allPhotos.map((_, i) => (
               <div key={i} style={{
                 height: 5, borderRadius: 999,
@@ -625,15 +648,43 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* ── White content card ────────────────────────────────────────────── */}
-      <div className="flex-1 rounded-t-[48px] -mt-14 px-5 pt-16 pb-10 space-y-5" style={{ background: "#fff" }}>
+      <div className="flex-1 rounded-t-[28px] -mt-6 px-5 pt-5 pb-10 space-y-5" style={{ background: "#fff", position: "relative" }}>
+
+        {/* Facility logo badge — photo/card boundary, top-right */}
+        {(() => {
+          const initials = place.name
+            .split(/\s+/).filter(Boolean)
+            .slice(0, 2).map(w => w[0].toUpperCase()).join("");
+          return (
+            <div style={{
+              position: "absolute", top: -35, right: 16,
+              width: 70, height: 70, borderRadius: 18,
+              border: "3px solid #fff",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.20)",
+              overflow: "clip", zIndex: 10,
+              background: "#132d1e",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {place.logo
+                ? <img src={place.logo} alt={`${place.name} logo`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                : <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 17, fontWeight: 800, color: "#f0b429", letterSpacing: -0.5 }}>{initials}</span>
+              }
+            </div>
+          );
+        })()}
 
         {/* Name + category + rating + buttons */}
         <div>
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1" style={{ minWidth: 0 }}>
-              <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block mb-2" style={{ background: colors.bg, color: colors.text }}>
-                {categoryLabel[place.category]}
-              </span>
+              <div className="flex items-center gap-1.5 mb-3">
+                <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block" style={{ background: colors.bg, color: colors.text }}>
+                  {categoryLabel[place.category]}
+                </span>
+                <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block" style={{ background: colors.bg, color: colors.text }}>
+                  {(() => { const ag = getAreaGroup(place.area); return ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro"; })()}
+                </span>
+              </div>
               <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
               {place.address && (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginTop: 6 }}>
@@ -692,16 +743,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* ── Rating + heart with favorites tooltip ─────────────────────── */}
+            {/* ── Heart + favorites tooltip ─────────────────────────────────── */}
             <div className="flex flex-col items-end flex-shrink-0 mt-7 gap-2" style={{ position: "relative" }}>
-              <div className="font-jakarta text-[10px] font-semibold text-gray-400 tracking-wide text-right" style={{ lineHeight: 1.3 }}>
-                <span style={{ display: "block" }}>Google</span>
-                <span style={{ display: "block" }}>Rating:</span>
-              </div>
-              <div className="flex items-center gap-0.5" style={{ marginTop: -4 }}>
-                <Star size={14} fill="#FBBF24" stroke="none" />
-                <span className="font-jakarta font-bold text-gray-800">{place.rating}</span>
-              </div>
               <ActionButton onClick={toggleSave} ariaLabel="Save to favorites" style={{
                 display: "flex", alignItems: "center", justifyContent: "center",
                 width: 36, height: 36, borderRadius: 999,
@@ -710,6 +753,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
               }}>
                 <Heart size={16} fill={isSaved ? "#EF4444" : "none"} stroke={isSaved ? "#EF4444" : "#94A3B8"} strokeWidth={2} />
               </ActionButton>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, marginTop: 6 }}>
+                <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 400, color: "#94a3b8", letterSpacing: 0.3 }}>Google Rating</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                  <Star size={13} fill="#FBBF24" stroke="none" />
+                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#0e1d4f" }}>{place.rating}</span>
+                </div>
+              </div>
               {favTooltip && (
                 <div style={{
                   position: "absolute", right: 0, bottom: "calc(100% + 6px)",
@@ -726,44 +776,66 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* ── Direct-contact buttons — full width below the name/rating row ── */}
-          {place.phone && place.phone !== "-" && (() => {
-            const waNum = toWaNumber(place.whatsapp ?? place.phone);
+          {/* ── Direct-contact buttons — always rendered, faded when unavailable ── */}
+          {(() => {
+            const hasPhone = !!(place.phone && place.phone !== "-");
+            const hasWa    = !!(place.whatsapp || hasPhone);
+            const hasEmail = !!place.email;
+            const waNum    = hasWa ? toWaNumber(place.whatsapp ?? place.phone) : "";
+            const naTooltipStyle: React.CSSProperties = {
+              position: "absolute", bottom: "calc(100% + 6px)", left: "50%",
+              transform: "translateX(-50%)",
+              background: "#1e293b", borderRadius: 8, padding: "5px 10px",
+              whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.22)",
+              fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 600, color: "#fff",
+            };
             return (
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <ActionButton
-                  onClick={() => { window.location.href = `tel:${place.phone}`; }}
-                  ariaLabel={t.contactCallBtn}
-                  style={{
-                    flex: 1, minHeight: 44,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                    borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    fontFamily: "var(--font-jakarta),sans-serif",
-                    background: "#2e8a5a", color: "#fff", border: "none",
-                  }}
-                  title={place.phone}
-                >
-                  <Phone size={15} strokeWidth={2} />
-                  {t.contactCallBtn}
-                </ActionButton>
-                <ActionButton
-                  onClick={() => { window.open(`https://wa.me/${waNum}`, "_blank"); }}
-                  ariaLabel={t.contactWhatsAppBtn}
-                  style={{
-                    flex: 1, minHeight: 44,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                    borderRadius: 12, fontSize: 13, fontWeight: 700,
-                    fontFamily: "var(--font-jakarta),sans-serif",
-                    background: "#25D366", color: "#fff", border: "none",
-                  }}
-                  title={`WhatsApp ${place.phone}`}
-                >
-                  <WhatsAppIcon size={15} color="#fff" />
-                  {t.contactWhatsAppBtn}
-                </ActionButton>
-                {place.email && (
+                {/* Phone */}
+                <div style={{ flex: 1, position: "relative" }}>
                   <ActionButton
-                    onClick={() => { window.location.href = `mailto:${place.email}`; }}
+                    onClick={() => hasPhone ? window.location.href = `tel:${place.phone}` : showContactNA("phone")}
+                    ariaLabel={t.contactCallBtn}
+                    style={{
+                      width: "100%", minHeight: 44,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-jakarta),sans-serif",
+                      background: "#2e8a5a", color: "#fff", border: "none",
+                      opacity: hasPhone ? 1 : 0.35,
+                    }}
+                    title={hasPhone ? place.phone : undefined}
+                  >
+                    <Phone size={15} strokeWidth={2} />
+                    {t.contactCallBtn}
+                  </ActionButton>
+                  {contactTooltip === "phone" && <div style={naTooltipStyle}>{t.contactPhoneNA}</div>}
+                </div>
+                {/* WhatsApp */}
+                <div style={{ flex: 1, position: "relative" }}>
+                  <ActionButton
+                    onClick={() => hasWa ? window.open(`https://wa.me/${waNum}`, "_blank") : showContactNA("wa")}
+                    ariaLabel={t.contactWhatsAppBtn}
+                    style={{
+                      width: "100%", minHeight: 44,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                      borderRadius: 12, fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-jakarta),sans-serif",
+                      background: "#25D366", color: "#fff", border: "none",
+                      opacity: hasWa ? 1 : 0.35,
+                    }}
+                    title={hasWa ? `WhatsApp ${place.whatsapp ?? place.phone}` : undefined}
+                  >
+                    <WhatsAppIcon size={15} color="#fff" />
+                    {t.contactWhatsAppBtn}
+                  </ActionButton>
+                  {contactTooltip === "wa" && <div style={naTooltipStyle}>{t.contactWaNA}</div>}
+                </div>
+                {/* Email */}
+                <div style={{ position: "relative" }}>
+                  <ActionButton
+                    onClick={() => hasEmail ? window.location.href = `mailto:${place.email}` : showContactNA("email")}
                     ariaLabel={t.contactEmailBtn}
                     style={{
                       minHeight: 44, minWidth: 44, padding: "0 14px",
@@ -772,8 +844,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                       fontFamily: "var(--font-jakarta),sans-serif",
                       background: "#f1f5f9", color: "#475569",
                       border: "1.5px solid #e2e8f0",
+                      opacity: hasEmail ? 1 : 0.35,
                     }}
-                    title={place.email}
+                    title={hasEmail ? place.email : undefined}
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -781,14 +854,411 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     </svg>
                     {t.contactEmailBtn}
                   </ActionButton>
-                )}
+                  {contactTooltip === "email" && <div style={naTooltipStyle}>{t.contactEmailNA}</div>}
+                </div>
               </div>
             );
           })()}
         </div>
 
+        {/* Info chips */}
+        {(() => {
+          const ag = getAreaGroup(place.area);
+          const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
+          const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
+            ? t.free
+            : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
+          const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`;
+
+          // ── Icon map: label string → icon node
+          const ic = (Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>, heroChip = false) => (
+            <Icon size={13} color={heroChip ? "#2e8a5a" : "#94a3b8"} strokeWidth={2} />
+          );
+          const iconMap: Record<string, React.ReactNode> = {
+            [t.pdGrade]:           ic(GraduationCap, true),
+            [t.pdChipBahasa]:      ic(Globe, true),
+            [t.pdCurriculum]:      ic(BookOpen),
+            [t.pdChipUangPangkal]: ic(Banknote),
+            [t.pdChipSpp]:         ic(Calendar),
+            [t.pdStudentsPerClass]:ic(Users),
+            [t.pdComputerLab]:     ic(Monitor),
+            [t.pdSchoolPool]:      ic(Droplets),
+            [t.pdChipCourseType]:  ic(Layers, true),
+            [t.pdChipAgeChild]:    ic(Baby, true),
+            [t.pdMonthlyFee]:      ic(Wallet),
+            [t.pdFreeTrial]:       ic(Gift),
+            [t.pdTeacherRatio]:    ic(Users),
+            [t.pdTeachingLanguage]:ic(MessageCircle),
+            [t.pdAgeRange]:        ic(Baby, true),
+            [t.pdCarerRatio]:      ic(Users),
+            [t.pdDaycareMethod]:   ic(BookOpen),
+            [t.pdCctv]:            ic(Camera),
+            [t.pdAccreditation]:   ic(Award),
+            [t.pdType]:            ic(Layers, true),
+            [t.pdChipTicket]:      ic(Ticket, true),
+            [t.pdChipCost]:        ic(CreditCard, true),
+            [t.pdChipServices]:    ic(Activity),
+            [t.pdChipBudget]:      ic(Wallet, true),
+          };
+
+          // ── Hero chip (large, colored bg, label + value stacked)
+          const hero = (label: string, value: string) => (
+            <div style={{
+              flex: 1, background: "transparent", borderRadius: 12,
+              padding: "10px 12px", minWidth: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 5 }}>
+                {iconMap[label]}
+                <span style={{
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: 9, fontWeight: 700, color: "#2e8a5a",
+                  textTransform: "uppercase" as const, letterSpacing: "0.08em",
+                }}>
+                  {label}
+                </span>
+              </div>
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 700, fontSize: 17, color: "#0e1d4f",
+                lineHeight: 1.3, display: "block",
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
+              }}>
+                {value}
+              </span>
+            </div>
+          );
+
+          // ── Free info row (label left, value right)
+          const yearTag = <span style={{ fontSize: "0.7rem", color: "#9ca3af", fontWeight: 400, marginLeft: 4 }}>(26/27)</span>;
+          const schoolYearSuffix: Record<string, React.ReactNode> = {
+            ...(place.category === "school" ? {
+              [t.pdChipUangPangkal]: yearTag,
+              [t.pdChipSpp]:         yearTag,
+            } : {}),
+            ...(place.category === "learning-center" ? {
+              [t.pdMonthlyFee]: yearTag,
+            } : {}),
+          };
+          const row = (label: string, value: React.ReactNode) => (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              paddingTop: 9, paddingBottom: 9,
+              borderBottom: "1px solid #e9eef4",
+            }}>
+              <span style={{
+                display: "flex", alignItems: "center", gap: 6,
+                flexShrink: 0,
+              }}>
+                {iconMap[label]}
+                <span style={{
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  fontSize: "0.875rem", color: "#6b7280",
+                }}>
+                  {label}{schoolYearSuffix[label]}
+                </span>
+              </span>
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
+                textAlign: "right" as const, maxWidth: "58%",
+              }}>
+                {value}
+              </span>
+            </div>
+          );
+
+          // ── Gated row: clear for premium, blurred+lock for free
+          const gatedRow = (label: string, value: string) => {
+            const val = (
+              <span style={{
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
+              }}>
+                {value}
+              </span>
+            );
+            return row(label, tier === "premium" ? val : <PremiumGate>{val}</PremiumGate>);
+          };
+
+          // ── Build per-category arrays
+          type StrPair = [string, string];
+          let heroItems: StrPair[] = [];
+          let freeRows:  StrPair[] = [];
+          let gatedRows: StrPair[] = [];
+
+          if (place.category === "school") {
+            const tahun = place.tahunBiaya ? ` (${place.tahunBiaya})` : "";
+            const fmtUp = place.uangPangkalMin !== undefined
+              ? `Rp ${formatPrice(place.uangPangkalMin)}${place.uangPangkalMax && place.uangPangkalMax !== place.uangPangkalMin ? ` – ${formatPrice(place.uangPangkalMax)}` : ""}${tahun}`
+              : "—";
+            const fmtSpp = place.priceMin > 0
+              ? `Rp ${formatPrice(place.priceMin)}${place.priceMax && place.priceMax !== place.priceMin ? ` – ${formatPrice(place.priceMax)}` : ""} / bln${tahun}`
+              : "—";
+            const fmtAnnual = place.annualFeeMin !== undefined
+              ? `Rp ${formatPrice(place.annualFeeMin)}${place.annualFeeMax && place.annualFeeMax !== place.annualFeeMin ? ` – ${formatPrice(place.annualFeeMax)}` : ""}${tahun}`
+              : null;
+            heroItems = [];
+            freeRows = [
+              [t.pdGrade,      place.grades?.join(", ") ?? "—"],
+              [t.pdChipBahasa, place.teachingLanguageDisplay ?? place.bahasa?.join(", ") ?? "—"],
+              [t.pdCurriculum, place.curriculum ?? "—"],
+              [t.pdStudentsPerClass, place.studentsPerClass !== undefined ? `${place.studentsPerClass} murid` : "—"],
+              [t.pdChipUangPangkal, fmtUp],
+              [t.pdChipSpp, fmtSpp],
+              ...(fmtAnnual ? [[t.pdChipAnnualFee, fmtAnnual] as [string, string]] : []),
+            ];
+
+          } else if (place.category === "learning-center") {
+            heroItems = [];
+            freeRows = [
+              [t.pdChipCourseType, place.courseTypes?.join(", ") ?? place.centerType ?? "—"],
+              [t.pdChipAgeChild,   place.ageRange],
+              [t.pdMonthlyFee,     fmtBulanan],
+            ];
+            if (place.freeTrial !== undefined)
+              freeRows.push([t.pdFreeTrial, place.freeTrial ? "Ada" : "Tidak Ada"]);
+            if (place.teacherStudentRatio !== undefined)
+              gatedRows.push([t.pdTeacherRatio, place.teacherStudentRatio]);
+            if (place.teachingLanguage !== undefined)
+              gatedRows.push([t.pdTeachingLanguage, place.teachingLanguage]);
+
+          } else if (place.category === "daycare") {
+            heroItems = [];
+            freeRows = [
+              [t.pdAgeRange,   place.daycareAgeGroups?.join(", ") ?? place.ageRange],
+              [t.pdMonthlyFee, fmtBulanan],
+            ];
+            if (place.carerChildRatio !== undefined)
+              gatedRows.push([t.pdCarerRatio, place.carerChildRatio]);
+            if (place.daycareMethod !== undefined)
+              gatedRows.push([t.pdDaycareMethod, place.daycareMethod]);
+            if (place.hasCctv !== undefined)
+              gatedRows.push([t.pdCctv, place.hasCctv ? "Ada" : "Tidak Ada"]);
+            if (place.hasAccreditation !== undefined)
+              gatedRows.push([t.pdAccreditation, place.hasAccreditation ? "Ada" : "Tidak Ada"]);
+
+          } else if (place.category === "playground") {
+            heroItems = [];
+            freeRows = [
+              [t.pdType,       place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"],
+              [t.pdChipTicket, fmtTicket],
+            ];
+
+          } else if (place.category === "clinic") {
+            heroItems = [];
+            freeRows = [
+              [t.pdChipCost, `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`],
+            ];
+            if (place.clinicServices?.length)
+              freeRows.push([t.pdChipServices, place.clinicServices.join(", ")]);
+
+          } else if (place.category === "cafe") {
+            heroItems = [];
+            freeRows = [];
+            if (place.priceCategory) freeRows.push([t.pdChipBudget, place.priceCategory]);
+
+          } else if (place.category === "mini-zoo" || place.category === "swimming-pool") {
+            heroItems = [];
+            freeRows = [
+              [t.pdChipTicket, fmtTicket],
+            ];
+
+          } else if (place.category === "bookstore") {
+            heroItems = [];
+            freeRows = [];
+          }
+
+          return (
+            <div style={{
+              marginTop: 8,
+              background: "#f8fafc",
+              borderRadius: 18,
+              padding: "14px 14px 4px",
+            }}>
+              {/* Hero chips */}
+              {heroItems.length > 0 && (
+                <div style={{ display: "flex", marginBottom: 0, paddingBottom: 12, borderBottom: "1px solid #e9eef4" }}>
+                  {heroItems.map(([label, value], i) => (
+                    <React.Fragment key={label}>
+                      {i > 0 && <div style={{ width: 1, background: "#e9eef4", alignSelf: "stretch", flexShrink: 0 }} />}
+                      {hero(label, value)}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Free rows */}
+              {freeRows.length > 0 && (
+                <div>
+                  {freeRows.map(([label, value]) => (
+                    <React.Fragment key={label}>{row(label, value)}</React.Fragment>
+                  ))}
+                </div>
+              )}
+
+              {/* Collapsible: fee image (schools) or gated rows (other categories) */}
+              {(place.category === "school" || gatedRows.length > 0) && (
+                <>
+                  <ActionButton
+                    onClick={() => setDetailOpen((o) => !o)}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      width: "100%", padding: "10px 0",
+                      background: "none", border: "none",
+                      borderTop: freeRows.length > 0 ? "1px solid #e9eef4" : "none",
+                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                      cursor: "pointer",
+                    } as React.CSSProperties}
+                  >
+                    <span style={{
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                      fontSize: 13, fontWeight: 600, color: "#2e8a5a",
+                    }}>
+                      {t.pdSeeDetails}
+                    </span>
+                    <ChevronDown
+                      size={16} color="#2e8a5a"
+                      style={{ transform: detailOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                    />
+                  </ActionButton>
+
+                  {detailOpen && (
+                    <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
+                      {place.category === "school" ? (
+                        /* Fee detail image — premium gated */
+                        place.feeImageUrl ? (
+                        <div
+                          style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
+                          onClick={tier !== "premium" ? () => setShowPsbGate(true) : undefined}
+                        >
+                          <img
+                            src={place.feeImageUrl}
+                            alt="Detail biaya"
+                            style={{
+                              width: "100%", borderRadius: 12, display: "block",
+                              filter: tier === "premium" ? "none" : "blur(6px)",
+                              cursor: tier !== "premium" ? "pointer" : "default",
+                            }}
+                          />
+                          {tier !== "premium" && (
+                            <div style={{
+                              position: "absolute", inset: 0, display: "flex",
+                              alignItems: "center", justifyContent: "center",
+                              cursor: "pointer",
+                            }}>
+                              <div style={{
+                                width: 44, height: 44, borderRadius: 999,
+                                background: "#f1f5f9",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                              }}>
+                                <Lock size={20} color="#d97706" strokeWidth={2.5} />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        ) : null
+                      ) : (
+                        gatedRows.map(([label, value]) => (
+                          <React.Fragment key={label}>{gatedRow(label, value)}</React.Fragment>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* TangselKids Rating — playgrounds only */}
+        {place.category === "playground" && place.tangselKidsRating && (() => {
+          const tkr = place.tangselKidsRating!;
+          const cats = [
+            { key: "cleanliness", label: t.tkCleanliness, score: tkr.cleanliness },
+            { key: "value",       label: t.tkValue,       score: tkr.value },
+            { key: "safety",      label: t.tkSafety,      score: tkr.safety },
+            { key: "fun",         label: t.tkFun,         score: tkr.fun },
+            { key: "facilities",  label: t.tkFacilities,  score: tkr.facilities },
+          ];
+          return (
+            <div className="rounded-2xl p-5 border-2 border-dashed" style={{ background: "#e6f4ed", borderColor: "#a7d4bc" }}>
+              <div className="flex items-center gap-2 mb-4">
+                <Star size={20} fill="#FBBF24" stroke="none" />
+                <h2 className="text-xl font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.tkRatingTitle}</h2>
+              </div>
+              <div className="space-y-3 mb-4">
+                {cats.map((cat) => (
+                  <div key={cat.key} className="flex items-center gap-3">
+                    <span className="font-jakarta text-sm font-medium text-gray-700 w-24 flex-shrink-0">{cat.label}</span>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} size={18} fill={i < cat.score ? "#FBBF24" : "#D1D5DB"} stroke="none" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-blue-100 pt-3">
+                <p className="font-jakarta text-sm font-bold text-[#0e1d4f] mb-1">{t.tkVerdict}</p>
+                <p className="font-jakarta text-sm text-gray-600 leading-relaxed">{tkr.verdict}</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* About */}
+        <div>
+          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{place.description}</p>
+            {extraParas.map((para, i) => (
+              <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed">{para}</p>
+            ))}
+          </div>
+        </div>
+
+        {/* Fasilitas */}
+        {place.facilities && (() => {
+          const items = place.facilities.split(",").map(x => x.trim()).filter(Boolean);
+          return (
+            <div>
+              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+                {t.pdFacilities}
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
+                {items.map((item) => (
+                  <div key={item} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ color: "#2e8a5a", fontSize: 14, lineHeight: 1, flexShrink: 0 }}>•</span>
+                    <span className="font-jakarta text-gray-600 text-sm leading-relaxed">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Ekstrakurikuler */}
+        {place.extracurriculars && (() => {
+          const items = place.extracurriculars.split(",").map(x => x.trim()).filter(Boolean);
+          return (
+            <div>
+              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+                {t.pdExtracurriculars}
+              </h2>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
+                {items.map((item) => (
+                  <div key={item} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                    <span style={{ color: "#2e8a5a", fontSize: 14, lineHeight: 1, flexShrink: 0 }}>•</span>
+                    <span className="font-jakarta text-gray-600 text-sm leading-relaxed">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── Personal Notes ───────────────────────────────────────────────── */}
-        <div style={{ marginTop: 8, marginBottom: 8 }}>
+        <div style={{ marginTop: 8, marginBottom: 20 }}>
         {tier === "premium" ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             {/* Label */}
@@ -830,7 +1300,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                 <ActionButton
                   onClick={() => {
                     if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
-                    deleteNote(id);
+                    deleteNote(place?.id ?? slug);
                     setNoteText(""); setNoteUpdatedAt(null); setNoteEditing(false);
                   }}
                   style={{
@@ -866,7 +1336,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                     onClick={() => {
                       if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
                       const now = new Date().toISOString();
-                      saveNote({ placeId: id, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now });
+                      saveNote({ placeId: place?.id ?? slug, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now });
                       setNoteUpdatedAt(now);
                       setNoteEditing(false);
                     }}
@@ -924,334 +1394,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
         )}
         </div>
 
-        {/* Info chips */}
-        {(() => {
-          const ag = getAreaGroup(place.area);
-          const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
-          const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
-            ? t.free
-            : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
-          const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`;
-
-          // ── Icon map: label string → icon node
-          const ic = (Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>, heroChip = false) => (
-            <Icon size={13} color={heroChip ? "#2e8a5a" : "#94a3b8"} strokeWidth={2} />
-          );
-          const iconMap: Record<string, React.ReactNode> = {
-            [t.pdGrade]:           ic(GraduationCap, true),
-            [t.pdChipBahasa]:      ic(Globe, true),
-            [t.pdCurriculum]:      ic(BookOpen),
-            ["Area"]:              ic(MapPin),
-            [t.pdChipUangPangkal]: ic(Banknote),
-            [t.pdChipSpp]:         ic(Calendar),
-            [t.pdStudentsPerClass]:ic(Users),
-            [t.pdComputerLab]:     ic(Monitor),
-            [t.pdSchoolPool]:      ic(Droplets),
-            [t.pdChipCourseType]:  ic(Layers, true),
-            [t.pdChipAgeChild]:    ic(Baby, true),
-            [t.pdMonthlyFee]:      ic(Wallet),
-            [t.pdFreeTrial]:       ic(Gift),
-            [t.pdTeacherRatio]:    ic(Users),
-            [t.pdTeachingLanguage]:ic(MessageCircle),
-            [t.pdAgeRange]:        ic(Baby, true),
-            [t.pdCarerRatio]:      ic(Users),
-            [t.pdDaycareMethod]:   ic(BookOpen),
-            [t.pdCctv]:            ic(Camera),
-            [t.pdAccreditation]:   ic(Award),
-            [t.pdType]:            ic(Layers, true),
-            [t.pdChipTicket]:      ic(Ticket, true),
-            [t.pdChipCost]:        ic(CreditCard, true),
-            [t.pdChipServices]:    ic(Activity),
-            [t.pdChipBudget]:      ic(Wallet, true),
-          };
-
-          // ── Hero chip (large, colored bg, label + value stacked)
-          const hero = (label: string, value: string) => (
-            <div style={{
-              flex: 1, background: "transparent", borderRadius: 12,
-              padding: "10px 12px", minWidth: 0,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 5 }}>
-                {iconMap[label]}
-                <span style={{
-                  fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: 9, fontWeight: 700, color: "#2e8a5a",
-                  textTransform: "uppercase" as const, letterSpacing: "0.08em",
-                }}>
-                  {label}
-                </span>
-              </div>
-              <span style={{
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 700, fontSize: 17, color: "#0e1d4f",
-                lineHeight: 1.3, display: "block",
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const,
-              }}>
-                {value}
-              </span>
-            </div>
-          );
-
-          // ── Free info row (label left, value right)
-          const row = (label: string, value: React.ReactNode) => (
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              paddingTop: 9, paddingBottom: 9,
-              borderBottom: "1px solid #e9eef4",
-            }}>
-              <span style={{
-                display: "flex", alignItems: "center", gap: 6,
-                flexShrink: 0,
-              }}>
-                {iconMap[label]}
-                <span style={{
-                  fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: "0.875rem", color: "#6b7280",
-                }}>
-                  {label}
-                </span>
-              </span>
-              <span style={{
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
-                textAlign: "right" as const, maxWidth: "58%",
-              }}>
-                {value}
-              </span>
-            </div>
-          );
-
-          // ── Gated row: clear for premium, blurred+lock for free
-          const gatedRow = (label: string, value: string) => {
-            const val = (
-              <span style={{
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
-              }}>
-                {value}
-              </span>
-            );
-            return row(label, tier === "premium" ? val : <PremiumGate>{val}</PremiumGate>);
-          };
-
-          // ── Build per-category arrays
-          type StrPair = [string, string];
-          let heroItems: StrPair[] = [];
-          let freeRows:  StrPair[] = [];
-          let gatedRows: StrPair[] = [];
-
-          if (place.category === "school") {
-            heroItems = [];
-            freeRows = [
-              [t.pdGrade,      place.grades?.join(", ") ?? "—"],
-              [t.pdChipBahasa, place.bahasa?.join(", ")  ?? "—"],
-              [t.pdCurriculum, place.curriculum ?? "—"],
-              ["Area",         areaLabel],
-            ];
-            gatedRows.push([t.pdChipUangPangkal, place.uangPangkalMin !== undefined ? `Rp ${formatPrice(place.uangPangkalMin)} – ${formatPrice(place.uangPangkalMax!)}` : "—"]);
-            gatedRows.push([t.pdChipSpp, fmtBulanan]);
-            gatedRows.push([t.pdStudentsPerClass, place.studentsPerClass !== undefined ? `${place.studentsPerClass} murid` : "—"]);
-            gatedRows.push([t.pdComputerLab, place.hasComputerLab !== undefined ? (place.hasComputerLab ? "Ada" : "Tidak Ada") : "—"]);
-            gatedRows.push([t.pdSchoolPool, place.hasPool !== undefined ? (place.hasPool ? "Ada" : "Tidak Ada") : "—"]);
-
-          } else if (place.category === "learning-center") {
-            heroItems = [];
-            freeRows = [
-              [t.pdChipCourseType, place.courseTypes?.join(", ") ?? place.centerType ?? "—"],
-              [t.pdChipAgeChild,   place.ageRange],
-              ["Area",             areaLabel],
-            ];
-            if (place.freeTrial !== undefined)
-              freeRows.push([t.pdFreeTrial, place.freeTrial ? "Ada" : "Tidak Ada"]);
-            gatedRows.push([t.pdMonthlyFee, fmtBulanan]);
-            if (place.teacherStudentRatio !== undefined)
-              gatedRows.push([t.pdTeacherRatio, place.teacherStudentRatio]);
-            if (place.teachingLanguage !== undefined)
-              gatedRows.push([t.pdTeachingLanguage, place.teachingLanguage]);
-
-          } else if (place.category === "daycare") {
-            heroItems = [];
-            freeRows = [
-              [t.pdAgeRange,   place.daycareAgeGroups?.join(", ") ?? place.ageRange],
-              [t.pdMonthlyFee, fmtBulanan],
-              ["Area",         areaLabel],
-            ];
-            if (place.carerChildRatio !== undefined)
-              gatedRows.push([t.pdCarerRatio, place.carerChildRatio]);
-            if (place.daycareMethod !== undefined)
-              gatedRows.push([t.pdDaycareMethod, place.daycareMethod]);
-            if (place.hasCctv !== undefined)
-              gatedRows.push([t.pdCctv, place.hasCctv ? "Ada" : "Tidak Ada"]);
-            if (place.hasAccreditation !== undefined)
-              gatedRows.push([t.pdAccreditation, place.hasAccreditation ? "Ada" : "Tidak Ada"]);
-
-          } else if (place.category === "playground") {
-            heroItems = [];
-            freeRows = [
-              [t.pdType,       place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"],
-              [t.pdChipTicket, fmtTicket],
-              ["Area",         areaLabel],
-            ];
-
-          } else if (place.category === "clinic") {
-            heroItems = [];
-            freeRows = [
-              ["Area",       areaLabel],
-              [t.pdChipCost, `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`],
-            ];
-            if (place.clinicServices?.length)
-              freeRows.push([t.pdChipServices, place.clinicServices.join(", ")]);
-
-          } else if (place.category === "cafe") {
-            heroItems = [];
-            freeRows = [["Area", areaLabel]];
-            if (place.priceCategory) freeRows.push([t.pdChipBudget, place.priceCategory]);
-
-          } else if (place.category === "mini-zoo" || place.category === "swimming-pool") {
-            heroItems = [];
-            freeRows = [
-              ["Area",         areaLabel],
-              [t.pdChipTicket, fmtTicket],
-            ];
-
-          } else if (place.category === "bookstore") {
-            heroItems = [];
-            freeRows = [["Area", areaLabel]];
-          }
-
-          return (
-            <div style={{
-              marginTop: 8,
-              background: "#f8fafc",
-              borderRadius: 18,
-              padding: "14px 14px 4px",
-            }}>
-              {/* Hero chips */}
-              {heroItems.length > 0 && (
-                <div style={{ display: "flex", marginBottom: 0, paddingBottom: 12, borderBottom: "1px solid #e9eef4" }}>
-                  {heroItems.map(([label, value], i) => (
-                    <React.Fragment key={label}>
-                      {i > 0 && <div style={{ width: 1, background: "#e9eef4", alignSelf: "stretch", flexShrink: 0 }} />}
-                      {hero(label, value)}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-
-              {/* Free rows */}
-              {freeRows.length > 0 && (
-                <div>
-                  {freeRows.map(([label, value]) => (
-                    <React.Fragment key={label}>{row(label, value)}</React.Fragment>
-                  ))}
-                </div>
-              )}
-
-              {/* Collapsible gated section */}
-              {gatedRows.length > 0 && (
-                <>
-                  <ActionButton
-                    onClick={() => setDetailOpen((o) => !o)}
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between",
-                      width: "100%", padding: "10px 0",
-                      background: "none", border: "none",
-                      borderTop: freeRows.length > 0 ? "1px solid #e9eef4" : "none",
-                      touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                      cursor: "pointer",
-                    } as React.CSSProperties}
-                  >
-                    <span style={{
-                      fontFamily: "var(--font-jakarta), sans-serif",
-                      fontSize: 13, fontWeight: 600, color: "#2e8a5a",
-                    }}>
-                      {t.pdSeeDetails}
-                    </span>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{
-                        fontFamily: "var(--font-jakarta), sans-serif",
-                        fontSize: 11, fontWeight: 700, color: "#fff",
-                        background: "#2e8a5a", borderRadius: 999,
-                        padding: "1px 7px", lineHeight: 1.6,
-                      }}>
-                        +{gatedRows.length}
-                      </span>
-                      <ChevronDown
-                        size={16} color="#2e8a5a"
-                        style={{ transform: detailOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                      />
-                    </span>
-                  </ActionButton>
-
-                  {detailOpen && (
-                    <div style={{ borderTop: "1px solid #e9eef4" }}>
-                      {gatedRows.map(([label, value]) => (
-                        <React.Fragment key={label}>{gatedRow(label, value)}</React.Fragment>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* TangselKids Rating — playgrounds only */}
-        {place.category === "playground" && place.tangselKidsRating && (() => {
-          const tkr = place.tangselKidsRating!;
-          const cats = [
-            { key: "cleanliness", label: t.tkCleanliness, score: tkr.cleanliness },
-            { key: "value",       label: t.tkValue,       score: tkr.value },
-            { key: "safety",      label: t.tkSafety,      score: tkr.safety },
-            { key: "fun",         label: t.tkFun,         score: tkr.fun },
-            { key: "facilities",  label: t.tkFacilities,  score: tkr.facilities },
-          ];
-          return (
-            <div className="rounded-2xl p-5 border-2 border-dashed" style={{ background: "#e6f4ed", borderColor: "#a7d4bc" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Star size={20} fill="#FBBF24" stroke="none" />
-                <h2 className="text-xl font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.tkRatingTitle}</h2>
-              </div>
-              <div className="space-y-3 mb-4">
-                {cats.map((cat) => (
-                  <div key={cat.key} className="flex items-center gap-3">
-                    <span className="font-jakarta text-sm font-medium text-gray-700 w-24 flex-shrink-0">{cat.label}</span>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star key={i} size={18} fill={i < cat.score ? "#FBBF24" : "#D1D5DB"} stroke="none" />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t border-blue-100 pt-3">
-                <p className="font-jakarta text-sm font-bold text-[#0e1d4f] mb-1">{t.tkVerdict}</p>
-                <p className="font-jakarta text-sm text-gray-600 leading-relaxed">{tkr.verdict}</p>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* About */}
-        <div>
-          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{place.description}</p>
-            {extraParas.map((para, i) => (
-              <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed">{para}</p>
-            ))}
-          </div>
-        </div>
-
         {/* Enrollment schedule box — schools only, now below About */}
         {place.category === "school" && (
           <div className="rounded-2xl p-4 flex items-center justify-between" style={{ background: "#e6f4ed" }}>
-            <div>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p className="text-xs font-jakarta text-[#3aab74] font-semibold uppercase tracking-wide mb-0.5">
                 {t.pdEnrollTitle}
               </p>
               <p className="text-base font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                {t.pdEnrollSoon}
+                {place.jadwalPendaftaran ?? t.pdEnrollSoon}
               </p>
             </div>
             {/* PSB notification button */}
@@ -1339,8 +1490,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Related Videos */}
         <div>
-          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-            Related Videos
+          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+            {t.pdVideosTitle}
           </h2>
           {(place.videos ?? []).length === 0 ? (
             <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#94a3b8" }}>
@@ -1348,16 +1499,16 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
             </p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {(place.videos ?? []).map((v) => (
+              {(place.videos ?? []).map((videoId, idx) => (
                 <ActionButton
-                  key={v.id}
-                  onClick={() => setVideoOpen(v.id)}
+                  key={videoId}
+                  onClick={() => setVideoOpen(videoId)}
                   style={{ display: "block", textAlign: "left", padding: 0, borderRadius: 14, overflow: "clip" }}
                 >
                   <div style={{ position: "relative", paddingBottom: "56.25%", background: "#000", borderRadius: "14px 14px 0 0", overflow: "clip" }}>
                     <img
-                      src={`https://img.youtube.com/vi/${v.id}/mqdefault.jpg`}
-                      alt={v.title}
+                      src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                      alt={`Video ${idx + 1}`}
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                     />
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.22)" }}>
@@ -1365,11 +1516,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
                         <Play size={16} fill="#1f6b43" stroke="none" style={{ marginLeft: 2 }} />
                       </div>
                     </div>
-                  </div>
-                  <div style={{ padding: "8px 10px 10px", background: "#f6f1e8", borderRadius: "0 0 14px 14px", border: "1px solid #e2e8f0", borderTop: "none" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#0e1d4f", lineHeight: 1.4, fontFamily: "var(--font-jakarta), sans-serif", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {v.title}
-                    </p>
                   </div>
                 </ActionButton>
               ))}
@@ -1383,7 +1529,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ id: stri
           const totalCount = baseList.length + (userReview ? 1 : 0);
           return (
             <div>
-              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
                 {t.pdUserReviewsTitle}{totalCount > 0 ? ` (${totalCount})` : ""}
               </h2>
               {totalCount === 0 ? (

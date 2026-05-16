@@ -3,8 +3,10 @@ import { Playfair_Display, Plus_Jakarta_Sans, Fraunces } from "next/font/google"
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { RegisterSheetProvider } from "@/context/RegisterSheetContext";
+import { LoginSheetProvider } from "@/context/LoginSheetContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { RegisterSheet } from "@/components/RegisterSheet";
+import { LoginSheet } from "@/components/LoginSheet";
 import { DragClickGuard } from "@/components/DragClickGuard";
 import "./globals.css";
 
@@ -28,8 +30,15 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "TangselKids",
-  description: "Hyperlocal directory for parents in Tangerang Selatan, Indonesia",
+  title: { default: "TangselKids", template: "%s | TangselKids" },
+  description: "Direktori hyperlokal untuk orang tua di Tangerang Selatan — temukan sekolah, daycare, tempat bermain, klinik anak, dan lebih banyak lagi.",
+  metadataBase: new URL("https://tangselkids.com"),
+  openGraph: {
+    siteName: "TangselKids",
+    locale: "id_ID",
+    type: "website",
+  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
@@ -130,9 +139,12 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <RegisterSheetProvider>
-              <DragClickGuard />
-              <AuthGuard>{children}</AuthGuard>
-              <RegisterSheet />
+              <LoginSheetProvider>
+                <DragClickGuard />
+                <AuthGuard>{children}</AuthGuard>
+                <RegisterSheet />
+                <LoginSheet />
+              </LoginSheetProvider>
             </RegisterSheetProvider>
           </AuthProvider>
         </LanguageProvider>

@@ -7,6 +7,7 @@ import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 import { ImageCropper } from "./ImageCropper";
 import { MapPicker } from "./MapPicker";
+import { legalContent } from "@/lib/legalContent";
 
 type Step = "phone" | "otp" | "profile" | "done";
 
@@ -59,11 +60,13 @@ const bigConfetti = [
 export function RegisterSheet() {
   const { register } = useAuth();
   const { isOpen, options, closeRegisterSheet } = useRegisterSheet();
-  const { t } = useLang();
+  const { t, lang } = useLang();
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
   const [showExitWarning, setShowExitWarning] = useState(false);
+  const [agreed, setAgreed] = useState(true);
+  const [legalDoc, setLegalDoc] = useState<"terms" | "privacy" | null>(null);
 
   // OTP
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -159,7 +162,7 @@ export function RegisterSheet() {
   }
 
   function handleSendOtp() {
-    if (phone.replace(/\D/g, "").length < 7) return;
+    if (phone.replace(/\D/g, "").length < 7 || !agreed) return;
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
     setStep("otp");
@@ -443,6 +446,108 @@ export function RegisterSheet() {
         />
       )}
 
+      {/* Legal document popup — zIndex 1200 */}
+      {legalDoc && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 1200,
+            background: "rgba(0,0,0,0.60)",
+            display: "flex", alignItems: "flex-end", justifyContent: "center",
+          }}
+          onClick={() => setLegalDoc(null)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: "22px 22px 0 0",
+              width: "100%", maxWidth: 448,
+              maxHeight: "88vh",
+              display: "flex", flexDirection: "column",
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.22)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: "16px 20px 14px",
+              borderBottom: "1px solid #f1f5f9",
+              flexShrink: 0,
+              display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
+            }}>
+              <div>
+                <h3 style={{
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: 16, fontWeight: 700, color: "#0f172a",
+                  margin: "0 0 2px",
+                }}>
+                  {legalDoc === "terms" ? t.legalTermsTitle : t.legalPrivacyTitle}
+                </h3>
+                <p style={{ fontSize: 10, color: "#94a3b8", margin: 0, fontFamily: "var(--font-jakarta), sans-serif" }}>
+                  {t.legalLastUpdated}
+                </p>
+              </div>
+              <ActionButton
+                onClick={() => setLegalDoc(null)}
+                style={{
+                  flexShrink: 0, width: 30, height: 30, borderRadius: 999,
+                  background: "#f1f5f9", display: "flex",
+                  alignItems: "center", justifyContent: "center",
+                  touchAction: "manipulation",
+                }}
+              >
+                <X size={15} color="#64748b" strokeWidth={2.5} />
+              </ActionButton>
+            </div>
+
+            {/* Scrollable content */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "14px 20px 48px", WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
+              {(legalDoc === "terms" ? legalContent[lang].terms : legalContent[lang].privacy)
+                .split("\n")
+                .map((line, i) => {
+                  const s = line.trim();
+                  if (!s) return <div key={i} style={{ height: 6 }} />;
+
+                  // Numbered section header: "1. ABOUT..." or "10. LIMIT..."
+                  if (/^\d+\.\s+[A-Z]/.test(s) && s === s.toUpperCase()) {
+                    return <p key={i} style={{ fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 700, fontSize: 11.5, color: "#0f172a", margin: "14px 0 3px", letterSpacing: 0.2 }}>{s}</p>;
+                  }
+                  // ALL-CAPS section title: "RINGKASAN", "SUMMARY", etc.
+                  if (s.length > 3 && s === s.toUpperCase() && /[A-Z]/.test(s) && !/^\d+\.\d+/.test(s)) {
+                    return <p key={i} style={{ fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 700, fontSize: 11.5, color: "#0f172a", margin: "14px 0 3px", letterSpacing: 0.2 }}>{s}</p>;
+                  }
+                  // Subsection: "1.1 ..." "4.2 ..."
+                  if (/^\d+\.\d+\s/.test(s)) {
+                    return <p key={i} style={{ fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600, fontSize: 11, color: "#1e293b", margin: "6px 0 1px" }}>{s}</p>;
+                  }
+                  // Numbered list items without letter (8.1, 8.2 — not subsections with text on same line as label)
+                  // Emoji or bullet list item
+                  if (/^[•✅🔒📱🚫📊🗑️✉️🇮🇩♾️⭐]/.test(s)) {
+                    return <p key={i} style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#374151", margin: "2px 0 2px 6px", lineHeight: 1.5 }}>{s}</p>;
+                  }
+                  return <p key={i} style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#475569", margin: "2px 0", lineHeight: 1.55 }}>{s}</p>;
+                })}
+            </div>
+
+            {/* Close button */}
+            <div style={{ padding: "12px 20px 28px", flexShrink: 0, borderTop: "1px solid #f1f5f9" }}>
+              <ActionButton
+                onClick={() => setLegalDoc(null)}
+                style={{
+                  display: "block", width: "100%", textAlign: "center",
+                  padding: "13px 20px", borderRadius: 14,
+                  background: "#f1f5f9", color: "#0f172a",
+                  fontWeight: 700, fontSize: 14,
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  touchAction: "manipulation",
+                }}
+              >
+                {t.legalClose}
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Full-screen reveal overlay */}
       {showReveal && (
         <div style={{
@@ -621,17 +726,54 @@ export function RegisterSheet() {
                   />
                 </div>
 
+                {/* Consent row — checkbox and text are siblings, NOT nested,
+                    so iOS touch events never bubble between them */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 16 }}>
+                  <ActionButton
+                    onClick={() => setAgreed(!agreed)}
+                    style={{ flexShrink: 0, marginTop: 2 }}
+                  >
+                    <div style={{
+                      width: 16, height: 16, borderRadius: 4,
+                      border: `2px solid ${agreed ? "#2e8a5a" : "#cbd5e1"}`,
+                      background: agreed ? "#2e8a5a" : "transparent",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s, border-color 0.15s",
+                    }}>
+                      {agreed && <span style={{ color: "#fff", fontSize: 10, lineHeight: 1, fontWeight: 800 }}>✓</span>}
+                    </div>
+                  </ActionButton>
+
+                  <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.6, fontFamily: "var(--font-jakarta), sans-serif", flex: 1 }}>
+                    {t.obConsentPre}{" "}
+                    <ActionButton
+                      onClick={() => setLegalDoc("terms")}
+                      style={{ display: "inline", color: "#2e8a5a", fontWeight: 600, textDecoration: "underline" }}
+                    >
+                      {t.obConsentTerms}
+                    </ActionButton>
+                    {" "}{t.obConsentAnd}{" "}
+                    <ActionButton
+                      onClick={() => setLegalDoc("privacy")}
+                      style={{ display: "inline", color: "#2e8a5a", fontWeight: 600, textDecoration: "underline" }}
+                    >
+                      {t.obConsentPrivacy}
+                    </ActionButton>
+                    {" "}{t.obConsentPost}
+                  </div>
+                </div>
+
                 <ActionButton
                   onClick={handleSendOtp}
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "16px 20px", borderRadius: 18,
-                    background: phone.replace(/\D/g, "").length >= 7
+                    background: phone.replace(/\D/g, "").length >= 7 && agreed
                       ? "linear-gradient(135deg, #128c7e, #25d366)"
                       : "#e2e8f0",
-                    color: phone.replace(/\D/g, "").length >= 7 ? "#fff" : "#94a3b8",
+                    color: phone.replace(/\D/g, "").length >= 7 && agreed ? "#fff" : "#94a3b8",
                     fontWeight: 700, fontSize: 15,
-                    boxShadow: phone.replace(/\D/g, "").length >= 7 ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
+                    boxShadow: phone.replace(/\D/g, "").length >= 7 && agreed ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
                   }}
                 >
                   {t.obPhoneBtn}
@@ -645,7 +787,7 @@ export function RegisterSheet() {
 
             {/* ── OTP STEP ─────────────────────────────────────────── */}
             {step === "otp" && (
-              <div style={{ padding: "20px 24px 44px" }}>
+              <div style={{ padding: "20px 24px 44px", minHeight: 340 }}>
                 <ActionButton
                   onClick={() => setStep("phone")}
                   style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "#94a3b8", marginBottom: 20 }}
@@ -682,22 +824,24 @@ export function RegisterSheet() {
                     />
                   ))}
                 </div>
-                {otpError && <p style={{ ...errorStyle, textAlign: "center", marginBottom: 16 }}>{otpError}</p>}
 
-                <div style={{ marginTop: 20 }}>
-                  <ActionButton
-                    onClick={handleVerifyOtp}
-                    style={{
-                      display: "block", width: "100%", textAlign: "center",
-                      padding: "16px 20px", borderRadius: 18,
-                      background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
-                      color: "#fff", fontWeight: 700, fontSize: 15,
-                      boxShadow: "0 8px 24px rgba(30,63,176,0.30)",
-                    }}
-                  >
-                    {t.obOtpBtn}
-                  </ActionButton>
-                </div>
+                {/* Always rendered so its height never shifts the button below */}
+                <p style={{ ...errorStyle, textAlign: "center", marginBottom: 16, visibility: otpError ? "visible" : "hidden" }}>
+                  {otpError || "placeholder"}
+                </p>
+
+                <ActionButton
+                  onClick={handleVerifyOtp}
+                  style={{
+                    display: "block", width: "100%", textAlign: "center",
+                    padding: "16px 20px", borderRadius: 18,
+                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                    color: "#fff", fontWeight: 700, fontSize: 15,
+                    boxShadow: "0 8px 24px rgba(30,63,176,0.30)",
+                  }}
+                >
+                  {t.obOtpBtn}
+                </ActionButton>
               </div>
             )}
 

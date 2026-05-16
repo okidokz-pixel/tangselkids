@@ -25,13 +25,16 @@ type AuthContextType = {
   isRegistered: boolean;
   loaded: boolean;
   register: (data: UserData) => void;
+  login: (phone: string) => boolean;
   logout: () => void;
+  updateUser: (data: Partial<UserData>) => void;
   upgradeToPremium: (lifetime?: boolean) => void;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null, tier: "free", isRegistered: false, loaded: false,
-  register: () => {}, logout: () => {}, upgradeToPremium: (_lifetime?: boolean) => {},
+  register: () => {}, login: () => false, logout: () => {},
+  upgradeToPremium: (_lifetime?: boolean) => {}, updateUser: () => {},
 });
 
 function computeTier(user: UserData | null): Tier {
@@ -56,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   function register(data: UserData) {
-    // Preserve existing tier/expiry if not explicitly set in new data
     const existing = user;
     const merged: UserData = {
       ...data,
@@ -64,8 +66,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       lifetime: data.lifetime ?? existing?.lifetime,
       premiumExpiresAt: data.premiumExpiresAt ?? existing?.premiumExpiresAt,
     };
+    // Persist to active session
     localStorage.setItem("tkUser", JSON.stringify(merged));
     setUser(merged);
+    // Persist to registry so login() can find this user later
+    try {
+      const registry = JSON.parse(localStorage.getItem("tkUsers") || "{}");
+      const normalized = data.phone.replace(/\D/g, "");
+      registry[normalized] = merged;
+      localStorage.setItem("tkUsers", JSON.stringify(registry));
+    } catch {}
+  }
+
+  function login(phone: string): boolean {
+    try {
+      const registry = JSON.parse(localStorage.getItem("tkUsers") || "{}");
+      const normalized = phone.replace(/\D/g, "");
+      const userData: UserData | undefined = registry[normalized] ?? registry[phone];
+      if (userData) {
+        localStorage.setItem("tkUser", JSON.stringify(userData));
+        setUser(userData);
+        return true;
+      }
+    } catch {}
+    return false;
+  }
+
+  function updateUser(data: Partial<UserData>) {
+    if (!user) return;
+    const updated = { ...user, ...data };
+    localStorage.setItem("tkUser", JSON.stringify(updated));
+    setUser(updated);
+    try {
+      const registry = JSON.parse(localStorage.getItem("tkUsers") || "{}");
+      const normalized = user.phone.replace(/\D/g, "");
+      registry[normalized] = updated;
+      localStorage.setItem("tkUsers", JSON.stringify(registry));
+    } catch {}
   }
 
   function logout() {
@@ -93,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tier = computeTier(user);
 
   return (
-    <AuthContext.Provider value={{ user, tier, isRegistered: !!user, loaded, register, logout, upgradeToPremium }}>
+    <AuthContext.Provider value={{ user, tier, isRegistered: !!user, loaded, register, login, logout, upgradeToPremium, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -18,6 +18,7 @@ export type TangselKidsRating = {
 
 export type Place = {
   id: string;
+  slug?: string;
   category: "school" | "learning-center" | "daycare" | "playground" | "clinic" | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore" | "other";
   name: string;
   area: string;
@@ -46,23 +47,31 @@ export type Place = {
   icon: string;
   photo: string;
   photos?: string[];
-  videos?: { id: string; title: string }[];  // YouTube video IDs
+  logo?: string;                // URL to facility logo image
+  facilities?: string;          // comma-separated, e.g. "Perpustakaan, Kolam Renang, Aula"
+  extracurriculars?: string;    // comma-separated, e.g. "Futsal, Basket, Renang"
+  feeImageUrl?: string;         // URL to detailed fee/price list image
+  videos?: string[];            // YouTube video IDs
   reviewsList?: Review[];
   tangselKidsRating?: TangselKidsRating;
   instagram?: string;
   facebook?: string;
   tiktok?: string;
+  youtube?: string;
   website?: string;
 
-  yearFounded?: number;       // e.g., 2015
+  yearFounded?: number;         // e.g., 2015
 
   // ── School-specific ─────────────────────────────────────────
-  uangPangkalMin?: number;   // one-time enrollment / admission fee (min)
-  uangPangkalMax?: number;   // one-time enrollment / admission fee (max)
-  bahasa?: string[];         // ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+AR)","Bilingual (EN+CN)","Trilingual (ID+EN+CN)","Bilingual (DE+EN)","Japanese"]
-  studentsPerClass?: number;   // e.g., 20 students per class
-  hasComputerLab?: boolean;
-  hasPool?: boolean;
+  uangPangkalMin?: number;      // one-time enrollment / admission fee (min)
+  uangPangkalMax?: number;      // one-time enrollment / admission fee (max)
+  annualFeeMin?: number;        // annual fee (min)
+  annualFeeMax?: number;        // annual fee (max)
+  tahunBiaya?: string;          // fee reference year, e.g. "2025/2026"
+  bahasa?: string[];            // kategori_bahasa — simplified categories for filtering
+  teachingLanguageDisplay?: string; // full Bahasa Pengantar text for display
+  studentsPerClass?: number;    // e.g., 20 students per class
+  jadwalPendaftaran?: string;   // registration schedule text
 
   // ── Learning-center-specific ─────────────────────────────────
   courseTypes?: string[];    // multi-valued, e.g. ["English", "Math"]
@@ -149,8 +158,6 @@ export const places: Place[] = [
     uangPangkalMax: 10000000,
     bahasa: ["Bilingual (ID+EN)"],
     studentsPerClass: 15,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.9,
     reviews: 42,
     ageRange: "2 – 6 tahun",
@@ -163,6 +170,8 @@ export const places: Place[] = [
     icon: "🏫",
     photo: PH("classroom-bright"),
     photos: [PH("montessori-kids"), PH("school-garden")],
+    facilities: "Perpustakaan, Ruang Musik, Ruang Seni, Taman Bermain, Aula, Ruang UKS",
+    extracurriculars: "Menari, Melukis, Musik, Yoga Anak, Memasak",
     instagram: "https://instagram.com/example",
     facebook: "https://facebook.com/example",
     tiktok: "https://tiktok.com/@example",
@@ -187,8 +196,6 @@ export const places: Place[] = [
     uangPangkalMax: 35000000,
     bahasa: ["English", "Bilingual (ID+EN)"],
     studentsPerClass: 20,
-    hasComputerLab: true,
-    hasPool: true,
     rating: 4.7,
     reviews: 31,
     ageRange: "3 – 12 tahun",
@@ -201,6 +208,8 @@ export const places: Place[] = [
     icon: "🏫",
     photo: PH("school-building-modern"),
     photos: [PH("international-classroom"), PH("school-library")],
+    facilities: "Perpustakaan, Laboratorium Komputer, Laboratorium IPA, Kolam Renang, Aula, Ruang Seni, Ruang Medis, Lapangan Sepak Bola, Ruang Komunal",
+    extracurriculars: "Futsal, Basket, Renang, Taekwondo, Karate, Panahan, Paduan Suara, Melukis, Pramuka",
     instagram: "https://instagram.com/globalkidsinternational",
     website: "https://globalkids.sch.id",
     reviewsList: [
@@ -222,8 +231,6 @@ export const places: Place[] = [
     uangPangkalMax: 7000000,
     bahasa: ["Bilingual (ID+AR)"],
     studentsPerClass: 25,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.8,
     reviews: 56,
     ageRange: "4 – 6 tahun",
@@ -258,8 +265,6 @@ export const places: Place[] = [
     uangPangkalMax: 5000000,
     bahasa: ["Indonesian"],
     studentsPerClass: 15,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.6,
     reviews: 28,
     ageRange: "3 – 6 tahun",
@@ -291,8 +296,6 @@ export const places: Place[] = [
     uangPangkalMax: 10000000,
     bahasa: ["Bilingual (ID+EN)"],
     studentsPerClass: 18,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.7,
     reviews: 38,
     ageRange: "2 – 5 tahun",
@@ -325,8 +328,6 @@ export const places: Place[] = [
     uangPangkalMax: 3000000,
     bahasa: ["Indonesian"],
     studentsPerClass: 22,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.5,
     reviews: 22,
     ageRange: "3 – 6 tahun",
@@ -361,8 +362,6 @@ export const places: Place[] = [
     uangPangkalMax: 5000000,
     bahasa: ["Indonesian", "English"],
     studentsPerClass: 28,
-    hasComputerLab: true,
-    hasPool: false,
     rating: 4.6,
     reviews: 44,
     ageRange: "6 – 12 tahun",
@@ -394,8 +393,6 @@ export const places: Place[] = [
     uangPangkalMax: 8000000,
     bahasa: ["Bilingual (ID+EN)"],
     studentsPerClass: 30,
-    hasComputerLab: true,
-    hasPool: true,
     rating: 4.5,
     reviews: 37,
     ageRange: "12 – 15 tahun",
@@ -426,8 +423,6 @@ export const places: Place[] = [
     uangPangkalMax: 12000000,
     bahasa: ["Indonesian", "English"],
     studentsPerClass: 32,
-    hasComputerLab: true,
-    hasPool: true,
     rating: 4.7,
     reviews: 52,
     ageRange: "15 – 18 tahun",
@@ -460,8 +455,6 @@ export const places: Place[] = [
     uangPangkalMax: 60000000,
     bahasa: ["English", "Bilingual (ID+EN)"],
     studentsPerClass: 18,
-    hasComputerLab: true,
-    hasPool: true,
     rating: 4.9,
     reviews: 27,
     ageRange: "4 – 15 tahun",
@@ -493,8 +486,6 @@ export const places: Place[] = [
     uangPangkalMax: 12000000,
     bahasa: ["Indonesian", "English"],
     studentsPerClass: 25,
-    hasComputerLab: true,
-    hasPool: false,
     rating: 4.6,
     reviews: 33,
     ageRange: "6 – 15 tahun",
@@ -526,8 +517,6 @@ export const places: Place[] = [
     uangPangkalMax: 4000000,
     bahasa: ["Indonesian"],
     studentsPerClass: 20,
-    hasComputerLab: false,
-    hasPool: false,
     rating: 4.4,
     reviews: 19,
     ageRange: "4 – 12 tahun",
@@ -559,8 +548,6 @@ export const places: Place[] = [
     uangPangkalMax: 20000000,
     bahasa: ["Bilingual (EN+CN)"],
     studentsPerClass: 20,
-    hasComputerLab: true,
-    hasPool: false,
     rating: 4.7,
     reviews: 24,
     ageRange: "4 – 12 tahun",
@@ -592,8 +579,6 @@ export const places: Place[] = [
     uangPangkalMax: 30000000,
     bahasa: ["Japanese"],
     studentsPerClass: 18,
-    hasComputerLab: true,
-    hasPool: false,
     rating: 4.8,
     reviews: 16,
     ageRange: "4 – 15 tahun",
@@ -625,8 +610,6 @@ export const places: Place[] = [
     uangPangkalMax: 45000000,
     bahasa: ["Bilingual (DE+EN)"],
     studentsPerClass: 22,
-    hasComputerLab: true,
-    hasPool: true,
     rating: 4.7,
     reviews: 12,
     ageRange: "4 – 18 tahun",
