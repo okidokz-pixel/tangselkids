@@ -75,7 +75,8 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const { t }    = useLang();
   const { user, tier, loaded } = useAuth();
   const [place, setPlace] = useState<Place | null>(null);
-  useEffect(() => { fetchPlaceById(id).then(setPlace); }, [id]);
+  const [placeLoaded, setPlaceLoaded] = useState(false);
+  useEffect(() => { fetchPlaceById(id).then((p) => { setPlace(p); setPlaceLoaded(true); }); }, [id]);
 
   const [step,               setStep]               = useState<Step>("form");
   const [name,               setName]               = useState(user?.name ?? "");
@@ -106,6 +107,10 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
       router.replace(`/place/${id}`);
     }
   }, [loaded, tier, router, id]);
+
+  if (!placeLoaded) {
+    return <div className="max-w-md mx-auto min-h-screen" style={{ background: "#fff" }} />;
+  }
 
   if (!place) {
     return (

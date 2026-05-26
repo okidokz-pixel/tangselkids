@@ -36,7 +36,7 @@ export default function SavedPage() {
 
       {/* Header */}
       <div
-        className="px-5 pt-12 pb-6"
+        className="px-5 pt-7 pb-6"
         style={{
           background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",

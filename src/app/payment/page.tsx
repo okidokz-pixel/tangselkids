@@ -289,7 +289,11 @@ function PaymentContent() {
               {viewProfile}
             </ActionButton>
             <ActionButton
-              onClick={() => { window.location.href = "/"; }}
+              onClick={() => {
+                const from = sessionStorage.getItem("upgradeFrom") || "/";
+                sessionStorage.removeItem("upgradeFrom");
+                router.replace(from);
+              }}
               style={{
                 marginTop: 10, padding: "13px 0", width: "100%", borderRadius: 16, border: "none",
                 background: "#f1f5f9", color: "#64748b",
@@ -298,7 +302,7 @@ function PaymentContent() {
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               } as React.CSSProperties}
             >
-              {t.paymentBackHome}
+              Kembali
             </ActionButton>
           </div>
         </div>

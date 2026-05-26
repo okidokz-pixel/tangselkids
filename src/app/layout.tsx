@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, Fraunces } from "next/font/google";
+import { Playfair_Display, Plus_Jakarta_Sans, Bricolage_Grotesque, Fraunces } from "next/font/google";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { RegisterSheetProvider } from "@/context/RegisterSheetContext";
@@ -22,10 +22,16 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-const fraunces = Fraunces({
+const fraunces = Bricolage_Grotesque({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const frauncesLogo = Fraunces({
+  variable: "--font-logo",
+  subsets: ["latin"],
+  weight: ["700", "800"],
   style: ["normal", "italic"],
 });
 
@@ -54,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${playfair.variable} ${jakarta.variable} ${fraunces.variable} h-full`}>
+    <html lang="id" className={`${playfair.variable} ${jakarta.variable} ${fraunces.variable} ${frauncesLogo.variable} h-full`}>
       <head>
         {/*
           Pre-hydration safety net: forces a hard reload on browser back/forward
@@ -114,6 +120,45 @@ export default function RootLayout({
                 });
               })();
             `,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "TangselKids",
+              "url": "https://tangselkids.com",
+              "description": "Direktori hyperlokal untuk orang tua di Tangerang Selatan — temukan sekolah, daycare, tempat bermain, klinik anak, dan lebih banyak lagi.",
+              "inLanguage": "id-ID",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": {
+                  "@type": "EntryPoint",
+                  "urlTemplate": "https://tangselkids.com/explore?q={search_term_string}"
+                },
+                "query-input": "required name=search_term_string"
+              }
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "TangselKids",
+              "url": "https://tangselkids.com",
+              "logo": "https://tangselkids.com/tangsel-kids-logo.png",
+              "description": "Direktori hyperlokal untuk orang tua di Tangerang Selatan.",
+              "areaServed": {
+                "@type": "City",
+                "name": "Tangerang Selatan"
+              },
+              "sameAs": []
+            }),
           }}
         />
         <style>{`

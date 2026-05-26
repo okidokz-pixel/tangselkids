@@ -12,6 +12,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
+import { SkeletonList } from "@/components/SkeletonCard";
 
 const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
@@ -198,8 +199,8 @@ function CafesContent() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => router.replace(toResults())}
-              onTouchEnd={(e) => { e.preventDefault(); router.replace(toResults()); }}
+              onClick={() => router.push(toResults())}
+              onTouchEnd={(e) => { e.preventDefault(); router.push(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
@@ -219,7 +220,7 @@ function CafesContent() {
       <div style={HEADER_STYLE}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton onClick={() => router.replace(toFilter())} ariaLabel="Back" style={{
+            <ActionButton onClick={() => router.back()} ariaLabel="Back" style={{
               width: 36, height: 36, borderRadius: 999, flexShrink: 0,
               background: "rgba(255,255,255,0.18)", display: "inline-flex",
               alignItems: "center", justifyContent: "center" }}>
@@ -279,9 +280,10 @@ function CafesContent() {
 
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
-        {filtered.length === 0 && (
+        {loading && <SkeletonList count={6} />}
+        {!loading && filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
-            {loading ? "Memuat..." : t.exploreNoResults}
+            {t.exploreNoResults}
           </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

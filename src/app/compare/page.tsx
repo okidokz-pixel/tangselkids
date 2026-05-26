@@ -3,25 +3,46 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Scale, GraduationCap, Lock } from "lucide-react";
-import { formatPriceRange, type Place } from "@/lib/mockData";
+import { formatPriceRange, formatPrice, type Place } from "@/lib/mockData";
 import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
+function fmtFee(min: number | undefined, max: number | undefined): string {
+  if (min === undefined) return "—";
+  if (min === 0) return "—";
+  const lo = `Rp ${formatPrice(min)}`;
+  return max && max !== min ? `${lo} – ${formatPrice(max)}` : lo;
+}
+
 function getValue(place: Place, key: string): string {
-  if (key === "priceRange") return formatPriceRange(place.priceMin, place.priceMax);
-  if (key === "rating")     return `${place.rating} / 5`;
-  if (key === "curriculum") return place.curriculum ?? "—";
-  if (key === "ageRange")   return place.ageRange;
-  if (key === "hours")      return place.hours;
-  if (key === "area")       return place.area;
+  if (key === "uangPangkal") return fmtFee(place.uangPangkalMin, place.uangPangkalMax);
+  if (key === "priceRange")  return formatPriceRange(place.priceMin, place.priceMax);
+  if (key === "annualFee")   return fmtFee(place.annualFeeMin, place.annualFeeMax);
+  if (key === "bahasa")      return place.teachingLanguageDisplay ?? place.bahasa?.join(", ") ?? "—";
+  if (key === "rating")      return place.rating ? `${place.rating} / 5` : "—";
+  if (key === "curriculum")  return place.curriculum ?? "—";
+  if (key === "area")        return place.area;
   return "—";
 }
 
 function isBest(list: Place[], key: string, index: number): boolean {
-  if (key === "priceRange") return list[index]?.priceMin === Math.min(...list.map((p) => p.priceMin));
-  if (key === "rating")     return list[index]?.rating === Math.max(...list.map((p) => p.rating));
+  if (key === "uangPangkal") {
+    const vals = list.map(p => p.uangPangkalMin ?? Infinity);
+    const min = Math.min(...vals);
+    return min < Infinity && vals[index] === min;
+  }
+  if (key === "priceRange") {
+    const vals = list.map(p => p.priceMin);
+    return vals[index] === Math.min(...vals);
+  }
+  if (key === "annualFee") {
+    const vals = list.map(p => p.annualFeeMin ?? Infinity);
+    const min = Math.min(...vals);
+    return min < Infinity && vals[index] === min;
+  }
+  if (key === "rating") return list[index]?.rating === Math.max(...list.map((p) => p.rating));
   return false;
 }
 
@@ -32,12 +53,13 @@ export default function ComparePage() {
   const [compareSchools, setCompareSchools] = useState<Place[]>([]);
 
   const rows = [
-    { label: t.cmpRowPrice,      key: "priceRange" },
-    { label: t.cmpRowRating,     key: "rating" },
-    { label: t.cmpRowCurriculum, key: "curriculum" },
-    { label: t.cmpRowAge,        key: "ageRange" },
-    { label: t.cmpRowHours,      key: "hours" },
-    { label: t.cmpRowArea,       key: "area" },
+    { label: t.cmpRowUangPangkal, key: "uangPangkal" },
+    { label: t.cmpRowPrice,       key: "priceRange" },
+    { label: t.cmpRowAnnualFee,   key: "annualFee" },
+    { label: t.cmpRowBahasa,      key: "bahasa" },
+    { label: t.cmpRowCurriculum,  key: "curriculum" },
+    { label: t.cmpRowRating,      key: "rating" },
+    { label: t.cmpRowArea,        key: "area" },
   ];
 
   useEffect(() => {
@@ -95,7 +117,7 @@ export default function ComparePage() {
               Bandingkan hingga 3 sekolah secara bersamaan — termasuk SPP, kurikulum, dan jenjang — dengan akun Premium.
             </p>
             <button
-              onClick={() => router.push("/upgrade")}
+              onClick={() => { sessionStorage.setItem("upgradeFrom", "/compare"); router.push("/upgrade"); }}
               className="px-8 py-3 rounded-full text-white font-jakarta font-bold text-sm shadow-md"
               style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
             >
@@ -197,14 +219,13 @@ export default function ComparePage() {
             )}
 
             <div className="mt-6">
-              <Link href="/schools">
-                <button
-                  className="w-full py-3.5 rounded-2xl font-jakarta font-bold text-white text-sm"
-                  style={{ background: "linear-gradient(135deg, #1f6b43, #2e8a5a)" }}
-                >
-                  {t.cmpBackToSchools}
-                </button>
-              </Link>
+              <button
+                onClick={() => router.back()}
+                className="w-full py-3.5 rounded-2xl font-jakarta font-bold text-white text-sm"
+                style={{ background: "linear-gradient(135deg, #1f6b43, #2e8a5a)" }}
+              >
+                {t.cmpBackToSchools}
+              </button>
             </div>
           </>
         )}

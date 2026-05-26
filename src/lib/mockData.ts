@@ -80,6 +80,8 @@ export type Place = {
   freeTrial?: boolean;
   teacherStudentRatio?: string;  // e.g., "1:5"
   teachingLanguage?: string;     // "Indonesia" | "Inggris" | "Bilingual"
+  registrationFeeMin?: number;
+  registrationFeeMax?: number;
 
   // ── Daycare-specific ─────────────────────────────────────────
   careHours?: "full-day" | "half-day";

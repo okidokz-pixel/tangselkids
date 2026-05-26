@@ -113,7 +113,7 @@ export const translations = {
     schoolsFound: (n: number) => `${n} sekolah ditemukan`,
     schoolsAllGrade: "Semua",
     schoolsAllCurriculum: "Semua",
-    schoolsCompareHint: "Ketuk ☑ pada kartu untuk membandingkan",
+    schoolsCompareHint: "Pilih 3 Sekolah Untuk Dibandingkan",
     schoolsSelectedForCompare: (n: number) => `${n} dipilih untuk dibandingkan`,
     schoolsSortRating: "★ Rating",
     schoolsSortPrice: "Rp Harga",
@@ -122,6 +122,12 @@ export const translations = {
     schoolsFilterSub: "Pilih filter untuk menemukan sekolah yang tepat",
     schoolsShowResults: (n: number) => `Tampilkan ${n} sekolah →`,
     schoolsFilterAll: "Semua sekolah",
+    schoolsFilterResultsBtn: "Filter Hasil",
+    schoolsSortRandom: "Acak",
+    schoolsCompareModeBtn: "Bandingkan",
+    schoolsCompareCancelBtn: "Batal",
+    cardLabelBahasa: "Bahasa",
+    cardLabelKurikulum: "Kurikulum",
 
     // ── FILTER UI (shared) ──────────────────────────────────
     filterChange: "Ubah",
@@ -319,12 +325,13 @@ export const translations = {
     pdFreeTrial:          "Free Trial",
     pdTeacherRatio:       "Rasio Guru:Murid",
     pdTeachingLanguage:   "Bahasa Pengantar",
+    pdRegistrationFee:    "Biaya Pendaftaran",
     pdCarerRatio:         "Rasio Pengasuh:Anak",
     pdDaycareMethod:      "Kurikulum / Metode",
     pdCctv:               "CCTV & Akses",
     pdAccreditation:      "Akreditasi",
     pdChipCourseType:  "Tipe Kursus",
-    pdChipAgeChild:    "Usia Anak",
+    pdChipAgeChild:    "Rentang Usia",
     pdChipCost:        "Biaya",
     pdChipTicket:      "Tiket",
     pdChipServices:    "Layanan",
@@ -334,7 +341,10 @@ export const translations = {
     // ── COMPARE ─────────────────────────────────────────────
     cmpTitle: "Bandingkan Sekolah",
     cmpSelected: (n: number) => `${n} dari 3 sekolah dipilih`,
+    cmpRowUangPangkal: "Uang Pangkal",
     cmpRowPrice: "Biaya / Bulan",
+    cmpRowAnnualFee: "Biaya Tahunan",
+    cmpRowBahasa: "Bahasa Pengantar",
     cmpRowRating: "Rating",
     cmpRowCurriculum: "Kurikulum",
     cmpRowAge: "Usia",
@@ -556,7 +566,7 @@ export const translations = {
 
     // ── PROFILE — PREMIUM TIER CARD ──────────────────────────
     profilePremiumStatus:   "Status Akun: Premium",
-    profilePremiumDesc:     "Akses penuh · Berlaku hingga",
+    profilePremiumDesc:     "Berlaku hingga",
 
     // ── PROFILE — FREE TIER CARD ─────────────────────────────
     profileFreeStatus:      "Status Akun: Terdaftar",
@@ -991,7 +1001,7 @@ export const translations = {
     schoolsFound: (n: number) => `${n} schools found`,
     schoolsAllGrade: "All",
     schoolsAllCurriculum: "All",
-    schoolsCompareHint: "Tap ☑ on a card to compare",
+    schoolsCompareHint: "Select 3 Schools to Compare",
     schoolsSelectedForCompare: (n: number) => `${n} selected for compare`,
     schoolsSortRating: "★ Rating",
     schoolsSortPrice: "Rp Price",
@@ -1000,6 +1010,12 @@ export const translations = {
     schoolsFilterSub: "Filter to find the right school",
     schoolsShowResults: (n: number) => `Show ${n} schools →`,
     schoolsFilterAll: "All schools",
+    schoolsFilterResultsBtn: "Filter Results",
+    schoolsSortRandom: "Random",
+    schoolsCompareModeBtn: "Compare",
+    schoolsCompareCancelBtn: "Cancel",
+    cardLabelBahasa: "Language",
+    cardLabelKurikulum: "Curriculum",
 
     // ── FILTER UI (shared) ──────────────────────────────────
     filterChange: "Change",
@@ -1197,12 +1213,13 @@ export const translations = {
     pdFreeTrial:          "Free Trial",
     pdTeacherRatio:       "Teacher:Student Ratio",
     pdTeachingLanguage:   "Teaching Language",
+    pdRegistrationFee:    "Registration Fee",
     pdCarerRatio:         "Carer:Child Ratio",
     pdDaycareMethod:      "Curriculum / Method",
     pdCctv:               "CCTV & Access",
     pdAccreditation:      "Accreditation",
     pdChipCourseType:  "Course Type",
-    pdChipAgeChild:    "Child's Age",
+    pdChipAgeChild:    "Age Range",
     pdChipCost:        "Cost",
     pdChipTicket:      "Ticket",
     pdChipServices:    "Services",
@@ -1212,7 +1229,10 @@ export const translations = {
     // ── COMPARE ─────────────────────────────────────────────
     cmpTitle: "Compare Schools",
     cmpSelected: (n: number) => `${n} of 3 schools selected`,
+    cmpRowUangPangkal: "Enrollment Fee",
     cmpRowPrice: "Price / Month",
+    cmpRowAnnualFee: "Annual Fee",
+    cmpRowBahasa: "Teaching Language",
     cmpRowRating: "Rating",
     cmpRowCurriculum: "Curriculum",
     cmpRowAge: "Age Range",
@@ -1434,7 +1454,7 @@ export const translations = {
 
     // ── PROFILE — PREMIUM TIER CARD ──────────────────────────
     profilePremiumStatus:   "Account Status: Premium",
-    profilePremiumDesc:     "Full access · Valid until",
+    profilePremiumDesc:     "Valid until",
 
     // ── PROFILE — FREE TIER CARD ─────────────────────────────
     profileFreeStatus:      "Account Status: Registered",
@@ -1681,7 +1701,7 @@ export const translations = {
 
     // ── HOME-ALT PAGE ─────────────────────────────────────────
     homeAltTagline:        "Smart directory for parents in",
-    homeAltFeatureKicker:  "WHAT ARE YOU LOOKING FOR?",
+    homeAltFeatureKicker:  "QUICK FILTER",
     homeAltSchoolSub:      "Preschool to High School — national, international & nature-based.",
     homeAltKursusSub:      "English · Math · Art · Music · Coding — private & group classes.",
     homeAltAreaWhere:      "WHERE?",

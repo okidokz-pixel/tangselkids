@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronDown, SlidersHorizontal, Check, Scale, ArrowUpDown, X } from "lucide-react";
@@ -8,6 +8,7 @@ import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
+import { SkeletonList } from "@/components/SkeletonCard";
 import { ActionButton } from "@/components/ActionButton";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
@@ -19,14 +20,14 @@ const HI = { position: "absolute" as const, width: 1, height: 1, opacity: 0,
   margin: -1, padding: 0, overflow: "hidden" as const, clip: "rect(0,0,0,0)", border: 0 };
 
 // ── Area chip ─────────────────────────────────────────────────────────────────
-function Chip({ name, value, checked, onChange, children }: {
-  name: string; value: string; checked: boolean; onChange: () => void; children: React.ReactNode;
+function Chip({ name, value, checked, onChange, children, compact }: {
+  name: string; value: string; checked: boolean; onChange: () => void; children: React.ReactNode; compact?: boolean;
 }) {
   return (
     <label style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}>
       <input type="radio" name={name} value={value} checked={checked} onChange={onChange} style={HI} />
-      <span style={{ display: "inline-block", padding: "6px 13px", borderRadius: 999,
-        fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
+      <span style={{ display: "inline-block", padding: compact ? "5px 11px" : "6px 13px", borderRadius: 999,
+        fontSize: compact ? 12.5 : 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
         border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
         background: checked ? "#2e8a5a" : "#fff", color: checked ? "#fff" : "#374151" }}>
         {children}
@@ -121,7 +122,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const CURRICULA = ["Nasional","Nasional Plus","Nasional + Islam","Cambridge","Cambridge + IB","IB","International","Montessori","Nature / Play-based","Play-Based Learning","Lainnya"];
+// Derived dynamically from allPlaces — see useMemo below
 const BAHASA = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"];
 const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA"];
 
@@ -190,6 +191,15 @@ function SchoolsContent() {
   const [loading,   setLoading]   = useState(true);
   useEffect(() => { fetchPlacesByCategory("school").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
 
+  const CURRICULA = useMemo(() =>
+    [...new Set(
+      allPlaces.flatMap(p => p.curriculumCategory
+        ? p.curriculumCategory.split(",").map(s => s.trim()).filter(Boolean)
+        : []
+      )
+    )].sort(),
+  [allPlaces]);
+
   const [showFilterGate, setShowFilterGate] = useState(false);
   const [premiumOpen,   setPremiumOpen]   = useState(false);
   const router = useRouter();
@@ -212,15 +222,17 @@ function SchoolsContent() {
   const [upBucket,      setUpBucket]      = useState(searchParams.get("up") ?? "all");
   const [sppBucket,     setSppBucket]     = useState(searchParams.get("spp") ?? "all");
   const [classSizeBucket, setClassSizeBucket] = useState(searchParams.get("cs") ?? "all");
-  const [sortBy,     setSortBy]     = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
-  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [sortBy,      setSortBy]      = useState<"alpha"|"za"|"random">((searchParams.get("sort") as "alpha"|"za") ?? "random");
+  const [sortSeed]                    = useState(() => Math.random());
+  const [compareIds,  setCompareIds]  = useState<string[]>([]);
+  const [compareMode, setCompareMode] = useState(false);
 
 
   const filtered = allPlaces
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
     .filter(s => grade === "all" || s.jenjang === grade)
-    .filter(s => curricula.length === 0 || curricula.includes(s.curriculumCategory ?? ""))
-    .filter(s => bahasaFilter.length === 0 || bahasaFilter.every(b => s.bahasa?.includes(b)))
+    .filter(s => curricula.length === 0 || (s.curriculumCategory ?? "").split(",").map(v => v.trim()).some(v => curricula.includes(v)))
+    .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
     .filter(s => matchesSppBucket(s.priceMin, sppBucket))
     .filter(s => {
@@ -233,10 +245,14 @@ function SchoolsContent() {
       return true;
     })
     .sort((a, b) => {
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
-  });
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      if (sortBy === "za") return b.name.localeCompare(a.name);
+      if (sortBy === "alpha") return a.name.localeCompare(b.name);
+      // random — stable per session via seed
+      const h = (id: string) => { let v = sortSeed; for (let i = 0; i < id.length; i++) v = Math.sin(v + id.charCodeAt(i)) * 10000; return v - Math.floor(v); };
+      return h(a.id) - h(b.id);
+    });
 
   const activeCount = [
     area !== "all", grade !== "all", curricula.length > 0,
@@ -285,6 +301,9 @@ function SchoolsContent() {
     if (typeof window !== "undefined") localStorage.setItem("compareIds", JSON.stringify(compareIds));
     window.location.href = "/compare";
   }
+  function toggleCompareMode() {
+    setCompareMode(prev => { if (prev) setCompareIds([]); return !prev; });
+  }
 
   // Dropdown option builders
   const gradeOptions    = [{ value: "all", label: "Semua" }, ...GRADES.map(g => ({ value: g, label: g }))];
@@ -316,10 +335,10 @@ function SchoolsContent() {
           </div>
         </div>
 
-        <div style={{ padding: "24px 20px 130px" }}>
+        <div style={{ padding: "16px 16px 130px", display: "flex", flexDirection: "column", gap: 10 }}>
 
           {/* Area */}
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               {(["all","bintaro","bsd"] as const).map(v => (
@@ -331,21 +350,25 @@ function SchoolsContent() {
             </div>
           </div>
 
-          {/* Jenjang — free filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-              {t.filterGrade}
-            </p>
-            <div style={{ flex: 1 }}>
-              <FilterDropdown value={grade} onChange={setGrade} options={gradeOptions} />
+          {/* Jenjang */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>{t.filterGrade}</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {(["all", ...GRADES] as const).map(v => (
+                <Chip key={v} name="f-grade" value={v} checked={grade === v} onChange={() => setGrade(v)} compact>
+                  {v === "all" ? t.filterAll : v}
+                </Chip>
+              ))}
             </div>
           </div>
 
-          {/* Bahasa — free for all */}
-          <div style={{ marginBottom: 18 }}>
+          {/* Bahasa */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>{t.filterBahasa}</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <Chip name="f-bahasa-all" value="all" checked={bahasaFilter.length === 0} onChange={() => setBahasaFilter([])}>
+                {t.filterAll}
+              </Chip>
               {BAHASA.map(b => (
                 <MultiChip
                   key={b}
@@ -360,10 +383,13 @@ function SchoolsContent() {
             </div>
           </div>
 
-          {/* Kurikulum — multi-select chips */}
-          <div style={{ marginBottom: 18 }}>
+          {/* Kurikulum */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>Kurikulum</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <Chip name="f-cur-all" value="all" checked={curricula.length === 0} onChange={() => setCurricula([])}>
+                {t.filterAll}
+              </Chip>
               {CURRICULA.map(c => (
                 <MultiChip
                   key={c}
@@ -378,95 +404,91 @@ function SchoolsContent() {
             </div>
           </div>
 
-          {/* Uang Pangkal — free for all */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-              {t.filterUangPangkal}
-            </p>
-            <div style={{ flex: 1 }}>
-              <FilterDropdown value={upBucket} onChange={setUpBucket} options={upOptions} />
+          {/* Uang Pangkal */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                {t.filterUangPangkal}
+              </p>
+              <div style={{ flex: 1 }}>
+                <FilterDropdown value={upBucket} onChange={setUpBucket} options={upOptions} />
+              </div>
             </div>
           </div>
 
-          {/* SPP / Bulan — free for all */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-              SPP / Bulan
-            </p>
-            <div style={{ flex: 1 }}>
-              <FilterDropdown value={sppBucket} onChange={setSppBucket} options={sppOptions} />
+          {/* SPP / Bulan */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                SPP / Bulan
+              </p>
+              <div style={{ flex: 1 }}>
+                <FilterDropdown value={sppBucket} onChange={setSppBucket} options={sppOptions} />
+              </div>
             </div>
           </div>
 
           {/* Collapsible premium filter section */}
-          <ActionButton
-            onClick={() => setPremiumOpen(o => !o)}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              width: "100%", padding: "13px 16px", marginBottom: premiumOpen ? 0 : 8,
-              borderRadius: premiumOpen ? "14px 14px 0 0" : 14,
-              background: "#f0fdf4",
-              border: "1.5px solid #bbf7d0",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              cursor: "pointer",
-            } as React.CSSProperties}
-          >
-            <span style={{
-              fontFamily: "var(--font-jakarta), sans-serif",
-              fontSize: 13, fontWeight: 700, color: "#166534",
-            }}>
-              Filter Lebih Dalam?{" "}
-              <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
-            </span>
-            <ChevronDown
-              size={18} color="#166534"
-              style={{ transform: premiumOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
-            />
-          </ActionButton>
+          <div style={{ borderRadius: 16, overflow: "clip", border: "1.5px solid #bbf7d0" }}>
+            <ActionButton
+              onClick={() => setPremiumOpen(o => !o)}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", padding: "10px 14px",
+                borderRadius: 0,
+                background: "#f0fdf4",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                cursor: "pointer",
+              } as React.CSSProperties}
+            >
+              <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#166534" }}>
+                Filter Lebih Dalam?{" "}
+                <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
+              </span>
+              <ChevronDown
+                size={18} color="#166534"
+                style={{ transform: premiumOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+              />
+            </ActionButton>
 
-          {premiumOpen && (
-            <div style={{
-              border: "1.5px solid #bbf7d0", borderTop: "none",
-              borderRadius: "0 0 14px 14px",
-              padding: "16px 16px 4px",
-              marginBottom: 8,
-              background: "#fff",
-            }}>
-              {tier === "premium" ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                    Murid / Kelas
-                  </p>
-                  <div style={{ flex: 1 }}>
-                    <FilterDropdown value={classSizeBucket} onChange={setClassSizeBucket} options={classSizeOptions} />
+            {premiumOpen && (
+              <div style={{ padding: "16px 16px 4px", background: "#fff", borderTop: "1.5px solid #bbf7d0" }}>
+                {tier === "premium" ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                      color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                      Murid / Kelas
+                    </p>
+                    <div style={{ flex: 1 }}>
+                      <FilterDropdown value={classSizeBucket} onChange={setClassSizeBucket} options={classSizeOptions} />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <ActionButton
-                  onClick={() => setShowFilterGate(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
-                    width: "100%", padding: 0, background: "transparent" }}
-                >
-                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                    Murid / Kelas
-                  </p>
-                  <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                    fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                    color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                    display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span>Premium only</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                </ActionButton>
-              )}
-            </div>
-          )}
+                ) : (
+                  <ActionButton
+                    onClick={() => setShowFilterGate(true)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
+                      width: "100%", padding: 0, background: "transparent" }}
+                  >
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                      color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                      Murid / Kelas
+                    </p>
+                    <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
+                      fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+                      color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
+                      display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span>Premium only</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </div>
+                  </ActionButton>
+                )}
+              </div>
+            )}
+          </div>
 
         </div>
 
@@ -476,8 +498,8 @@ function SchoolsContent() {
           background: "#fff", borderTop: "1px solid #f1f5f9" }}>
           <div style={{ maxWidth: 448, margin: "0 auto" }}>
             <button
-              onClick={() => router.replace(toResults())}
-              onTouchEnd={(e) => { e.preventDefault(); router.replace(toResults()); }}
+              onClick={() => router.push(toResults())}
+              onTouchEnd={(e) => { e.preventDefault(); router.push(toResults()); }}
               style={{ width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
                 background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff",
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
@@ -498,7 +520,7 @@ function SchoolsContent() {
       <div style={HEADER_STYLE}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <ActionButton onClick={() => router.replace(toFilter())} ariaLabel="Back" style={{
+            <ActionButton onClick={() => router.back()} ariaLabel="Back" style={{
               width: 36, height: 36, borderRadius: 999, flexShrink: 0,
               background: "rgba(255,255,255,0.18)", display: "inline-flex",
               alignItems: "center", justifyContent: "center" }}>
@@ -519,14 +541,14 @@ function SchoolsContent() {
       </div>
 
       {/* Filter / Sort bar */}
-      <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, margin: "12px 14px 0", alignItems: "center" }}>
         <ActionButton onClick={() => router.push(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0,
           animation: "filter-pulse 2s ease-in-out infinite" }}>
           <SlidersHorizontal size={14} strokeWidth={2.5} />
-          Filter
+          {t.schoolsFilterResultsBtn}
           {activeCount > 0 && (
             <span style={{ background: "#f59e0b", color: "#fff", borderRadius: 999,
               minWidth: 20, height: 20, display: "inline-flex", alignItems: "center",
@@ -535,15 +557,51 @@ function SchoolsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
+        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : s === "za" ? "random" : "alpha")} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "10px 16px", borderRadius: 999,
-          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
-          border: "1.5px solid #e2e8f0" }}>
-          <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
+          padding: "10px 12px", borderRadius: 999, flexShrink: 0,
+          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 12,
+          border: "1.5px solid #e2e8f0", justifyContent: "center" }}>
+          <ArrowUpDown size={13} strokeWidth={2.5} />
+          {sortBy === "alpha" ? "A–Z" : sortBy === "za" ? "Z–A" : t.schoolsSortRandom}
         </ActionButton>
+        {(tier === "premium" || tier === "free") && (
+          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "10px 12px", borderRadius: 999, flexShrink: 0,
+            background: compareMode ? "#2e8a5a" : "#fff",
+            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
+            fontWeight: 700, fontSize: 12,
+            opacity: tier === "free" ? 0.85 : 1,
+            border: `1.5px solid ${compareMode ? "#2e8a5a" : tier === "free" ? "#e2e8f0" : "#e2e8f0"}` }}>
+            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+          </ActionButton>
+        )}
       </div>
+
+      {/* Compare status hint — only in compare mode */}
+      {tier === "premium" && compareMode && filtered.length > 0 && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "9px 13px", borderRadius: 10,
+            background: compareIds.length === 0 ? "#fef9c3" : "#e6f4ed",
+            border: `1.5px solid ${compareIds.length === 0 ? "#fde68a" : "#a7d4bc"}`,
+          }}>
+            <Scale size={14} color={compareIds.length === 0 ? "#854d0e" : "#2e8a5a"} />
+            <span style={{
+              fontSize: 12, fontWeight: 600,
+              color: compareIds.length === 0 ? "#854d0e" : "#2e8a5a",
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              {compareIds.length === 0
+                ? t.schoolsCompareHint
+                : t.schoolsSelectedForCompare(compareIds.length)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Active filter tags */}
       {activeCount > 0 && (
@@ -561,32 +619,10 @@ function SchoolsContent() {
         </div>
       )}
 
-      {/* Compare helper text */}
-      {tier === "premium" && filtered.length > 0 && (
-        <div style={{ padding: "8px 14px 0" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 7,
-            padding: "9px 13px", borderRadius: 10,
-            background: compareIds.length === 0 ? "#f1f5f9" : "#e6f4ed",
-            border: `1.5px solid ${compareIds.length === 0 ? "#e2e8f0" : "#a7d4bc"}`,
-          }}>
-            <Scale size={14} color={compareIds.length === 0 ? "#94a3b8" : "#2e8a5a"} />
-            <span style={{
-              fontSize: 12, fontWeight: 600,
-              color: compareIds.length === 0 ? "#94a3b8" : "#2e8a5a",
-              fontFamily: "var(--font-jakarta), sans-serif",
-            }}>
-              {compareIds.length === 0
-                ? t.schoolsCompareHint
-                : t.schoolsSelectedForCompare(compareIds.length)}
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
-        {filtered.length === 0 && (
+        {loading && <SkeletonList count={6} />}
+        {!loading && filtered.length === 0 && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
             {t.schoolsNoResults}
           </div>
@@ -599,7 +635,7 @@ function SchoolsContent() {
                 <Link href={`/place/${school.slug ?? school.id}`} style={{ textDecoration: "none", display: "block" }}>
                   <PlaceCard place={school} selected={isSelected} />
                 </Link>
-                {tier === "premium" && (
+                {tier === "premium" && compareMode && (
                   <div style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}>
                     <ActionButton onClick={() => toggleCompare(school.id)} ariaLabel="Toggle compare" style={{
                       display: "flex", alignItems: "center", justifyContent: "center",

@@ -1,5 +1,6 @@
 ﻿"use client";
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import {
@@ -7,10 +8,10 @@ import {
   Heart, Pencil, Star, Globe, Play, Check, Lock, MessageCircle,
   GraduationCap, BookOpen, Banknote, Calendar, Users, Monitor,
   Droplets, Gift, Wallet, Camera, Award, Layers, Ticket,
-  CreditCard, Activity, Baby,
+  CreditCard, Activity, Baby, Home,
 } from "lucide-react";
 import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } from "@/lib/mockData";
-import { fetchPlaceBySlug, fetchPlaceById } from "@/lib/db";
+import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
@@ -169,6 +170,17 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [showPsbGate,    setShowPsbGate]    = useState(false);
   const [showSaveGate,   setShowSaveGate]   = useState(false);
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
+  const [similarSchools,    setSimilarSchools]    = useState<Place[]>([]);
+  const [similarCenters,   setSimilarCenters]    = useState<Place[]>([]);
+  const similarRailRef = useRef<HTMLDivElement>(null);
+  const [similarCanL, setSimilarCanL] = useState(false);
+  const [similarCanR, setSimilarCanR] = useState(true);
+  const updateSimilarArrows = () => {
+    const el = similarRailRef.current;
+    if (!el) return;
+    setSimilarCanL(el.scrollLeft > 4);
+    setSimilarCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
   const [detailOpen,        setDetailOpen]        = useState(false);
 
   // ── Suggest Edits form state ────────────────────────────────────────────────
@@ -237,6 +249,22 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     return () => window.removeEventListener("focus", loadUserReview);
   }, [place?.id]);
 
+  useEffect(() => {
+    if (!place || place.category !== "school") return;
+    fetchSimilarSchools(place.curriculum, place.id, place.grades).then((results) => {
+      setSimilarSchools(results);
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id, place?.curriculum]);
+
+  useEffect(() => {
+    if (!place || place.category !== "learning-center") return;
+    fetchSimilarLearningCenters(place.courseTypes, place.id).then((results) => {
+      setSimilarCenters(results);
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id, place?.courseTypes?.join(",")]);
+
   // Guests can freely view place detail pages (no gate)
 
   // Auto-advance slideshow every 2 s (pauses when lightbox is open)
@@ -265,6 +293,19 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     setFavTooltip(adding ? "add" : "remove");
     favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
   }
+
+  const categoryHref: Record<string, string> = {
+    school:            "/schools",
+    "learning-center": "/learning-centers",
+    daycare:           "/daycare",
+    playground:        "/playgrounds",
+    clinic:            "/clinics",
+    cafe:              "/cafes",
+    "mini-zoo":        "/mini-zoo",
+    "swimming-pool":   "/swimming-pools",
+    bookstore:         "/bookstores",
+    other:             "/others",
+  };
 
   const categoryLabel: Record<string, string> = {
     school:            t.catSchool,
@@ -319,16 +360,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
       }}>
         <div style={{ maxWidth: 448, margin: "0 auto", height: "100%",
           display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
-          <ActionButton onClick={() => router.back()} style={{
-            display: "inline-flex", alignItems: "center", gap: 4,
-            padding: "7px 12px", borderRadius: 999,
-            background: "rgba(255,255,255,0.18)", color: "#fff",
-            fontSize: 13, fontWeight: 700,
-            border: "1px solid rgba(255,255,255,0.22)",
-          }}>
-            <ChevronLeft size={14} strokeWidth={2.5} color="#fff" />
-            Back
-          </ActionButton>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Link href="/" style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              width: 34, height: 34, borderRadius: 999,
+              background: "rgba(255,255,255,0.18)",
+              border: "1px solid rgba(255,255,255,0.22)",
+            }}>
+              <Home size={15} strokeWidth={2.5} color="#fff" />
+            </Link>
+            <ActionButton onClick={() => router.back()} style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "7px 12px", borderRadius: 999,
+              background: "rgba(255,255,255,0.18)", color: "#fff",
+              fontSize: 13, fontWeight: 700,
+              border: "1px solid rgba(255,255,255,0.22)",
+            }}>
+              <ChevronLeft size={14} strokeWidth={2.5} color="#fff" />
+              {lang === "id" ? "Kembali" : "Back"}
+            </ActionButton>
+          </div>
           <PremiumBadge />
         </div>
       </div>
@@ -565,20 +616,32 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             <X size={18} color="white" />
           </button>
           {/* Download */}
-          <a
-            href={place.feeImageUrl}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            style={{ position: "absolute", top: 52, left: 16, width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, textDecoration: "none" }}
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (!place?.feeImageUrl) return;
+              try {
+                const res = await fetch(place.feeImageUrl);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const ext = blob.type.includes("png") ? "png" : blob.type.includes("webp") ? "webp" : "jpg";
+                a.download = `biaya-${place.slug ?? place.id}.${ext}`;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch {
+                window.open(place.feeImageUrl, "_blank");
+              }
+            }}
+            style={{ position: "absolute", top: 52, left: 16, width: 36, height: 36, borderRadius: 999, background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1, border: "none", cursor: "pointer" }}
           >
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-          </a>
+          </button>
           {/* Image */}
           <img
             src={place.feeImageUrl}
@@ -710,7 +773,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               border: "3px solid #fff",
               boxShadow: "0 4px 14px rgba(0,0,0,0.20)",
               overflow: "clip", zIndex: 10,
-              background: "#132d1e",
+              background: "#fff",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {place.logo
@@ -722,18 +785,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         })()}
 
         {/* Name + category + rating + buttons */}
-        <div>
+        <div style={{ marginTop: -8 }}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1" style={{ minWidth: 0 }}>
-              <div className="flex items-center gap-1.5 mb-3">
-                <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block" style={{ background: colors.bg, color: colors.text }}>
+              {/* Breadcrumb */}
+              <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8, flexWrap: "nowrap", overflow: "hidden" }}>
+                <Link href="/" style={{ fontSize: 11, color: "#94a3b8", textDecoration: "none", fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500, whiteSpace: "nowrap" }}>
+                  {lang === "id" ? "Beranda" : "Home"}
+                </Link>
+                <span style={{ fontSize: 10, color: "#cbd5e1" }}>›</span>
+                <Link href={categoryHref[place.category] ?? "/explore"} style={{ fontSize: 11, color: "#94a3b8", textDecoration: "none", fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500, whiteSpace: "nowrap" }}>
                   {categoryLabel[place.category]}
-                </span>
-                <span className="text-xs font-jakarta font-bold px-2.5 py-0.5 rounded-full inline-block" style={{ background: colors.bg, color: colors.text }}>
-                  {(() => { const ag = getAreaGroup(place.area); return ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro"; })()}
+                </Link>
+                <span style={{ fontSize: 10, color: "#cbd5e1" }}>›</span>
+                <span style={{ fontSize: 11, color: "#64748b", fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                  {place.name}
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{place.name}</h1>
+              <div style={{ height: 1, background: "rgba(15,23,42,0.08)", margin: "4px 0 6px" }} />
+
+              <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif", letterSpacing: "-0.5px" }}>{place.name}</h1>
               {place.address && (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginTop: 6 }}>
                   <MapPin size={12} style={{ color: "#2e8a5a", marginTop: 1, flexShrink: 0 }} />
@@ -781,7 +852,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 <Clock size={12} style={{ color: "#64748b", flexShrink: 0 }} />
                 <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}>
                   {place.hours}
-                  {place.yearFounded && (
+                  {place.yearFounded && place.category !== "learning-center" && (
                     <>
                       <span style={{ margin: "0 5px", color: "#cbd5e1" }}>|</span>
                       {t.pdYearFounded}: {place.yearFounded}
@@ -839,7 +910,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 600, color: "#fff",
             };
             return (
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: -6 }}>
                 {/* Phone */}
                 <div style={{ flex: 1, position: "relative" }}>
                   <ActionButton
@@ -933,6 +1004,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             [t.pdSchoolPool]:      ic(Droplets),
             [t.pdChipCourseType]:  ic(Layers, true),
             [t.pdChipAgeChild]:    ic(Baby, true),
+            [t.pdRegistrationFee]: ic(Banknote),
             [t.pdMonthlyFee]:      ic(Wallet),
             [t.pdFreeTrial]:       ic(Gift),
             [t.pdTeacherRatio]:    ic(Users),
@@ -987,13 +1059,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               [t.pdChipAnnualFee]:   yearTag,
             } : {}),
             ...(place.category === "learning-center" ? {
-              [t.pdMonthlyFee]: yearTag,
+              [t.pdRegistrationFee]: yearTag,
+              [t.pdMonthlyFee]:      yearTag,
             } : {}),
           };
           const row = (label: string, value: React.ReactNode) => (
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              paddingTop: 9, paddingBottom: 9,
+              gap: 8,
+              paddingTop: 7, paddingBottom: 7,
               borderBottom: "1px solid #e9eef4",
             }}>
               <span style={{
@@ -1003,15 +1077,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 {iconMap[label]}
                 <span style={{
                   fontFamily: "var(--font-jakarta), sans-serif",
-                  fontSize: "0.875rem", color: "#6b7280",
+                  fontSize: 14, color: "#6b7280",
                 }}>
                   {label}{schoolYearSuffix[label]}
                 </span>
               </span>
               <span style={{
                 fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
-                textAlign: "right" as const, maxWidth: "58%",
+                fontWeight: 600, fontSize: 14, color: "#0e1d4f",
+                textAlign: "right" as const, maxWidth: "65%",
               }}>
                 {value}
               </span>
@@ -1023,7 +1097,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             const val = (
               <span style={{
                 fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 600, fontSize: "0.875rem", color: "#0e1d4f",
+                fontWeight: 600, fontSize: 14, color: "#0e1d4f",
               }}>
                 {value}
               </span>
@@ -1055,22 +1129,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               [t.pdStudentsPerClass, place.studentsPerClass !== undefined ? `${place.studentsPerClass} murid` : "—"],
               [t.pdChipUangPangkal, fmtUp],
               [t.pdChipSpp, fmtSpp],
-              ...(fmtAnnual ? [[t.pdChipAnnualFee, fmtAnnual] as [string, string]] : []),
+              [t.pdChipAnnualFee, fmtAnnual ?? "—"],
             ];
 
           } else if (place.category === "learning-center") {
+            const fmtRegFee = place.registrationFeeMin !== undefined
+              ? `Rp ${formatPrice(place.registrationFeeMin)}${place.registrationFeeMax && place.registrationFeeMax !== place.registrationFeeMin ? ` – ${formatPrice(place.registrationFeeMax)}` : ""}`
+              : "—";
             heroItems = [];
             freeRows = [
               [t.pdChipCourseType, place.courseTypes?.join(", ") ?? place.centerType ?? "—"],
-              [t.pdChipAgeChild,   place.ageRange],
-              [t.pdMonthlyFee,     fmtBulanan],
+              [t.pdRegistrationFee, fmtRegFee],
+              [t.pdMonthlyFee,      fmtBulanan],
+              [t.pdChipAgeChild,    place.ageRange],
             ];
+            if (place.teachingLanguage !== undefined)
+              freeRows.push([t.pdTeachingLanguage, place.teachingLanguage]);
+            if (place.teacherStudentRatio !== undefined)
+              freeRows.push([t.pdTeacherRatio, place.teacherStudentRatio]);
             if (place.freeTrial !== undefined)
               freeRows.push([t.pdFreeTrial, place.freeTrial ? "Ada" : "Tidak Ada"]);
-            if (place.teacherStudentRatio !== undefined)
-              gatedRows.push([t.pdTeacherRatio, place.teacherStudentRatio]);
-            if (place.teachingLanguage !== undefined)
-              gatedRows.push([t.pdTeachingLanguage, place.teachingLanguage]);
 
           } else if (place.category === "daycare") {
             heroItems = [];
@@ -1120,10 +1198,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
           return (
             <div style={{
-              marginTop: 8,
+              marginTop: 4,
               background: "#f8fafc",
               borderRadius: 18,
-              padding: "14px 14px 4px",
+              padding: "6px 14px 4px",
             }}>
               {/* Hero chips */}
               {heroItems.length > 0 && (
@@ -1146,35 +1224,36 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 </div>
               )}
 
-              {/* Collapsible: fee image (schools) or gated rows (other categories) */}
-              {(place.category === "school" || gatedRows.length > 0) && (
+              {/* Collapsible: fee image (schools & learning-centers) or gated rows (other categories) */}
+              {(place.category === "school" || place.category === "learning-center" || gatedRows.length > 0) && (
                 <>
                   <ActionButton
                     onClick={() => setDetailOpen((o) => !o)}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
-                      width: "100%", padding: "10px 0",
-                      background: "none", border: "none",
-                      borderTop: freeRows.length > 0 ? "1px solid #e9eef4" : "none",
+                      width: "100%", padding: "10px 12px",
+                      background: "#d1fae5", border: "none",
+                      borderRadius: 10,
+                      marginTop: freeRows.length > 0 ? 8 : 0,
                       touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                       cursor: "pointer",
                     } as React.CSSProperties}
                   >
                     <span style={{
                       fontFamily: "var(--font-jakarta), sans-serif",
-                      fontSize: 13, fontWeight: 600, color: "#2e8a5a",
+                      fontSize: 15, fontWeight: 700, color: "#166534",
                     }}>
                       {t.pdSeeDetails}
                     </span>
                     <ChevronDown
-                      size={16} color="#2e8a5a"
+                      size={18} color="#166534"
                       style={{ transform: detailOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
                     />
                   </ActionButton>
 
                   {detailOpen && (
                     <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
-                      {place.category === "school" ? (
+                      {(place.category === "school" || place.category === "learning-center") ? (
                         /* Fee detail image — premium gated */
                         place.feeImageUrl ? (
                         <div
@@ -1206,7 +1285,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                             </div>
                           )}
                         </div>
-                        ) : null
+                        ) : (
+                          <div style={{
+                            padding: "20px 0", textAlign: "center",
+                            color: "#94a3b8", fontSize: 13,
+                            fontFamily: "var(--font-jakarta), sans-serif",
+                          }}>
+                            Data Belum Tersedia
+                          </div>
+                        )
                       ) : (
                         gatedRows.map(([label, value]) => (
                           <React.Fragment key={label}>{gatedRow(label, value)}</React.Fragment>
@@ -1258,7 +1345,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* About */}
         <div>
-          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{t.pdAbout}</h2>
+          <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>{t.pdAbout}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {(place.description ?? "").split(/\n+/).filter(Boolean).map((para, i) => (
               <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed" style={{ margin: 0 }}>{para}</p>
@@ -1271,7 +1358,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           const items = place.facilities.split(",").map(x => x.trim()).filter(Boolean);
           return (
             <div>
-              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
                 {t.pdFacilities}
               </h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
@@ -1291,7 +1378,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           const items = place.extracurriculars.split(",").map(x => x.trim()).filter(Boolean);
           return (
             <div>
-              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
                 {t.pdExtracurriculars}
               </h2>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px 8px" }}>
@@ -1467,7 +1554,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* Social Media */}
         <div>
-          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-3" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+          <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
             Social Media
           </h2>
           <div style={{ display: "flex", gap: 10 }}>
@@ -1512,7 +1599,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* Related Videos */}
         <div>
-          <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+          <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
             {t.pdVideosTitle}
           </h2>
           {(place.videos ?? []).length === 0 ? (
@@ -1551,7 +1638,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           const totalCount = baseList.length + (userReview ? 1 : 0);
           return (
             <div>
-              <h2 className="text-lg font-semibold text-[#0e1d4f] mb-1" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
                 {t.pdUserReviewsTitle}{totalCount > 0 ? ` (${totalCount})` : ""}
               </h2>
               {totalCount === 0 ? (
@@ -1650,6 +1737,200 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           </ActionButton>
         )}
 
+        {/* ── Sekolah Lain Yang Mirip ──────────────────────────────────── */}
+        {place.category === "school" && similarSchools.length > 0 && (
+          <div style={{
+            margin: "28px -20px 0",
+            background: "#e8eaed",
+            padding: "20px 20px 22px",
+          }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Sekolah Lain Yang Mirip" : "Similar Schools"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarSchools.map((s) => (
+                  <a
+                    key={s.id}
+                    href={`/place/${s.slug ?? s.id}`}
+                    style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
+                  >
+                    <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                      <img
+                        src={s.photo}
+                        alt={s.name}
+                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
+                      />
+                      <div style={{ padding: "8px 9px" }}>
+                        <p style={{
+                          fontFamily: "var(--font-fraunces), Georgia, serif",
+                          fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                          margin: 0, lineHeight: 1.3,
+                          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}>
+                          {s.name}
+                        </p>
+                        {s.curriculum && (
+                          <p style={{
+                            fontFamily: "var(--font-jakarta), sans-serif",
+                            fontSize: 12, color: "#64748b",
+                            margin: "3px 0 0",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {s.curriculum}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              {/* Left arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanL ? 1 : 0,
+                  pointerEvents: similarCanL ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanR ? 1 : 0,
+                  pointerEvents: similarCanR ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tempat Kursus Yang Serupa ────────────────────────────────── */}
+        {place.category === "learning-center" && similarCenters.length > 0 && (
+          <div style={{
+            margin: "28px -20px 0",
+            background: "#e8eaed",
+            padding: "20px 20px 22px",
+          }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Tempat Kursus Yang Serupa" : "Similar Learning Centers"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarCenters.map((s) => (
+                  <a
+                    key={s.id}
+                    href={`/place/${s.slug ?? s.id}`}
+                    style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
+                  >
+                    <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                      <img
+                        src={s.photo}
+                        alt={s.name}
+                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
+                      />
+                      <div style={{ padding: "8px 9px" }}>
+                        <p style={{
+                          fontFamily: "var(--font-fraunces), Georgia, serif",
+                          fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                          margin: 0, lineHeight: 1.3,
+                          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}>
+                          {s.name}
+                        </p>
+                        {s.courseTypes && s.courseTypes.length > 0 && (
+                          <p style={{
+                            fontFamily: "var(--font-jakarta), sans-serif",
+                            fontSize: 12, color: "#64748b",
+                            margin: "3px 0 0",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {s.courseTypes.join(", ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              {/* Left arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanL ? 1 : 0,
+                  pointerEvents: similarCanL ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanR ? 1 : 0,
+                  pointerEvents: similarCanR ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Suggest Edits trigger ──────────────────────────────────────── */}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
           <ActionButton
@@ -1713,7 +1994,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   {t.premiumGateDesc}
                 </p>
                 <ActionButton
-                  onClick={() => { setShowSuggestSheet(false); router.push("/upgrade"); }}
+                  onClick={() => { setShowSuggestSheet(false); sessionStorage.setItem("upgradeFrom", window.location.pathname); router.push("/upgrade"); }}
                   style={{
                     width: "100%", marginTop: 4, padding: "15px 0", borderRadius: 16, fontSize: 15, fontWeight: 700,
                     background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",

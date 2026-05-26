@@ -41,3 +41,18 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+.env*.local
+
+# local image asset folders (served from Supabase Storage)
+/public/detil-biaya-learning-centers/
+/public/facility-images/
+/public/logo-sekolah/
+/public/logo-tempat-kursus/
+/public/price-detail/
+
+# scratch / upload scripts with hardcoded keys
+/scripts/upload-*.mjs
+/learning-centers-missing-photos.csv
+
+# supabase temp
+/supabase/.temp/

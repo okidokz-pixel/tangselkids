@@ -30,7 +30,7 @@ export default function FeedbackPage() {
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "12px 14px", borderRadius: 14, fontSize: 14,
-    border: "1.5px solid #e2e8f0", background: "#f6f1e8", outline: "none",
+    border: "1.5px solid #e2e8f0", background: "#fff", outline: "none",
     fontFamily: "var(--font-jakarta), sans-serif", color: "#0f172a",
     boxSizing: "border-box",
   };
@@ -41,7 +41,7 @@ export default function FeedbackPage() {
   };
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8", paddingBottom: 100 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#fff", paddingBottom: 100 }}>
 
       {/* Header */}
       <div style={{

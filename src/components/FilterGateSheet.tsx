@@ -80,6 +80,7 @@ export function FilterGateSheet({
         <ActionButton
           onClick={() => {
             onClose();
+            sessionStorage.setItem("upgradeFrom", window.location.pathname + window.location.search);
             router.push("/upgrade");
           }}
           style={{

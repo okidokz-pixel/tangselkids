@@ -228,7 +228,7 @@ export default function ProfilePage() {
 
       {/* Header */}
       <div
-        className="px-5 pt-12 pb-8"
+        className="px-5 pt-7 pb-8"
         style={{
           background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",
@@ -301,7 +301,7 @@ export default function ProfilePage() {
               }}
             >
               <Pencil size={13} />
-              Profile
+              Edit Profil
             </ActionButton>
           )}
           {!user && (
@@ -373,7 +373,7 @@ export default function ProfilePage() {
               </p>
             </div>
             <ActionButton
-              onClick={() => router.push("/upgrade")}
+              onClick={() => { sessionStorage.setItem("upgradeFrom", "/profile"); router.push("/upgrade"); }}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "10px 16px", borderRadius: 999, flexShrink: 0,

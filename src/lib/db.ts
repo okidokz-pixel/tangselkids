@@ -76,7 +76,7 @@ function mapRow(row: any, category: Place["category"]): Place {
     facebook:       normalizeSocial(row.facebook,  "facebook"),
     tiktok:         normalizeSocial(row.tiktok,    "tiktok"),
     website:        normalizeSocial(row.website,   "website"),
-    youtube:        row.youtube ?? undefined,
+    youtube:        normalizeSocial(row.youtube,   "youtube"),
     yearFounded:    row.year_founded ?? undefined,
   };
 
@@ -110,6 +110,9 @@ function mapRow(row: any, category: Place["category"]): Place {
         freeTrial:            row.free_trial             ?? undefined,
         teacherStudentRatio:  row.teacher_student_ratio  ?? undefined,
         teachingLanguage:     row.teaching_language      ?? undefined,
+        tahunBiaya:           row.tahun_biaya            ?? undefined,
+        registrationFeeMin:   row.registration_fee_min   ?? undefined,
+        registrationFeeMax:   row.registration_fee_max   ?? undefined,
         priceMin:             row.price_min ?? 0,
         priceMax:             row.price_max ?? row.price_min ?? 0,
       };
@@ -171,16 +174,19 @@ function mapRow(row: any, category: Place["category"]): Place {
 
 function normalizeSocial(
   v: string | null | undefined,
-  platform: "instagram" | "facebook" | "tiktok" | "website",
+  platform: "instagram" | "facebook" | "tiktok" | "website" | "youtube",
 ): string | undefined {
   if (!v) return undefined;
   const s = v.trim();
   if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  // Bare domain URL (e.g. "fb.com/Page" or "youtube.com/@Channel")
+  if (s.includes(".") && !s.startsWith("@")) return `https://${s}`;
   const handle = s.replace(/^@/, "");
   switch (platform) {
     case "instagram": return `https://instagram.com/${handle}`;
     case "facebook":  return `https://facebook.com/${handle}`;
     case "tiktok":    return `https://tiktok.com/@${handle}`;
+    case "youtube":   return `https://youtube.com/@${handle}`;
     case "website":   return `https://${handle}`;
   }
 }
@@ -222,6 +228,33 @@ export function getCachedAllPlaces(): Place[] {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
+export async function searchAllPlaces(query: string, limit = 30): Promise<Place[]> {
+  const categories = Object.keys(TABLE).filter((c) => c !== "other") as Place["category"][];
+  const results = await Promise.all(
+    categories.map(async (category) => {
+      const { data } = await supabase
+        .from(TABLE[category])
+        .select("*")
+        .ilike("name", `%${query}%`)
+        .order("is_featured", { ascending: false })
+        .limit(limit);
+      return (data ?? []).map((row) => mapRow(row, category));
+    })
+  );
+  return results.flat();
+}
+
+export async function fetchPlacesPreview(category: Place["category"], limit = 4, offset = 0): Promise<Place[]> {
+  const { data, error } = await supabase
+    .from(TABLE[category])
+    .select("*")
+    .order("is_featured", { ascending: false })
+    .order("name",        { ascending: true })
+    .range(offset, offset + limit - 1);
+  if (error || !data) return [];
+  return data.map((row) => mapRow(row, category));
+}
+
 export async function fetchPlacesByCategory(category: Place["category"]): Promise<Place[]> {
   const { data, error } = await supabase
     .from(TABLE[category])
@@ -230,7 +263,6 @@ export async function fetchPlacesByCategory(category: Place["category"]): Promis
     .order("name",        { ascending: true });
   if (error || !data) return [];
   const result = data.map((row) => mapRow(row, category));
-  wc().categories[category] = result;
   return result;
 }
 
@@ -278,6 +310,73 @@ export async function fetchAllSlugs(): Promise<{ slug: string; category: Place["
     }),
   );
   return results.flat();
+}
+
+export async function fetchSimilarSchools(
+  curriculum: string | undefined,
+  excludeId: string,
+  grades: string[] | undefined,
+  limit = 4,
+): Promise<Place[]> {
+  // 1. Match by jenjang (grades overlap)
+  if (grades && grades.length > 0) {
+    const { data } = await supabase
+      .from("schools")
+      .select("*")
+      .overlaps("grades", grades)
+      .neq("id", excludeId)
+      .order("is_featured", { ascending: false })
+      .limit(limit);
+    if (data && data.length >= 2)
+      return data.map((row) => mapRow(row, "school"));
+  }
+  // 2. Fall back to kurikulum
+  if (curriculum) {
+    const { data } = await supabase
+      .from("schools")
+      .select("*")
+      .eq("curriculum", curriculum)
+      .neq("id", excludeId)
+      .order("is_featured", { ascending: false })
+      .limit(limit);
+    if (data && data.length >= 2)
+      return data.map((row) => mapRow(row, "school"));
+  }
+  // 3. Fall back to any schools
+  const { data } = await supabase
+    .from("schools")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "school"));
+}
+
+export async function fetchSimilarLearningCenters(
+  courseTypes: string[] | undefined,
+  excludeId: string,
+  limit = 6,
+): Promise<Place[]> {
+  // 1. Match by overlapping course_types
+  if (courseTypes && courseTypes.length > 0) {
+    const { data } = await supabase
+      .from("learning_centers")
+      .select("*")
+      .overlaps("course_types", courseTypes)
+      .neq("id", excludeId)
+      .order("is_featured", { ascending: false })
+      .limit(limit);
+    if (data && data.length >= 2)
+      return data.map((row) => mapRow(row, "learning-center"));
+  }
+  // 2. Fall back to any learning centers
+  const { data } = await supabase
+    .from("learning_centers")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "learning-center"));
 }
 
 export async function fetchPlacesByIds(ids: string[]): Promise<Place[]> {

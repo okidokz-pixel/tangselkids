@@ -31,7 +31,7 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 7,
+        gap: 5,
         background: "none",
         border: "none",
         padding: "4px 0",
@@ -44,7 +44,7 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
     >
       {/* ID label */}
       <span style={{
-        fontSize: 11, fontWeight: 800, letterSpacing: 0.4,
+        fontSize: 10, fontWeight: 800, letterSpacing: 0.4,
         color: !isEN ? labelActive : labelMuted,
         transition: "color 0.22s ease",
         lineHeight: 1,
@@ -55,8 +55,8 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
       {/* Track */}
       <div style={{
         position: "relative",
-        width: 56,
-        height: 30,
+        width: 48,
+        height: 26,
         borderRadius: 999,
         background: trackBg,
         border: trackBorder,
@@ -67,9 +67,9 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
         <div style={{
           position: "absolute",
           top: 3,
-          left: isEN ? 29 : 3,
-          width: 24,
-          height: 24,
+          left: isEN ? 25 : 3,
+          width: 20,
+          height: 20,
           borderRadius: 999,
           overflow: "clip",
           boxShadow: "0 2px 6px rgba(0,0,0,0.28), 0 0 0 1.5px rgba(255,255,255,0.6)",
@@ -86,7 +86,7 @@ export function LangToggle({ variant = "light" }: LangToggleProps) {
 
       {/* EN label */}
       <span style={{
-        fontSize: 11, fontWeight: 800, letterSpacing: 0.4,
+        fontSize: 10, fontWeight: 800, letterSpacing: 0.4,
         color: isEN ? labelActive : labelMuted,
         transition: "color 0.22s ease",
         lineHeight: 1,

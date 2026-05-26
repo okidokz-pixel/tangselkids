@@ -1,6 +1,7 @@
 "use client";
 import { MapPin, Star } from "lucide-react";
 import { type Place, formatPriceRange } from "@/lib/mockData";
+import { useLang } from "@/context/LanguageContext";
 
 export function PlaceCard({
   place,
@@ -11,8 +12,9 @@ export function PlaceCard({
   photoOverlay?: React.ReactNode;
   selected?: boolean;
 }) {
+  const { t } = useLang();
   const bottomRow = (() => {
-    if (place.category === "school") return place.curriculumCategory ?? null;
+    if (place.category === "school") return place.curriculum ?? place.curriculumCategory ?? null;
     if (place.category === "learning-center") return place.centerType ?? (place.courseTypes?.[0] ?? null);
     if (place.category === "bookstore") return null;
     return place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax);
@@ -101,7 +103,7 @@ export function PlaceCard({
         {place.category === "school" && place.bahasa?.length ? (
           <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-              Bahasa:
+              {t.cardLabelBahasa}:
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {place.bahasa.join(", ")}
@@ -124,7 +126,7 @@ export function PlaceCard({
           place.category === "school" ? (
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
               <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-                Kurikulum:
+                {t.cardLabelKurikulum}:
               </span>
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-blue-700)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {bottomRow}

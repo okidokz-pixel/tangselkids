@@ -1,210 +1,326 @@
-﻿"use client";
-import { useState, useEffect } from "react";
+"use client";
+import { useEffect, useRef, useState, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search, X } from "lucide-react";
-import { getAreaGroup, type Place } from "@/lib/mockData";
-import { fetchAllPlaces } from "@/lib/db";
-import { useLang } from "@/context/LanguageContext";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { type Place } from "@/lib/mockData";
+import { fetchPlacesPreview, searchAllPlaces } from "@/lib/db";
 import { PlaceCard } from "@/components/PlaceCard";
-import { type AreaFilter } from "@/components/AreaToggle";
-import { AreaCoverageButton } from "@/components/AreaCoverageButton";
+import { SkeletonList } from "@/components/SkeletonCard";
 import { BottomNav } from "@/components/BottomNav";
+import { useLang } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
+import { ActionButton } from "@/components/ActionButton";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
-type Cat =
-  | "all" | "school" | "learning-center" | "daycare" | "playground"
-  | "clinic" | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore";
+// ── Category config ───────────────────────────────────────────────────────────
+type CatConfig = {
+  id: Place["category"];
+  labelId: string;
+  labelEn: string;
+  emoji: string;
+  href: string;
+};
 
-export default function ExplorePage() {
-  const { t } = useLang();
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  useEffect(() => { fetchAllPlaces().then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+// Tempat Kursus is 2nd, no emojis in pills
+const CATS: CatConfig[] = [
+  { id: "school",          labelId: "Sekolah",        labelEn: "Schools",          emoji: "🏫", href: "/schools?view=results" },
+  { id: "learning-center", labelId: "Tempat Kursus",  labelEn: "Learning Centers", emoji: "📚", href: "/learning-centers?view=results" },
+  { id: "daycare",         labelId: "Daycare",         labelEn: "Daycares",         emoji: "🍼", href: "/daycare?view=results" },
+  { id: "playground",      labelId: "Playground",      labelEn: "Playgrounds",      emoji: "🎠", href: "/playgrounds?view=results" },
+  { id: "clinic",          labelId: "Klinik",          labelEn: "Clinics",          emoji: "🏥", href: "/clinics?view=results" },
+  { id: "cafe",            labelId: "Kafe Ramah Anak", labelEn: "Family Cafes",     emoji: "☕", href: "/cafes?view=results" },
+  { id: "swimming-pool",   labelId: "Kolam Renang",    labelEn: "Swimming Pools",   emoji: "🏊", href: "/swimming-pools?view=results" },
+  { id: "bookstore",       labelId: "Toko Buku",       labelEn: "Bookstores",       emoji: "📖", href: "/bookstores?view=results" },
+  { id: "mini-zoo",        labelId: "Mini Zoo",        labelEn: "Mini Zoo",         emoji: "🦁", href: "/mini-zoo?view=results" },
+];
 
-  const [query, setQuery] = useState("");
-  const [cat,   setCat]   = useState<Cat>("all");
-  const [area,  setArea]  = useState<AreaFilter>("all");
+// ── Explore page ──────────────────────────────────────────────────────────────
+function ExplorePageInner() {
+  const { lang } = useLang();
+  const { tier } = useAuth();
+  const tabsRef  = useRef<HTMLDivElement>(null);
+  const [canScrollL, setCanScrollL] = useState(false);
+  const [canScrollR, setCanScrollR] = useState(true);
 
-  const categoryOptions: { value: Cat; label: string }[] = [
-    { value: "all",             label: t.exploreAllCats       },
-    { value: "school",          label: t.exploreSchools       },
-    { value: "learning-center", label: t.exploreLCs           },
-    { value: "daycare",         label: t.exploreDaycare       },
-    { value: "playground",      label: t.explorePlaygrounds   },
-    { value: "clinic",          label: t.exploreClinics       },
-    { value: "cafe",            label: t.exploreCafes         },
-    { value: "mini-zoo",        label: t.exploreMiniZoo       },
-    { value: "swimming-pool",   label: t.exploreSwimmingPools },
-    { value: "bookstore",       label: t.exploreBookstores    },
-  ];
+  const searchParams = useSearchParams();
+  const [allPlaces,    setAllPlaces]    = useState<Place[]>([]);
+  const [search,       setSearch]       = useState(() => searchParams.get("q") ?? "");
+  const [searchResults, setSearchResults] = useState<Place[]>([]);
+  const [searching,    setSearching]    = useState(false);
+  const [offset,       setOffset]       = useState(6);
+  const [loadingMore,  setLoadingMore]  = useState(false);
+  const [hasMore,      setHasMore]      = useState(true);
 
-  const filtered = allPlaces
-    .filter((p) => {
-      const matchCat   = cat === "all" || p.category === cat;
-      const matchArea  = area === "all" || getAreaGroup(p.area) === area;
-      const q          = query.toLowerCase();
-      const matchQuery = !q || p.name.toLowerCase().includes(q) || p.area.toLowerCase().includes(q);
-      return matchCat && matchArea && matchQuery;
-    })
-    .sort((a, b) => {
-      if (a.isFeatured && !b.isFeatured) return -1;
-      if (!a.isFeatured && b.isFeatured) return 1;
-      return b.rating - a.rating;
-    });
+  function shuffle<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
 
-  const visiblePlaces  = filtered;
+  // Initial load — 6 per category
+  useEffect(() => {
+    Promise.all(CATS.map((c) => fetchPlacesPreview(c.id, 6, 0)))
+      .then((results) => setAllPlaces(shuffle(results.flat())));
+  }, []);
 
-  const catActive = cat !== "all";
+  async function loadMore() {
+    setLoadingMore(true);
+    const results = await Promise.all(CATS.map((c) => fetchPlacesPreview(c.id, 6, offset)));
+    const batch = shuffle(results.flat());
+    if (batch.length === 0) setHasMore(false);
+    else {
+      setAllPlaces((prev) => [...prev, ...batch]);
+      setOffset((o) => o + 6);
+    }
+    setLoadingMore(false);
+  }
+
+  // Track scroll arrows
+  function updateArrows() {
+    const el = tabsRef.current;
+    if (!el) return;
+    setCanScrollL(el.scrollLeft > 4);
+    setCanScrollR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => { el.removeEventListener("scroll", updateArrows); window.removeEventListener("resize", updateArrows); };
+  }, []);
+
+  function scrollTabs(dir: "l" | "r") {
+    tabsRef.current?.scrollBy({ left: dir === "r" ? 160 : -160, behavior: "smooth" });
+  }
+
+  // Debounced live search against Supabase
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) { setSearchResults([]); setSearching(false); return; }
+    setSearching(true);
+    const timer = setTimeout(() => {
+      searchAllPlaces(q).then((res) => {
+        setSearchResults(res);
+        setSearching(false);
+      });
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  const searchLow = search.trim();
+  const displayPlaces = searchLow ? searchResults : allPlaces;
 
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", display: "flex", flexDirection: "column", paddingBottom: 112 }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 80 }}>
 
-      {/* Header */}
-      <div
-        style={{
-          padding: "48px 20px 20px",
-          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
-          borderRadius: "0 0 32px 32px",
-        }}
-      >
-        <div style={{ marginBottom: 16 }}>
+      {/* ── Green sticky header ───────────────────────────────────────────── */}
+      <div style={{
+        background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
+        borderRadius: "0 0 32px 32px",
+        position: "sticky", top: 0, zIndex: 40,
+      }}>
+        <div style={{ padding: "28px 20px 14px" }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-            <p style={{ color: "#a8d5ba", fontSize: 11, fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>
+            <p className="text-[#a8d5ba] text-xs font-jakarta font-semibold tracking-widest uppercase" style={{ margin: 0 }}>
               TangselKids
             </p>
             <PremiumBadge />
           </div>
-          <h1 style={{ color: "#fff", fontSize: 30, fontWeight: 700, lineHeight: 1.1, margin: "4px 0 0", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-            {t.exploreTitle}
+          <h1 className="text-white text-3xl font-bold leading-tight mt-0.5"
+              style={{ fontFamily: "var(--font-fraunces), Georgia, serif", margin: "2px 0 0" }}>
+            {lang === "id" ? "Jelajahi" : "Explore"}
           </h1>
         </div>
 
-        {/* Search bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 16, padding: "12px 16px", background: "#fff", boxShadow: "0 4px 16px rgba(0,0,0,0.12)" }}>
-          <Search size={18} strokeWidth={2} style={{ color: "var(--tk-blue-700)", flexShrink: 0 }} />
+        {/* ── Category tabs with scroll arrows ──────────────────────────── */}
+        <style>{`
+          @keyframes tab-nudge-r {
+            0%, 60%, 100% { transform: translateX(0); }
+            20%            { transform: translateX(4px); }
+            40%            { transform: translateX(2px); }
+          }
+          @keyframes tab-nudge-l {
+            0%, 60%, 100% { transform: translateX(0); }
+            20%            { transform: translateX(-4px); }
+            40%            { transform: translateX(-2px); }
+          }
+          .tab-arrow-l { animation: tab-nudge-l 1.6s ease-in-out infinite; }
+          .tab-arrow-r { animation: tab-nudge-r 1.6s ease-in-out infinite; }
+        `}</style>
+        <div style={{ position: "relative" }}>
+          {/* Left arrow */}
+          {canScrollL && (
+            <ActionButton
+              onClick={() => scrollTabs("l")}
+              style={{
+                position: "absolute", left: 8, top: "50%", zIndex: 2,
+                width: 24, height: 24, borderRadius: 999,
+                background: "#0e1d4f",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "2px solid rgba(255,255,255,0.7)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+                transform: "translateY(-50%)",
+              }}
+            >
+              <span className="tab-arrow-l" style={{ display: "flex" }}>
+                <ChevronLeft size={13} color="#fff" strokeWidth={3} />
+              </span>
+            </ActionButton>
+          )}
+
+          <div
+            ref={tabsRef}
+            style={{
+              display: "flex", gap: 8,
+              overflowX: "auto", scrollbarWidth: "none",
+              padding: "0 16px",
+            }}
+          >
+            {/* Semua — active */}
+            <span style={{
+              display: "inline-block", flexShrink: 0,
+              padding: "6px 14px", borderRadius: 999,
+              fontSize: 13, fontWeight: 700,
+              background: "#fff", color: "#1f6b43",
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              {lang === "id" ? "Semua" : "All"}
+            </span>
+
+            {/* Category pills — no emoji */}
+            {CATS.map((c) => (
+              <Link
+                key={c.id}
+                href={c.href}
+                style={{
+                  display: "inline-block", flexShrink: 0,
+                  padding: "6px 14px", borderRadius: 999,
+                  fontSize: 13, fontWeight: 600,
+                  background: "rgba(255,255,255,0.15)",
+                  color: "#fff",
+                  border: "1px solid rgba(255,255,255,0.2)",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  textDecoration: "none",
+                }}
+              >
+                {lang === "id" ? c.labelId : c.labelEn}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right arrow */}
+          {canScrollR && (
+            <ActionButton
+              onClick={() => scrollTabs("r")}
+              style={{
+                position: "absolute", right: 8, top: "50%", zIndex: 2,
+                width: 24, height: 24, borderRadius: 999,
+                background: "#0e1d4f",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "2px solid rgba(255,255,255,0.7)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.35)",
+                transform: "translateY(-50%)",
+              }}
+            >
+              <span className="tab-arrow-r" style={{ display: "flex" }}>
+                <ChevronRight size={13} color="#fff" strokeWidth={3} />
+              </span>
+            </ActionButton>
+          )}
+        </div>
+
+        {/* ── Search box ────────────────────────────────────────────────── */}
+        <div style={{ padding: "14px 16px 16px" }}>
+          <div style={{ position: "relative" }}>
+            <Search
+              size={15}
+              color="rgba(255,255,255,0.55)"
+              style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}
+            />
           <input
             type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.exploreSearch}
-            style={{ flex: 1, fontSize: 14, color: "#374151", outline: "none", border: "none", background: "transparent", fontFamily: "var(--font-jakarta), sans-serif" }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={lang === "id" ? "Cari tempat..." : "Search places..."}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "9px 14px 9px 36px",
+              borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)",
+              background: "rgba(255,255,255,0.15)",
+              color: "#fff", fontSize: 13,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              outline: "none",
+            }}
           />
-          {query && (
-            <button onClick={() => setQuery("")} style={{ color: "#9ca3af", background: "none", border: "none", cursor: "pointer", flexShrink: 0, display: "flex" }}>
-              <X size={16} />
-            </button>
-          )}
+          </div>
         </div>
       </div>
 
-      {/* Filters + Results */}
-      <div style={{ padding: "16px 20px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* ── Flat random feed ──────────────────────────────────────────────── */}
+      <div style={{ padding: "16px 16px 0" }}>
+        {/* Initial loading */}
+        {allPlaces.length === 0 && !searchLow && <SkeletonList count={6} />}
 
-        {/* 1 — Area chips + ⓘ */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          {(["all", "bintaro", "bsd"] as AreaFilter[]).map((v) => {
-            const label = v === "all" ? t.areaAll : v === "bintaro" ? t.areaBintaro : t.areaBSD;
-            const active = area === v;
-            return (
-              <label key={v} style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}>
-                <input
-                  type="radio"
-                  name="explore-area"
-                  value={v}
-                  checked={active}
-                  onChange={() => setArea(v)}
-                  style={{ position: "absolute", width: 1, height: 1, opacity: 0, margin: -1, padding: 0, overflow: "hidden", clip: "rect(0,0,0,0)", border: 0 }}
-                />
-                <span style={{
-                  display: "inline-block",
-                  padding: "6px 16px",
-                  borderRadius: 999,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  fontFamily: "var(--font-jakarta), sans-serif",
-                  transition: "all 0.15s",
-                  border: active ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
-                  background: active ? "#2e8a5a" : "#fff",
-                  color: active ? "#fff" : "#374151",
-                }}>
-                  {label}
-                </span>
-              </label>
-            );
-          })}
-          <AreaCoverageButton />
-        </div>
+        {/* Searching */}
+        {searching && <SkeletonList count={4} />}
 
-        {/* 2 — Category dropdown (label + select on one line) */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <p style={{
-            margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-            color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96,
-            fontFamily: "var(--font-jakarta), sans-serif",
-          }}>
-            {t.exploreCategory}
-          </p>
-          <div style={{ flex: 1, position: "relative" }}>
-            <select
-              value={cat}
-              onChange={(e) => setCat(e.target.value as Cat)}
-              style={{
-                width: "100%",
-                padding: "11px 40px 11px 14px",
-                borderRadius: 12,
-                fontSize: 13.5,
-                fontFamily: "var(--font-jakarta), sans-serif",
-                fontWeight: 600,
-                color: catActive ? "#1f6b43" : "#94a3b8",
-                border: `2px solid ${catActive ? "#2e8a5a" : "#e2e8f0"}`,
-                background: catActive ? "#e6f4ed" : "#fff",
-                outline: "none",
-                appearance: "none",
-                WebkitAppearance: "none",
-                cursor: "pointer",
-                boxSizing: "border-box",
-              }}
-            >
-              {categoryOptions.map(o => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke={catActive ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5"
-                strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
+        {/* No results */}
+        {!searching && searchLow && searchResults.length === 0 && (
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#94a3b8" }}>
+              {lang === "id" ? "Tidak ada hasil untuk pencarian ini." : "No results found."}
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Results count */}
-        <p style={{ margin: 0, fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta), sans-serif" }}>
-          {t.exploreResults(filtered.length)}
-        </p>
-
-        {/* Cards */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: "center", padding: "64px 0" }}>
-              <Search size={40} style={{ color: "var(--tk-line)", margin: "0 auto 12px" }} />
-              <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "var(--tk-muted)" }}>
-                {loading ? "Memuat..." : t.exploreNoResults}
-              </p>
-            </div>
-          )}
-          {visiblePlaces.map((place) => (
-            <Link key={place.id} href={`/place/${place.id}`} style={{ textDecoration: "none", display: "block" }}>
+          {!searching && displayPlaces.map((place) => (
+            <Link
+              key={place.id}
+              href={`/place/${place.slug ?? place.id}`}
+              style={{ textDecoration: "none", color: "inherit", display: "block" }}
+            >
               <PlaceCard place={place} />
             </Link>
           ))}
         </div>
 
+        {/* Load more */}
+        {!searchLow && !searching && hasMore && allPlaces.length > 0 && (
+          <div style={{ padding: "20px 0 8px", display: "flex", justifyContent: "center" }}>
+            <ActionButton
+              onClick={loadMore}
+              style={{
+                padding: "11px 28px", borderRadius: 999,
+                background: loadingMore ? "#e2e8f0" : "#0e1d4f",
+                color: loadingMore ? "#94a3b8" : "#fff",
+                fontFamily: "var(--font-jakarta), sans-serif",
+                fontSize: 14, fontWeight: 700,
+                border: "none",
+              }}
+            >
+              {loadingMore
+                ? (lang === "id" ? "Memuat..." : "Loading...")
+                : (lang === "id" ? "Muat lebih banyak" : "Load more places")}
+            </ActionButton>
+          </div>
+        )}
       </div>
 
       <BottomNav active="explore" />
     </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense>
+      <ExplorePageInner />
+    </Suspense>
   );
 }
