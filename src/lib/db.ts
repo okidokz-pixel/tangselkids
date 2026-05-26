@@ -36,10 +36,16 @@ function mapRow(row: any, category: Place["category"]): Place {
     .map((c) => row[c])
     .filter((v): v is string => !!v);
 
+  const extractYouTubeId = (url: string): string | null => {
+    const m = url.match(/(?:v=|youtu\.be\/|\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  };
   const videoColumns = ["video_1","video_2","video_3","video_4"];
   const videos = videoColumns
     .map((c) => row[c])
-    .filter((v): v is string => !!v);
+    .filter((v): v is string => !!v)
+    .map((v) => extractYouTubeId(v) ?? v)
+    .filter(Boolean);
 
   const firstPhoto = photos[0] ?? row.image_url ?? `https://picsum.photos/seed/${row.id}/800/500`;
 
@@ -105,6 +111,7 @@ function mapRow(row: any, category: Place["category"]): Place {
     case "learning-center":
       return {
         ...base,
+        ageRange:             row.age_range ?? (row.age_groups as string[] | null)?.join(", ") ?? "",
         courseTypes:          (row.course_types as string[] | null) ?? undefined,
         ageGroups:            (row.age_groups   as string[] | null) ?? undefined,
         freeTrial:            row.free_trial             ?? undefined,
@@ -391,6 +398,14 @@ export async function fetchAllPlaces(): Promise<Place[]> {
   const flat = results.flat();
   wc().allPlaces = flat;
   return flat;
+}
+
+export async function fetchPrimaryCountsFast(): Promise<{ school: number; learningCenter: number }> {
+  const [s, lc] = await Promise.all([
+    supabase.from("schools").select("*", { count: "exact", head: true }),
+    supabase.from("learning_centers").select("*", { count: "exact", head: true }),
+  ]);
+  return { school: s.count ?? 0, learningCenter: lc.count ?? 0 };
 }
 
 export async function fetchCategoryCounts(): Promise<Partial<Record<Place["category"], number>>> {

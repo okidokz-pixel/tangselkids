@@ -81,6 +81,75 @@ export async function toggleSchoolFeatured(id: string, value: boolean) {
   revalidatePath("/schools");
 }
 
+// ── Learning Centers ──────────────────────────────────────────────────────────
+
+export async function getLearningCenters() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("learning_centers")
+    .select("id,name,slug,area,course_types,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getLearningCenter(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("learning_centers")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveLearningCenter(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin
+      .from("learning_centers")
+      .update(payload)
+      .eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin
+      .from("learning_centers")
+      .insert(payload)
+      .select("id")
+      .single();
+    if (error) throw error;
+    revalidatePath("/learning-centers");
+    revalidatePath("/admin/learning-centers");
+    redirect(`/admin/learning-centers/${data.id}`);
+  }
+
+  revalidatePath("/learning-centers");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/learning-centers");
+}
+
+export async function deleteLearningCenter(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("learning_centers").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/learning-centers");
+  revalidatePath("/admin/learning-centers");
+  redirect("/admin/learning-centers");
+}
+
+export async function toggleLearningCenterFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("learning_centers")
+    .update({ is_featured: value })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/learning-centers");
+  revalidatePath("/learning-centers");
+}
+
 // ── Articles ─────────────────────────────────────────────────────────────────
 
 export async function getArticles() {
@@ -143,14 +212,18 @@ export async function deleteArticle(id: string) {
 
 export async function getDashboardStats() {
   await assertAdmin();
-  const [schools, articles, featuredSchools] = await Promise.all([
+  const [schools, articles, featuredSchools, learningCenters, featuredLC] = await Promise.all([
     supabaseAdmin.from("schools").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("articles").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("schools").select("*", { count: "exact", head: true }).eq("is_featured", true),
+    supabaseAdmin.from("learning_centers").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("learning_centers").select("*", { count: "exact", head: true }).eq("is_featured", true),
   ]);
   return {
     schools: schools.count ?? 0,
     articles: articles.count ?? 0,
     featuredSchools: featuredSchools.count ?? 0,
+    learningCenters: learningCenters.count ?? 0,
+    featuredLC: featuredLC.count ?? 0,
   };
 }

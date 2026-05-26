@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans, Bricolage_Grotesque, Fraunces } from "next/font/google";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { LocationProvider } from "@/context/LocationContext";
 import { RegisterSheetProvider } from "@/context/RegisterSheetContext";
 import { LoginSheetProvider } from "@/context/LoginSheetContext";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -183,6 +184,7 @@ export default function RootLayout({
       <body className="min-h-full font-jakarta text-gray-800 antialiased" suppressHydrationWarning>
         <LanguageProvider>
           <AuthProvider>
+            <LocationProvider>
             <RegisterSheetProvider>
               <LoginSheetProvider>
                 <DragClickGuard />
@@ -191,6 +193,7 @@ export default function RootLayout({
                 <LoginSheet />
               </LoginSheetProvider>
             </RegisterSheetProvider>
+            </LocationProvider>
           </AuthProvider>
         </LanguageProvider>
       </body>

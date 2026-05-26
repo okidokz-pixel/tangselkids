@@ -17,6 +17,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
+import { useLocation } from "@/context/LocationContext";
 import { PremiumGate } from "@/components/PremiumGate";
 import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { SaveGateSheet } from "@/components/SaveGateSheet";
@@ -155,6 +156,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const router  = useRouter();
   const { t, lang } = useLang();
   const { tier, loaded, user } = useAuth();
+  const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
   const [place,   setPlace]   = useState<Place | null>(null);
   const [loadingPlace, setLoadingPlace] = useState(true);
@@ -345,9 +347,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const colors = categoryColor[place.category] ?? { bg: "#e6f4ed", text: "#1f6b43" };
   const extraParas = aboutExtra[place.category] ?? [];
 
-  // ── Distance from home ────────────────────────────────────────────────────
+  // ── Distance from home (premium saved address) ───────────────────────────
   const homeKm: number | null = (user?.addressLat && user?.addressLng && place.lat && place.lng)
     ? haversineKm(user.addressLat, user.addressLng, place.lat, place.lng)
+    : null;
+
+  // ── Distance from browser geolocation (all users) ────────────────────────
+  const geoKm: number | null = (locationStatus === "granted" && userLat && userLng && place.lat && place.lng)
+    ? haversineKm(userLat, userLng, place.lat, place.lng)
     : null;
 
   return (
@@ -813,40 +820,53 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   </span>
                 </div>
               )}
-              {/* Distance from home */}
-              {tier === "free" && place.lat && place.lng ? (
-                <ActionButton
-                  onClick={() => setShowSaveGate(true)}
-                  style={{
-                    margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
-                    background: "none", border: "none", padding: 0, cursor: "pointer",
-                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
-                    color: "#16a34a", fontWeight: 700,
-                  }}
-                >
-                  <MapPin size={12} color="#16a34a" style={{ flexShrink: 0 }} />
-                  {t.distanceAnonPrompt}
-                </ActionButton>
-              ) : homeKm !== null ? (
-                <ActionButton
-                  onClick={() => setMapOpen(true)}
-                  style={{
-                    margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
-                    background: "none", border: "none", padding: 0, cursor: "pointer",
-                    fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
-                    color: "#16a34a", fontWeight: 700,
-                  }}
-                >
-                  🏠 {t.distanceFromHome(homeKm)}
-                </ActionButton>
-              ) : (place.lat && place.lng) ? (
-                // Place has coords but user hasn't set home address yet → prompt them
-                <p
-                  style={{ margin: "3px 0 0", cursor: "pointer", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}
-                  onClick={() => { window.location.href = "/profile"; }}
-                >
-                  🏠 {t.distanceNoHome}
-                </p>
+              {/* Distance — priority: homeKm (premium) > geoKm > geo prompt */}
+              {place.lat && place.lng ? (
+                homeKm !== null ? (
+                  // Premium user with saved home address
+                  <ActionButton
+                    onClick={() => setMapOpen(true)}
+                    style={{
+                      margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                      background: "none", border: "none", padding: 0, cursor: "pointer",
+                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                      color: "#16a34a", fontWeight: 700,
+                    }}
+                  >
+                    🏠 {t.distanceFromHome(homeKm)}
+                  </ActionButton>
+                ) : geoKm !== null ? (
+                  // Browser geolocation obtained
+                  <ActionButton
+                    onClick={() => setMapOpen(true)}
+                    style={{
+                      margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                      background: "none", border: "none", padding: 0, cursor: "pointer",
+                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                      color: "#16a34a", fontWeight: 700,
+                    }}
+                  >
+                    📍 {t.distanceFromLocation(geoKm)}
+                  </ActionButton>
+                ) : locationStatus === "loading" ? (
+                  <p style={{ margin: "3px 0 0", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}>
+                    {t.distanceGeoLoading}
+                  </p>
+                ) : locationStatus !== "denied" && locationStatus !== "unavailable" ? (
+                  // Prompt to share location (idle — works for all users, free or premium)
+                  <ActionButton
+                    onClick={requestLocation}
+                    style={{
+                      margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                      background: "none", border: "none", padding: 0, cursor: "pointer",
+                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                      color: "#16a34a", fontWeight: 700,
+                    }}
+                  >
+                    <MapPin size={12} color="#16a34a" style={{ flexShrink: 0 }} />
+                    {t.distanceGeoPrompt}
+                  </ActionButton>
+                ) : null
               ) : null /* place has no coords in DB → hide the line entirely */}
               <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 3 }}>
                 <Clock size={12} style={{ color: "#64748b", flexShrink: 0 }} />
@@ -987,7 +1007,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
             ? t.free
             : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
-          const fmtBulanan = `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`;
+          const fmtBulanan = place.priceMax && place.priceMax !== place.priceMin
+            ? `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`
+            : `Rp ${formatPrice(place.priceMin)} ${t.perMonth}`;
 
           // ── Icon map: label string → icon node
           const ic = (Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }>, heroChip = false) => (

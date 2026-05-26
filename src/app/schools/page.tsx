@@ -3,8 +3,9 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronDown, SlidersHorizontal, Check, Scale, ArrowUpDown, X } from "lucide-react";
-import { placeMatchesAreas, type Grade, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, haversineKm, type Grade, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
+import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
@@ -187,9 +188,18 @@ function matchesUpBucket(upMin: number | undefined, bucket: string): boolean {
 function SchoolsContent() {
   const { t, lang } = useLang();
   const { tier, loaded } = useAuth();
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  useEffect(() => { fetchPlacesByCategory("school").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+  const { userLat, userLng, locationStatus, requestLocation } = useLocation();
+  const [allPlaces,    setAllPlaces]    = useState<Place[]>([]);
+  const [featuredSpot, setFeaturedSpot] = useState<Place | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  useEffect(() => {
+    fetchPlacesByCategory("school").then(d => {
+      setAllPlaces(d);
+      setLoading(false);
+      const featured = d.filter(p => p.isFeatured);
+      if (featured.length) setFeaturedSpot(featured[Math.floor(Math.random() * featured.length)]);
+    });
+  }, []);
 
   const CURRICULA = useMemo(() =>
     [...new Set(
@@ -222,13 +232,18 @@ function SchoolsContent() {
   const [upBucket,      setUpBucket]      = useState(searchParams.get("up") ?? "all");
   const [sppBucket,     setSppBucket]     = useState(searchParams.get("spp") ?? "all");
   const [classSizeBucket, setClassSizeBucket] = useState(searchParams.get("cs") ?? "all");
-  const [sortBy,      setSortBy]      = useState<"alpha"|"za"|"random">((searchParams.get("sort") as "alpha"|"za") ?? "random");
+  const [sortBy,      setSortBy]      = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"nearest") ?? "nearest");
   const [sortSeed]                    = useState(() => Math.random());
   const [compareIds,  setCompareIds]  = useState<string[]>([]);
   const [compareMode, setCompareMode] = useState(false);
 
+  // Auto-request location when "Terdekat" is the active sort and location not yet obtained
+  useEffect(() => {
+    if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
+  }, [sortBy, locationStatus, requestLocation]);
 
   const filtered = allPlaces
+    .filter(s => s.id !== featuredSpot?.id)
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
     .filter(s => grade === "all" || s.jenjang === grade)
     .filter(s => curricula.length === 0 || (s.curriculumCategory ?? "").split(",").map(v => v.trim()).some(v => curricula.includes(v)))
@@ -245,10 +260,13 @@ function SchoolsContent() {
       return true;
     })
     .sort((a, b) => {
-      if (a.isFeatured && !b.isFeatured) return -1;
-      if (!a.isFeatured && b.isFeatured) return 1;
       if (sortBy === "za") return b.name.localeCompare(a.name);
       if (sortBy === "alpha") return a.name.localeCompare(b.name);
+      if (sortBy === "nearest" && userLat && userLng) {
+        const dA = (a.lat && a.lng) ? haversineKm(userLat, userLng, a.lat, a.lng) : 9999;
+        const dB = (b.lat && b.lng) ? haversineKm(userLat, userLng, b.lat, b.lng) : 9999;
+        return dA - dB;
+      }
       // random — stable per session via seed
       const h = (id: string) => { let v = sortSeed; for (let i = 0; i < id.length; i++) v = Math.sin(v + id.charCodeAt(i)) * 10000; return v - Math.floor(v); };
       return h(a.id) - h(b.id);
@@ -557,14 +575,39 @@ function SchoolsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : s === "za" ? "random" : "alpha")} style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "10px 12px", borderRadius: 999, flexShrink: 0,
-          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 12,
-          border: "1.5px solid #e2e8f0", justifyContent: "center" }}>
-          <ArrowUpDown size={13} strokeWidth={2.5} />
-          {sortBy === "alpha" ? "A–Z" : sortBy === "za" ? "Z–A" : t.schoolsSortRandom}
-        </ActionButton>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const v = e.target.value as typeof sortBy;
+              setSortBy(v);
+              if (v === "nearest" && locationStatus !== "granted") requestLocation();
+            }}
+            style={{
+              padding: "10px 34px 10px 12px",
+              borderRadius: 999,
+              fontSize: 12,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontWeight: 600,
+              color: "#16a34a",
+              border: "1.5px solid #16a34a",
+              background: "#e6f4ed",
+              outline: "none",
+              appearance: "none" as const,
+              WebkitAppearance: "none" as const,
+              cursor: "pointer",
+            }}
+          >
+            <option value="random">{t.schoolsSortRandom}</option>
+            <option value="alpha">Urut A–Z</option>
+            <option value="za">Urut Z–A</option>
+            <option value="nearest">{t.sortNearest}</option>
+          </select>
+          <div style={{ position: "absolute", right: 9, top: 0, bottom: 0,
+            display: "flex", alignItems: "center", pointerEvents: "none" }}>
+            <ArrowUpDown size={12} strokeWidth={2.5} color="#16a34a" />
+          </div>
+        </div>
         {(tier === "premium" || tier === "free") && (
           <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
             display: "inline-flex", alignItems: "center", gap: 5,
@@ -622,8 +665,60 @@ function SchoolsContent() {
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
         {loading && <SkeletonList count={6} />}
-        {!loading && filtered.length === 0 && (
+
+        {/* ✦ Featured — 1 random featured place, pinned above results */}
+        {!loading && featuredSpot && (
+          <div style={{
+            marginBottom: 14,
+            background: "#fef9c3",
+            border: "1.5px dashed #f59e0b",
+            padding: "8px 10px",
+          }}>
+            <span style={{
+              display: "block", marginBottom: 7,
+              fontSize: 10, fontWeight: 800, letterSpacing: 1.3,
+              color: "#b45309", textTransform: "uppercase" as const,
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              ✦ Featured
+            </span>
+            {tier === "premium" && compareMode ? (
+              <ActionButton
+                onClick={() => toggleCompare(featuredSpot.id)}
+                style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+              >
+                <PlaceCard
+                  place={featuredSpot}
+                  selected={compareIds.includes(featuredSpot.id)}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </ActionButton>
+            ) : (
+              <Link href={`/place/${featuredSpot.slug ?? featuredSpot.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <PlaceCard
+                  place={featuredSpot}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && !featuredSpot && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
+            {t.schoolsNoResults}
+          </div>
+        )}
+        {!loading && filtered.length === 0 && featuredSpot && (
+          <div style={{ textAlign: "center", padding: "12px 0 32px", color: "#94a3b8", fontSize: 13 }}>
             {t.schoolsNoResults}
           </div>
         )}
@@ -631,20 +726,33 @@ function SchoolsContent() {
           {filtered.map(school => {
             const isSelected = compareIds.includes(school.id);
             return (
-              <div key={school.id} style={{ position: "relative" }}>
-                <Link href={`/place/${school.slug ?? school.id}`} style={{ textDecoration: "none", display: "block" }}>
-                  <PlaceCard place={school} selected={isSelected} />
-                </Link>
-                {tier === "premium" && compareMode && (
-                  <div style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}>
-                    <ActionButton onClick={() => toggleCompare(school.id)} ariaLabel="Toggle compare" style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: 22, height: 22, borderRadius: 6,
-                      border: `2px solid ${isSelected ? "#2e8a5a" : "#cbd5e1"}`,
-                      background: isSelected ? "#2e8a5a" : "#fff" }}>
-                      {isSelected && <Check size={11} color="white" strokeWidth={3} />}
-                    </ActionButton>
-                  </div>
+              <div key={school.id}>
+                {tier === "premium" && compareMode ? (
+                  <ActionButton
+                    onClick={() => toggleCompare(school.id)}
+                    style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+                  >
+                    <PlaceCard
+                      place={school}
+                      selected={isSelected}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && school.lat && school.lng
+                          ? haversineKm(userLat, userLng, school.lat, school.lng)
+                          : null
+                      }
+                    />
+                  </ActionButton>
+                ) : (
+                  <Link href={`/place/${school.slug ?? school.id}`} style={{ textDecoration: "none", display: "block" }}>
+                    <PlaceCard
+                      place={school}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && school.lat && school.lng
+                          ? haversineKm(userLat, userLng, school.lat, school.lng)
+                          : null
+                      }
+                    />
+                  </Link>
                 )}
               </div>
             );

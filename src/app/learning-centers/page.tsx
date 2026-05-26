@@ -2,13 +2,15 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check } from "lucide-react";
-import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check, Scale } from "lucide-react";
+import { placeMatchesAreas, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
+import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
+import { FilterGateSheet } from "@/components/FilterGateSheet";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
@@ -91,7 +93,12 @@ const COURSE_TYPES = [
   "Coding / Robotik", "Tari & Balet", "Gimnastik",
 ];
 
-const AGE_GROUPS = ["Toddler", "Kids", "Tween", "Teen"];
+const AGE_BUCKETS: { key: string; label: string; min: number; max: number }[] = [
+  { key: "0-3",  label: "0–3 tahun",  min: 0,  max: 3  },
+  { key: "4-8",  label: "4–8 tahun",  min: 4,  max: 8  },
+  { key: "9-12", label: "9–12 tahun", min: 9,  max: 12 },
+  { key: "13+",  label: "13+ tahun",  min: 13, max: 99 },
+];
 
 const TEACHING_LANGS = ["Indonesia", "Inggris", "Bilingual"];
 
@@ -140,14 +147,43 @@ function matchesRegFee(regFeeMin: number | undefined, bucket: string): boolean {
   return true;
 }
 
+// Parse age range strings from Supabase ("4 tahun ke atas", "5-10 tahun", etc.)
+function parseAgeRange(str: string): [number, number] {
+  const keAtas = str.match(/(\d+)\s*tahun\s*ke\s*atas/i);
+  if (keAtas) return [parseInt(keAtas[1]), 99];
+  const range = str.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) return [parseInt(range[1]), parseInt(range[2])];
+  const single = str.match(/(\d+)/);
+  if (single) return [parseInt(single[1]), parseInt(single[1])];
+  return [0, 99];
+}
+
+function matchesAgeBucket(ageRange: string | undefined, bucketKey: string): boolean {
+  if (bucketKey === "all") return true;
+  if (!ageRange) return false;
+  const bucket = AGE_BUCKETS.find(b => b.key === bucketKey);
+  if (!bucket) return false;
+  const [placeMin, placeMax] = parseAgeRange(ageRange);
+  return placeMin <= bucket.max && placeMax >= bucket.min;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 function LearningCentersContent() {
   const { t } = useLang();
-  const { loaded } = useAuth();
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  useEffect(() => { fetchPlacesByCategory("learning-center").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+  const { tier, loaded } = useAuth();
+  const { userLat, userLng, locationStatus, requestLocation } = useLocation();
+  const [allPlaces,    setAllPlaces]    = useState<Place[]>([]);
+  const [featuredSpot, setFeaturedSpot] = useState<Place | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  useEffect(() => {
+    fetchPlacesByCategory("learning-center").then(d => {
+      setAllPlaces(d);
+      setLoading(false);
+      const featured = d.filter(p => p.isFeatured);
+      if (featured.length) setFeaturedSpot(featured[Math.floor(Math.random() * featured.length)]);
+    });
+  }, []);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -166,25 +202,50 @@ function LearningCentersContent() {
   const [monthlyBucket, setMonthlyBucket] = useState(searchParams.get("price") ?? "all");
   const [ageGroup,      setAgeGroup]      = useState(searchParams.get("age") ?? "all");
   const [teachingLang,  setTeachingLang]  = useState(searchParams.get("lang") ?? "all");
-  const [sortBy,        setSortBy]        = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
+  const [sortBy,        setSortBy]        = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
+  const [sortSeed]                        = useState(() => Math.random());
+  const [compareIds,  setCompareIds]      = useState<string[]>([]);
+  const [compareMode, setCompareMode]     = useState(false);
+  const [showFilterGate, setShowFilterGate] = useState(false);
 
-  const ageGroupLabels: Record<string, string> = {
-    Toddler: t.ageGroupToddler, Kids: t.ageGroupKids,
-    Tween: t.ageGroupTween, Teen: t.ageGroupTeen,
-  };
+  function toggleCompare(id: string) {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length >= 3 ? prev : [...prev, id]
+    );
+  }
+  function toggleCompareMode() {
+    setCompareMode(prev => { if (prev) setCompareIds([]); return !prev; });
+  }
+  function goCompare() {
+    if (typeof window !== "undefined") localStorage.setItem("compareLcIds", JSON.stringify(compareIds));
+    window.location.href = "/compare?type=lc";
+  }
+
+  // Auto-request location when "Terdekat" is the active sort and location not yet obtained
+  useEffect(() => {
+    if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
+  }, [sortBy, locationStatus, requestLocation]);
 
   // ── Filtering ─────────────────────────────────────────────────────────────────
   const filtered = allPlaces
+    .filter(c => c.id !== featuredSpot?.id)
     .filter(c => area === "all" || placeMatchesAreas(c, [area]))
     .filter(c => courseTypes.length === 0 || courseTypes.some(ct => c.courseTypes?.includes(ct)))
     .filter(c => matchesRegFee(c.registrationFeeMin, regFeeBucket))
     .filter(c => matchesMonthlyFee(c.priceMin, monthlyBucket))
-    .filter(c => ageGroup === "all" || c.ageGroups?.includes(ageGroup))
+    .filter(c => matchesAgeBucket(c.ageRange, ageGroup))
     .filter(c => teachingLang === "all" || c.teachingLanguage === teachingLang)
     .sort((a, b) => {
-      if (a.isFeatured && !b.isFeatured) return -1;
-      if (!a.isFeatured && b.isFeatured) return 1;
-      return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
+      if (sortBy === "za") return b.name.localeCompare(a.name);
+      if (sortBy === "alpha") return a.name.localeCompare(b.name);
+      if (sortBy === "nearest" && userLat && userLng) {
+        const dA = (a.lat && a.lng) ? haversineKm(userLat, userLng, a.lat, a.lng) : 9999;
+        const dB = (b.lat && b.lng) ? haversineKm(userLat, userLng, b.lat, b.lng) : 9999;
+        return dA - dB;
+      }
+      // random — stable per session via seed
+      const h = (id: string) => { let v = sortSeed; for (let i = 0; i < id.length; i++) v = Math.sin(v + id.charCodeAt(i)) * 10000; return v - Math.floor(v); };
+      return h(a.id) - h(b.id);
     });
 
   const activeCount = [
@@ -316,9 +377,9 @@ function LearningCentersContent() {
               <Chip name="f-age" value="all" checked={ageGroup === "all"} onChange={() => setAgeGroup("all")}>
                 {t.filterAll}
               </Chip>
-              {AGE_GROUPS.map(ag => (
-                <Chip key={ag} name="f-age" value={ag} checked={ageGroup === ag} onChange={() => setAgeGroup(ag)}>
-                  {ageGroupLabels[ag] ?? ag}
+              {AGE_BUCKETS.map(({ key, label }) => (
+                <Chip key={key} name="f-age" value={key} checked={ageGroup === key} onChange={() => setAgeGroup(key)}>
+                  {label}
                 </Chip>
               ))}
             </div>
@@ -405,15 +466,73 @@ function LearningCentersContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "10px 16px", borderRadius: 999,
-          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
-          border: "1.5px solid #e2e8f0" }}>
-          <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
-        </ActionButton>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const v = e.target.value as typeof sortBy;
+              setSortBy(v);
+              if (v === "nearest" && locationStatus !== "granted") requestLocation();
+            }}
+            style={{
+              padding: "10px 36px 10px 14px",
+              borderRadius: 999,
+              fontSize: 13.5,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontWeight: 600,
+              color: "#16a34a",
+              border: "1.5px solid #16a34a",
+              background: "#e6f4ed",
+              outline: "none",
+              appearance: "none" as const,
+              WebkitAppearance: "none" as const,
+              cursor: "pointer",
+            }}
+          >
+            <option value="random">Acak</option>
+            <option value="alpha">Urut A–Z</option>
+            <option value="za">Urut Z–A</option>
+            <option value="nearest">{t.sortNearest}</option>
+          </select>
+          <div style={{ position: "absolute", right: 10, top: 0, bottom: 0,
+            display: "flex", alignItems: "center", pointerEvents: "none" }}>
+            <ArrowUpDown size={13} strokeWidth={2.5} color="#16a34a" />
+          </div>
+        </div>
+        {/* Compare button */}
+        {(tier === "premium" || tier === "free") && (
+          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "10px 14px", borderRadius: 999, flexShrink: 0,
+            background: compareMode ? "#2e8a5a" : "#fff",
+            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
+            fontWeight: 700, fontSize: 13,
+            opacity: tier === "free" ? 0.85 : 1,
+            border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+          </ActionButton>
+        )}
       </div>
+
+      {/* Compare hint */}
+      {tier === "premium" && compareMode && filtered.length > 0 && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "9px 13px", borderRadius: 10,
+            background: compareIds.length === 0 ? "#fef9c3" : "#e6f4ed",
+            border: `1.5px solid ${compareIds.length === 0 ? "#fde68a" : "#a7d4bc"}`,
+          }}>
+            <Scale size={14} color={compareIds.length === 0 ? "#854d0e" : "#2e8a5a"} />
+            <span style={{ fontSize: 12, fontWeight: 600,
+              color: compareIds.length === 0 ? "#854d0e" : "#2e8a5a",
+              fontFamily: "var(--font-jakarta), sans-serif" }}>
+              {compareIds.length === 0 ? t.lcCmpHint : t.lcCmpSelectedFor(compareIds.length)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Active filter tags */}
       {activeCount > 0 && (
@@ -424,7 +543,7 @@ function LearningCentersContent() {
           ))}
           {regFeeBucket !== "all" && <FTag label={`Daftar: ${REG_FEE_BUCKETS[regFeeBucket] ?? regFeeBucket}`} onRemove={() => setRegFeeBucket("all")} />}
           {monthlyBucket !== "all" && <FTag label={`Bulanan: ${MONTHLY_FEE_BUCKETS[monthlyBucket] ?? monthlyBucket}`} onRemove={() => setMonthlyBucket("all")} />}
-          {ageGroup !== "all" && <FTag label={`Usia: ${ageGroupLabels[ageGroup] ?? ageGroup}`} onRemove={() => setAgeGroup("all")} />}
+          {ageGroup !== "all" && <FTag label={`Usia: ${AGE_BUCKETS.find(b => b.key === ageGroup)?.label ?? ageGroup}`} onRemove={() => setAgeGroup("all")} />}
           {teachingLang !== "all" && <FTag label={`Bahasa: ${teachingLang}`} onRemove={() => setTeachingLang("all")} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
@@ -435,20 +554,115 @@ function LearningCentersContent() {
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
         {loading && <SkeletonList count={6} />}
-        {!loading && filtered.length === 0 && (
+
+        {/* ✦ Featured — 1 random featured place, pinned above results */}
+        {!loading && featuredSpot && (
+          <div style={{
+            marginBottom: 14,
+            background: "#fef9c3",
+            border: "1.5px dashed #f59e0b",
+            padding: "8px 10px",
+          }}>
+            <span style={{
+              display: "block", marginBottom: 7,
+              fontSize: 10, fontWeight: 800, letterSpacing: 1.3,
+              color: "#b45309", textTransform: "uppercase" as const,
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              ✦ Featured
+            </span>
+            {tier === "premium" && compareMode ? (
+              <ActionButton
+                onClick={() => toggleCompare(featuredSpot.id)}
+                style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+              >
+                <PlaceCard
+                  place={featuredSpot}
+                  selected={compareIds.includes(featuredSpot.id)}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </ActionButton>
+            ) : (
+              <Link href={`/place/${featuredSpot.slug ?? featuredSpot.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <PlaceCard
+                  place={featuredSpot}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && !featuredSpot && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
             {t.lcNoResults}
           </div>
         )}
+        {!loading && filtered.length === 0 && featuredSpot && (
+          <div style={{ textAlign: "center", padding: "12px 0 32px", color: "#94a3b8", fontSize: 13 }}>
+            {t.lcNoResults}
+          </div>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map(center => (
-            <Link key={center.id} href={`/place/${center.slug ?? center.id}`} style={{ textDecoration: "none", display: "block" }}>
-              <PlaceCard place={center} />
-            </Link>
-          ))}
+          {filtered.map(center => {
+            const isSelected = compareIds.includes(center.id);
+            return (
+              <div key={center.id}>
+                {tier === "premium" && compareMode ? (
+                  <ActionButton
+                    onClick={() => toggleCompare(center.id)}
+                    style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+                  >
+                    <PlaceCard
+                      place={center}
+                      selected={isSelected}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && center.lat && center.lng
+                          ? haversineKm(userLat, userLng, center.lat, center.lng)
+                          : null
+                      }
+                    />
+                  </ActionButton>
+                ) : (
+                  <Link href={`/place/${center.slug ?? center.id}`} style={{ textDecoration: "none", display: "block" }}>
+                    <PlaceCard
+                      place={center}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && center.lat && center.lng
+                          ? haversineKm(userLat, userLng, center.lat, center.lng)
+                          : null
+                      }
+                    />
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
+      {/* Floating compare button */}
+      {tier === "premium" && compareIds.length >= 2 && (
+        <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
+          <ActionButton onClick={goCompare} style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "16px 20px", borderRadius: 18,
+            background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff", fontWeight: 700, fontSize: 14,
+            boxShadow: "0 8px 24px rgba(30,63,176,0.36)" }}>
+            <Scale size={16} />{t.lcCmpBtn(compareIds.length)}
+          </ActionButton>
+        </div>
+      )}
+
+      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       <BottomNav active="explore" />
     </div>
   );

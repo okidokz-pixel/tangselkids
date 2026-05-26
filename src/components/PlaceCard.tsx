@@ -7,10 +7,12 @@ export function PlaceCard({
   place,
   photoOverlay,
   selected,
+  distanceKm,
 }: {
   place: Place;
   photoOverlay?: React.ReactNode;
   selected?: boolean;
+  distanceKm?: number | null;
 }) {
   const { t } = useLang();
   const bottomRow = (() => {
@@ -84,7 +86,7 @@ export function PlaceCard({
           {place.name}
         </p>
 
-        {/* Area */}
+        {/* Area + optional distance inline */}
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
           <MapPin size={12} style={{ color: "var(--tk-muted)", flexShrink: 0 }} strokeWidth={2} />
           <span style={{
@@ -96,53 +98,80 @@ export function PlaceCard({
             whiteSpace: "nowrap",
           }}>
             {place.locationDetail ?? place.area}
+            {distanceKm != null && (
+              <>
+                <span style={{ margin: "0 4px", color: "var(--tk-line, #e2e8f0)" }}>|</span>
+                <span style={{ color: "#16a34a", fontWeight: 600 }}>
+                  {distanceKm < 0.1 ? "Di sini" : `${distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm)} km dari tempatmu`}
+                </span>
+              </>
+            )}
           </span>
         </div>
 
-        {/* Rating or Bahasa Pengantar for schools */}
-        {place.category === "school" && place.bahasa?.length ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-              {t.cardLabelBahasa}:
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {place.bahasa.join(", ")}
-            </span>
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-              Google Ratings:
-            </span>
-            <Star size={12} fill="#f6b545" stroke="none" />
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-              {place.rating}
-            </span>
-          </div>
-        )}
-
-        {/* Bottom info row */}
-        {bottomRow && (
-          place.category === "school" ? (
+        {place.category === "learning-center" ? (
+          <>
+            {/* Row 3 — Kursus (course type) */}
+            {(place.courseTypes?.[0] ?? place.centerType) && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Kursus:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {place.courseTypes?.[0] ?? place.centerType}
+                </span>
+              </div>
+            )}
+            {/* Row 4 — Biaya Bulanan */}
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-                {t.cardLabelKurikulum}:
+              <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                {t.pdMonthlyFee}:
               </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-blue-700)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {bottomRow}
+              <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                {place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax)}
               </span>
             </div>
-          ) : (
-            <p style={{
-              margin: 0,
-              fontSize: 13,
-              fontWeight: 700,
-              color: "var(--tk-blue-700)",
-              fontFamily: "var(--font-jakarta, sans-serif)",
-            }}>
-              {bottomRow}
-            </p>
-          )
+          </>
+        ) : place.category === "school" && place.bahasa?.length ? (
+          /* School — Bahasa Pengantar then Kurikulum */
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                {t.cardLabelBahasa}:
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {place.bahasa.join(", ")}
+              </span>
+            </div>
+            {bottomRow && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                  {t.cardLabelKurikulum}:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {bottomRow}
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          /* All other categories — Google Rating then price */
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                Google Ratings:
+              </span>
+              <Star size={12} fill="#f6b545" stroke="none" />
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                {place.rating}
+              </span>
+            </div>
+            {bottomRow && (
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--tk-blue-700)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                {bottomRow}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

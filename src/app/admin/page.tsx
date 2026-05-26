@@ -7,8 +7,10 @@ export default async function AdminDashboard() {
   const stats = await getDashboardStats();
 
   const cards = [
-    { label: "Total Schools", value: stats.schools, href: "/admin/schools", color: "#eff2fa", accent: "#0e1d4f", icon: "🏫" },
-    { label: "Featured Schools", value: stats.featuredSchools, href: "/admin/schools?featured=true", color: "#fef3c7", accent: "#b45309", icon: "⭐" },
+    { label: "Total Sekolah", value: stats.schools, href: "/admin/schools", color: "#eff2fa", accent: "#0e1d4f", icon: "🏫" },
+    { label: "Featured Sekolah", value: stats.featuredSchools, href: "/admin/schools?featured=true", color: "#fef3c7", accent: "#b45309", icon: "⭐" },
+    { label: "Total Tempat Kursus", value: stats.learningCenters, href: "/admin/learning-centers", color: "#e6f4ed", accent: "#2e8a5a", icon: "📚" },
+    { label: "Featured Tempat Kursus", value: stats.featuredLC, href: "/admin/learning-centers", color: "#fef3c7", accent: "#b45309", icon: "⭐" },
     { label: "Total Articles", value: stats.articles, href: "/admin/articles", color: "#f0fdf4", accent: "#15803d", icon: "📝" },
   ];
 

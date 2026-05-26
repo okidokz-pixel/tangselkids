@@ -11,7 +11,7 @@ import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { useLoginSheet } from "@/context/LoginSheetContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getAreaGroup } from "@/lib/mockData";
-import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, getCachedCategory, getCachedCounts, searchAllPlaces } from "@/lib/db";
+import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, fetchPrimaryCountsFast, getCachedCategory, getCachedCounts, searchAllPlaces } from "@/lib/db";
 import type { Place } from "@/lib/mockData";
 import { articles, localizeArticle } from "@/lib/articles";
 import { fetchPublishedArticles, type DbArticle } from "@/lib/articles-db";
@@ -68,14 +68,37 @@ const LC_AGE_BANDS: Record<"id" | "en", { key: string; label: string; sub: strin
   ],
 };
 
-// ─── Area multipliers ─────────────────────────────────────────────────────────
-const AREA_MULT: Record<AreaKey, number> = { Bintaro: 1.0, BSD: 0.78, Semua: 1.7 };
-
 // ─── Count helpers (accept data arrays so they work with both mock and live data)
 function matchesArea(area: string, areaKey: AreaKey): boolean {
   if (areaKey === "Semua") return true;
   const g = getAreaGroup(area);
   return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
+}
+
+// Mirrors the parsing logic in learning-centers/page.tsx
+function parseAgeRange(str: string): [number, number] {
+  const keAtas = str.match(/(\d+)\s*tahun\s*ke\s*atas/i);
+  if (keAtas) return [parseInt(keAtas[1]), 99];
+  const range = str.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) return [parseInt(range[1]), parseInt(range[2])];
+  const single = str.match(/(\d+)/);
+  if (single) return [parseInt(single[1]), parseInt(single[1])];
+  return [0, 99];
+}
+
+const LC_AGE_BUCKET_RANGES: Record<string, [number, number]> = {
+  Toddler: [0, 3],
+  Kids:    [4, 8],
+  Tween:   [9, 12],
+  Teen:    [13, 99],
+};
+
+function matchesLCAgeGroup(ageRange: string | undefined, ageKey: string): boolean {
+  if (!ageRange) return false;
+  const bucket = LC_AGE_BUCKET_RANGES[ageKey];
+  if (!bucket) return false;
+  const [placeMin, placeMax] = parseAgeRange(ageRange);
+  return placeMin <= bucket[1] && placeMax >= bucket[0];
 }
 
 function buildAreas(schools: Place[], lcs: Place[]): { key: AreaKey; counts: Record<CategoryKey, number> }[] {
@@ -97,7 +120,7 @@ function countSchoolByGrade(gradeKey: string, areaKey: AreaKey, schools: Place[]
 
 function countLCByAge(ageKey: string, areaKey: AreaKey, lcs: Place[]): number {
   return lcs.filter(p =>
-    p.ageGroups?.includes(ageKey) && matchesArea(p.area, areaKey)
+    matchesLCAgeGroup(p.ageRange, ageKey) && matchesArea(p.area, areaKey)
   ).length;
 }
 
@@ -899,29 +922,32 @@ function CourseTypePills({
   const courseTypes: { value: string; label: string }[] = [
     { value: "Bahasa Inggris",  label: t.courseTypeEnglish },
     { value: "Matematika",      label: t.courseTypeMath },
-    { value: "Seni",            label: t.courseTypeArts },
-    { value: "Musik",           label: t.courseTypeMusic },
-    { value: "Coding/Robotik",  label: t.courseTypeCoding },
+    { value: "Seni Rupa",       label: t.courseTypeArts },
+    { value: "Musik & Vokal",   label: t.courseTypeMusic },
+    { value: "Coding / Robotik", label: t.courseTypeCoding },
     { value: "Tari & Balet",    label: t.courseTypeDance },
     { value: "Gimnastik",       label: t.courseTypeGymnastics },
   ];
 
   function countByCourse(course: string | null): number {
     return lcs.filter(p =>
-      p.ageGroups?.includes(ageKey) &&
-      (area === "Semua" || p.area === area) &&
-      (course === null || p.courseTypes?.some(c => c.toLowerCase().includes(course.toLowerCase()) || course.toLowerCase().includes(c.toLowerCase())))
+      matchesLCAgeGroup(p.ageRange, ageKey) &&
+      matchesArea(p.area, area) &&
+      (course === null || p.courseTypes?.includes(course))
     ).length;
   }
 
+  const lcAgeBucketKey: Record<string, string> = { Toddler: "0-3", Kids: "4-8", Tween: "9-12", Teen: "13+" };
+  const ageBucket = lcAgeBucketKey[ageKey] ?? ageKey;
+
   function goResults(course: string | null) {
     const q = course ? `&course=${encodeURIComponent(course)}` : "";
-    window.location.href = `/learning-centers?age=${ageKey}&area=${areaParam}${q}&view=results`;
+    window.location.href = `/learning-centers?age=${ageBucket}&area=${areaParam}${q}&view=results`;
   }
 
   function goFilter(course: string | null) {
     const q = course ? `&course=${encodeURIComponent(course)}` : "";
-    window.location.href = `/learning-centers?age=${ageKey}&area=${areaParam}${q}`;
+    window.location.href = `/learning-centers?age=${ageBucket}&area=${areaParam}${q}`;
   }
 
   const pillStyle: React.CSSProperties = {
@@ -1421,6 +1447,7 @@ function AgeBands({
                   background: active ? "#0e1d4f" : "#fff",
                   transition: "background .2s ease, border-color .2s ease",
                 };
+                const lcAgeBucketKey: Record<string, string> = { Toddler: "0-3", Kids: "4-8", Tween: "9-12", Teen: "13+" };
                 return onPick ? (
                   <Pressable
                     key={b.key}
@@ -1433,7 +1460,7 @@ function AgeBands({
                 ) : (
                   <Link
                     key={b.key}
-                    href={`/learning-centers?age=${b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
+                    href={`/learning-centers?age=${lcAgeBucketKey[b.key] ?? b.key}&area=${area === "Semua" ? "all" : area.toLowerCase()}&view=results`}
                     style={{
                       ...cardStyle,
                       textDecoration: "none", color: "inherit",
@@ -1468,20 +1495,31 @@ function FeaturePair() {
   const [area, setArea] = useState<AreaKey | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
 
-  const [allSchools, setAllSchools] = useState<Place[]>([]);
-  const [allLCs,     setAllLCs]     = useState<Place[]>([]);
+  const [allSchools,   setAllSchools]   = useState<Place[]>([]);
+  const [allLCs,       setAllLCs]       = useState<Place[]>([]);
+  const [schoolCount,  setSchoolCount]  = useState<number>(() => getCachedCategory("school").length  || 0);
+  const [lcCount,      setLcCount]      = useState<number>(() => getCachedCategory("learning-center").length || 0);
 
-  // Hydrate from window cache + always refetch fresh. Also re-runs on
-  // back-navigation / tab refocus to defeat Next.js router-cache restore
-  // that otherwise leaves this component mounted with empty arrays.
+  // Fast count: two HEAD requests (~100ms) so cards show real numbers immediately.
+  useEffect(() => {
+    if (schoolCount > 0 && lcCount > 0) return; // already know from cache
+    fetchPrimaryCountsFast().then(({ school, learningCenter }) => {
+      setSchoolCount(school);
+      setLcCount(learningCenter);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Full data: needed for filter pill counts. Hydrate from window cache first,
+  // then refetch fresh. Re-runs on back-navigation / tab refocus.
   useEffect(() => {
     const load = () => {
       const sc = getCachedCategory("school");
       const lc = getCachedCategory("learning-center");
-      if (sc.length) setAllSchools(sc);
-      if (lc.length) setAllLCs(lc);
-      fetchPlacesByCategory("school").then(setAllSchools);
-      fetchPlacesByCategory("learning-center").then(setAllLCs);
+      if (sc.length) { setAllSchools(sc); setSchoolCount(sc.length); }
+      if (lc.length) { setAllLCs(lc);     setLcCount(lc.length); }
+      fetchPlacesByCategory("school").then(d => { setAllSchools(d); setSchoolCount(d.length); });
+      fetchPlacesByCategory("learning-center").then(d => { setAllLCs(d); setLcCount(d.length); });
     };
     load();
     const onVisible = () => { if (document.visibilityState === "visible") load(); };
@@ -1531,8 +1569,8 @@ function FeaturePair() {
     }
   };
 
-  const schoolTotal = allSchools.length;
-  const lcTotal     = allLCs.length;
+  const schoolTotal = schoolCount || allSchools.length;
+  const lcTotal     = lcCount     || allLCs.length;
   const areas       = buildAreas(allSchools, allLCs);
 
   return (

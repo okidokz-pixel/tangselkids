@@ -359,6 +359,26 @@ export const translations = {
     cmpAddAnotherDesc: "Kamu bisa membandingkan hingga 3 sekolah",
     cmpBackToSchools: "← Kembali ke Sekolah",
 
+    // ── COMPARE LC ───────────────────────────────────────────
+    lcCmpTitle:            "Bandingkan Tempat Kursus",
+    lcCmpSelected:         (n: number) => `${n} dari 3 tempat kursus dipilih`,
+    lcCmpRowCourseType:    "Tipe Kursus",
+    lcCmpRowDistance:      "Jarak",
+    lcCmpRowRegFee:        "Biaya Pendaftaran",
+    lcCmpRowMonthlyFee:    "Biaya Bulanan",
+    lcCmpRowAge:           "Rentang Usia",
+    lcCmpRowTeachingLang:  "Bahasa Pengantar",
+    lcCmpRowTeacherRatio:  "Rasio Guru:Murid",
+    lcCmpEmpty:            "Belum ada kursus yang dipilih",
+    lcCmpEmptyDesc:        "Pergi ke Tempat Kursus dan centang ☑ pada kartu yang ingin dibandingkan.",
+    lcCmpBrowse:           "Lihat Tempat Kursus →",
+    lcCmpAddAnother:       "Tambah kursus lain",
+    lcCmpAddAnotherDesc:   "Kamu bisa membandingkan hingga 3 tempat kursus",
+    lcCmpBackTo:           "← Kembali ke Tempat Kursus",
+    lcCmpHint:             "Pilih 2–3 Kursus Untuk Dibandingkan",
+    lcCmpSelectedFor:      (n: number) => `${n} dipilih untuk dibandingkan`,
+    lcCmpBtn:              (n: number) => `⚖ Bandingkan ${n} Kursus →`,
+
     // ── PRICE FILTERS ────────────────────────────────────────
     priceAll: "Semua Harga",
     priceUnder500: "< Rp 500k",
@@ -772,8 +792,13 @@ export const translations = {
     favTooltipRemove: "Dihapus dari Favorit",
 
     // ── DISTANCE FROM HOME ───────────────────────────────────
-    distanceFromHome: (km: number) => km < 0.1 ? "Di lokasimu 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km dari rumahmu`,
-    distanceNoHome:   "Atur alamat rumah untuk lihat jarak →",
+    distanceFromHome:     (km: number) => km < 0.1 ? "Di lokasimu 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km dari rumahmu`,
+    distanceFromLocation: (km: number) => km < 0.1 ? "Di lokasimu 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km dari lokasimu`,
+    distanceNoHome:       "Atur alamat rumah untuk lihat jarak →",
+    distanceGeoPrompt:    "Lihat jarak dari lokasimu",
+    distanceGeoLoading:   "Mengambil lokasi...",
+    distanceGeoLabel:     (km: number) => km < 0.1 ? "Di sini" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`,
+    sortNearest:          "Paling Dekat",
 
     // ── PRIORITY SUPPORT ─────────────────────────────────────
     supportSectionTitle: "Dukungan Premium",
@@ -1247,6 +1272,26 @@ export const translations = {
     cmpAddAnotherDesc: "You can compare up to 3 schools",
     cmpBackToSchools: "← Back to Schools",
 
+    // ── COMPARE LC ───────────────────────────────────────────
+    lcCmpTitle:            "Compare Learning Centers",
+    lcCmpSelected:         (n: number) => `${n} of 3 selected`,
+    lcCmpRowCourseType:    "Course Type",
+    lcCmpRowDistance:      "Distance",
+    lcCmpRowRegFee:        "Registration Fee",
+    lcCmpRowMonthlyFee:    "Monthly Fee",
+    lcCmpRowAge:           "Age Range",
+    lcCmpRowTeachingLang:  "Teaching Language",
+    lcCmpRowTeacherRatio:  "Teacher:Student Ratio",
+    lcCmpEmpty:            "No learning centers selected",
+    lcCmpEmptyDesc:        "Go to Learning Centers and tick ☑ on cards you want to compare.",
+    lcCmpBrowse:           "Browse Learning Centers →",
+    lcCmpAddAnother:       "Add another center",
+    lcCmpAddAnotherDesc:   "You can compare up to 3 learning centers",
+    lcCmpBackTo:           "← Back to Learning Centers",
+    lcCmpHint:             "Select 2–3 Centers to Compare",
+    lcCmpSelectedFor:      (n: number) => `${n} selected for compare`,
+    lcCmpBtn:              (n: number) => `⚖ Compare ${n} Centers →`,
+
     // ── PRICE FILTERS ────────────────────────────────────────
     priceAll: "All Price",
     priceUnder500: "< Rp 500k",
@@ -1660,8 +1705,13 @@ export const translations = {
     favTooltipRemove: "Removed from Favorites",
 
     // ── DISTANCE FROM HOME ───────────────────────────────────
-    distanceFromHome: (km: number) => km < 0.1 ? "At your location 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km from your home`,
-    distanceNoHome:   "Set home address to see distance →",
+    distanceFromHome:     (km: number) => km < 0.1 ? "At your location 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km from your home`,
+    distanceFromLocation: (km: number) => km < 0.1 ? "At your location 📍" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km from your location`,
+    distanceNoHome:       "Set home address to see distance →",
+    distanceGeoPrompt:    "See distance from your location",
+    distanceGeoLoading:   "Getting location...",
+    distanceGeoLabel:     (km: number) => km < 0.1 ? "Here" : `${km < 10 ? km.toFixed(1) : Math.round(km)} km`,
+    sortNearest:          "Nearest First",
 
     // ── PRIORITY SUPPORT ─────────────────────────────────────
     supportSectionTitle: "Premium Support",

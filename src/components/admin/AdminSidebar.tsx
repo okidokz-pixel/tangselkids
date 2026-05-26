@@ -7,13 +7,13 @@ import { createAdminClient } from "@/lib/supabase-browser";
 
 const NAV_MAIN = [
   { label: "Dashboard", href: "/admin", icon: "▦" },
-  { label: "Schools", href: "/admin/schools", icon: "🏫" },
+  { label: "Sekolah", href: "/admin/schools", icon: "🏫" },
+  { label: "Tempat Kursus", href: "/admin/learning-centers", icon: "📚" },
   { label: "Articles", href: "/admin/articles", icon: "📝" },
   { label: "Analytics", href: "/admin/analytics", icon: "📊" },
 ];
 
 const NAV_CATEGORIES = [
-  { label: "Tempat Kursus", href: "/admin/learning-centers", icon: "📚" },
   { label: "Daycares", href: "/admin/daycares", icon: "🍼" },
   { label: "Playgrounds", href: "/admin/playgrounds", icon: "🎠" },
   { label: "Klinik Tumbuh Kembang", href: "/admin/clinics", icon: "🏥" },
@@ -110,7 +110,7 @@ export function AdminSidebar() {
         </div>
 
         <div style={{ margin: "12px 8px 8px", fontSize: 11, fontWeight: 600, color: C.sectionLabel, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          Categories
+          Kategori Lain
         </div>
 
         {NAV_CATEGORIES.map((item) => (
