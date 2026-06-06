@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/place/kb-tk-islam-ibnu-rusyd-preschool-bsd-city",
+        destination: "/place/kb-tk-tarbiyah-quraniyah-preschool-bsd",
+        permanent: true,
+      },
+      {
+        source: "/place/kb-tk-islam-ibnu-rusyd-tk-bsd-city",
+        destination: "/place/kb-tk-tarbiyah-quraniyah-tk-bsd",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -18,10 +18,7 @@ import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
-import { PremiumGate } from "@/components/PremiumGate";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { SaveGateSheet } from "@/components/SaveGateSheet";
-import { PremiumBadge } from "@/components/PremiumBadge";
+import { useLoginSheet } from "@/context/LoginSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
@@ -155,7 +152,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const { slug }  = use(params);
   const router  = useRouter();
   const { t, lang } = useLang();
-  const { tier, loaded, user } = useAuth();
+  const { loaded, user } = useAuth();
+  const { openLoginSheet } = useLoginSheet();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
   const [place,   setPlace]   = useState<Place | null>(null);
@@ -168,9 +166,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [feeImageOpen,   setFeeImageOpen]   = useState(false);
   const [mapOpen,        setMapOpen]        = useState(false);
   const [userReview,     setUserReview]     = useState<UserReview | null>(null);
-  const [showReviewGate, setShowReviewGate] = useState(false);
-  const [showPsbGate,    setShowPsbGate]    = useState(false);
-  const [showSaveGate,   setShowSaveGate]   = useState(false);
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
   const [similarSchools,    setSimilarSchools]    = useState<Place[]>([]);
   const [similarCenters,   setSimilarCenters]    = useState<Place[]>([]);
@@ -391,8 +386,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   }, [allPhotos.length, lightboxOpen]);
 
   function toggleSave() {
-    if (tier !== "premium") {
-      setShowSaveGate(true);
+    if (!user) {
+      openLoginSheet();
       return;
     }
     const placeId = place?.id ?? slug;
@@ -499,7 +494,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               {lang === "id" ? "Kembali" : "Back"}
             </ActionButton>
           </div>
-          <PremiumBadge />
         </div>
       </div>
 
@@ -1227,7 +1221,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             </div>
           );
 
-          // ── Gated row: clear for premium, blurred+lock for free
           const gatedRow = (label: string, value: string) => {
             const val = (
               <span style={{
@@ -1237,7 +1230,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 {value}
               </span>
             );
-            return row(label, tier === "premium" ? val : <PremiumGate>{val}</PremiumGate>);
+            return row(label, val);
           };
 
           // ── Build per-category arrays
@@ -1398,36 +1391,19 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   {detailOpen && (
                     <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
                       {(place.category === "school" || place.category === "learning-center" || place.category === "daycare") ? (
-                        /* Fee detail image — premium gated */
                         place.feeImageUrl ? (
                         <div
                           style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
-                          onClick={tier === "premium" ? () => setFeeImageOpen(true) : () => setShowPsbGate(true)}
+                          onClick={() => setFeeImageOpen(true)}
                         >
                           <img
                             src={place.feeImageUrl}
                             alt="Detail biaya"
                             style={{
                               width: "100%", borderRadius: 12, display: "block",
-                              filter: tier === "premium" ? "none" : "blur(6px)",
                               cursor: "pointer",
                             }}
                           />
-                          {tier !== "premium" && (
-                            <div style={{
-                              position: "absolute", inset: 0, display: "flex",
-                              alignItems: "center", justifyContent: "center",
-                              cursor: "pointer",
-                            }}>
-                              <div style={{
-                                width: 44, height: 44, borderRadius: 999,
-                                background: "#f1f5f9",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                              }}>
-                                <Lock size={20} color="#d97706" strokeWidth={2.5} />
-                              </div>
-                            </div>
-                          )}
                         </div>
                         ) : (
                           <div style={{
@@ -1545,30 +1521,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             </h2>
             <div
               style={{ position: "relative", borderRadius: 14, overflow: "clip", cursor: "pointer" }}
-              onClick={tier === "premium" ? () => setFeeImageOpen(true) : () => setShowPsbGate(true)}
+              onClick={() => setFeeImageOpen(true)}
             >
               <img
                 src={place.feeImageUrl}
                 alt="Detail info"
-                style={{
-                  width: "100%", borderRadius: 14, display: "block",
-                  filter: tier === "premium" ? "none" : "blur(6px)",
-                }}
+                style={{ width: "100%", borderRadius: 14, display: "block" }}
               />
-              {tier !== "premium" && (
-                <div style={{
-                  position: "absolute", inset: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 999,
-                    background: "#f1f5f9",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <Lock size={20} color="#d97706" strokeWidth={2.5} />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -1596,7 +1555,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* ── Personal Notes ───────────────────────────────────────────────── */}
         <div style={{ marginTop: 8, marginBottom: 20 }}>
-        {tier === "premium" ? (
+        {!!user ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             {/* Label */}
             <p style={{
@@ -1692,7 +1651,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             )}
           </div>
         ) : (
-          /* ── Free user — same visual as premium, locked ── */
+          /* ── Guest — prompt to login ── */
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <p style={{
               margin: 0,
@@ -1703,7 +1662,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               📝 {t.notesLabel}
             </p>
             <ActionButton
-              onClick={() => setShowReviewGate(true)}
+              onClick={openLoginSheet}
               style={{
                 position: "relative", width: "100%",
                 padding: "9px 40px 9px 12px", borderRadius: 12,
@@ -1908,11 +1867,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         ) : (
           <ActionButton
             onClick={() => {
-              if (tier === "premium") {
-                router.push(`/write-review/${place.id}`);
-              } else {
-                setShowReviewGate(true);
-              }
+              if (!user) { openLoginSheet(); return; }
+              router.push(`/write-review/${place.id}`);
             }}
             style={{
               width: "100%", padding: "12px 16px",
@@ -1925,16 +1881,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             }}
           >
             <Pencil size={15} /> {t.reviewWriteBtn}
-            {tier !== "premium" && (
-              <div style={{
-                width: 20, height: 20, borderRadius: 999,
-                background: "#d97706",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, marginLeft: 2,
-              }}>
-                <Lock size={11} strokeWidth={3} color="#fff" />
-              </div>
-            )}
           </ActionButton>
         )}
 
@@ -2521,10 +2467,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         {/* ── Suggest Edits trigger ──────────────────────────────────────── */}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
           <ActionButton
-            onClick={() => {
-              if (tier !== "premium") { setShowReviewGate(true); return; }
-              setSuggestSubmitted(false); setShowSuggestSheet(true);
-            }}
+            onClick={() => { setSuggestSubmitted(false); setShowSuggestSheet(true); }}
             style={{
               display: "inline-flex", alignItems: "center", gap: 5,
               padding: "7px 14px", borderRadius: 999,
@@ -2566,49 +2509,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             {/* Handle */}
             <div style={{ width: 36, height: 4, borderRadius: 999, background: "#e2e8f0", margin: "0 auto 20px" }} />
 
-            {tier !== "premium" ? (
-              /* Locked state */
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 12px", textAlign: "center" }}>
-                <div style={{
-                  width: 64, height: 64, borderRadius: 999,
-                  background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28,
-                }}>⭐</div>
-                <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 20, fontWeight: 700, color: "#0e1d4f", margin: 0 }}>
-                  {t.premiumGateTitle}
-                </p>
-                <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, color: "#64748b", margin: 0, lineHeight: 1.6, padding: "0 8px" }}>
-                  {t.premiumGateDesc}
-                </p>
-                <ActionButton
-                  onClick={() => { setShowSuggestSheet(false); sessionStorage.setItem("upgradeFrom", window.location.pathname); router.push("/upgrade"); }}
-                  style={{
-                    width: "100%", marginTop: 4, padding: "15px 0", borderRadius: 16, fontSize: 15, fontWeight: 700,
-                    background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    boxShadow: "0 4px 16px rgba(217,119,6,0.35)",
-                  }}
-                >
-                  {t.premiumGateCta}
-                  <span style={{ display: "inline-block", fontSize: 20, lineHeight: 1, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
-                </ActionButton>
-                <ActionButton
-                  onClick={() => setShowSuggestSheet(false)}
-                  style={{
-                    width: "100%", padding: "13px 0", borderRadius: 16,
-                    background: "transparent", color: "#94a3b8",
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    fontSize: 14, fontWeight: 600,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  {t.premiumGateCancel}
-                </ActionButton>
-              </div>
-            ) : suggestSubmitted ? (
+            {suggestSubmitted ? (
               /* Success state */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "8px 0 12px", textAlign: "center" }}>
                 <div style={{
@@ -2731,18 +2632,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         </>
       )}
 
-      {/* ── Save Gate Sheet (anonymous → register to save) ────────────────── */}
-      <SaveGateSheet
-        isOpen={showSaveGate}
-        onClose={() => setShowSaveGate(false)}
-      />
-
-
-      {/* ── PSB Upgrade Sheet (registered) ───────────────────────────────── */}
-      <FilterGateSheet isOpen={showPsbGate} onClose={() => setShowPsbGate(false)} />
-
-      {/* ── Review Gate Bottom Sheet ──────────────────────────────────────── */}
-      <FilterGateSheet isOpen={showReviewGate} onClose={() => setShowReviewGate(false)} />
 
     </div>
   );

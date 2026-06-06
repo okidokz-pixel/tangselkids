@@ -10,9 +10,6 @@ import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { useAuth } from "@/context/AuthContext";
-import { PremiumBadge } from "@/components/PremiumBadge";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { SkeletonList } from "@/components/SkeletonCard";
 
@@ -171,7 +168,6 @@ function matchesAgeBucket(ageRange: string | undefined, bucketKey: string): bool
 
 function LearningCentersContent() {
   const { t } = useLang();
-  const { tier, loaded } = useAuth();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
   const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
   const [allFeatured, setAllFeatured] = useState<Place[]>([]);
@@ -205,7 +201,6 @@ function LearningCentersContent() {
   const [sortSeed]                        = useState(() => Math.random());
   const [compareIds,  setCompareIds]      = useState<string[]>([]);
   const [compareMode, setCompareMode]     = useState(false);
-  const [showFilterGate, setShowFilterGate] = useState(false);
 
   function toggleCompare(id: string) {
     setCompareIds(prev =>
@@ -318,7 +313,6 @@ function LearningCentersContent() {
                 {t.lcTitle}
               </h1>
             </div>
-            <PremiumBadge />
           </div>
         </div>
 
@@ -457,7 +451,6 @@ function LearningCentersContent() {
               </p>
             </div>
           </div>
-          <PremiumBadge />
         </div>
       </div>
 
@@ -512,23 +505,20 @@ function LearningCentersContent() {
           </div>
         </div>
         {/* Compare button */}
-        {(tier === "premium" || tier === "free") && (
-          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "10px 14px", borderRadius: 999, flexShrink: 0,
-            background: compareMode ? "#2e8a5a" : "#fff",
-            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
-            fontWeight: 700, fontSize: 13,
-            opacity: tier === "free" ? 0.85 : 1,
-            border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
-            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
-            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
-          </ActionButton>
-        )}
+        <ActionButton onClick={toggleCompareMode} style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "10px 14px", borderRadius: 999, flexShrink: 0,
+          background: compareMode ? "#2e8a5a" : "#fff",
+          color: compareMode ? "#fff" : "#374151",
+          fontWeight: 700, fontSize: 13,
+          border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+          {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+          {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+        </ActionButton>
       </div>
 
       {/* Compare hint */}
-      {tier === "premium" && compareMode && filtered.length > 0 && (
+      {compareMode && filtered.length > 0 && (
         <div style={{ padding: "8px 14px 0" }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 7,
@@ -583,7 +573,7 @@ function LearningCentersContent() {
             }}>
               ✦ Featured
             </span>
-            {tier === "premium" && compareMode ? (
+            {compareMode ? (
               <ActionButton
                 onClick={() => toggleCompare(featuredSpot.id)}
                 style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -628,7 +618,7 @@ function LearningCentersContent() {
             const isSelected = compareIds.includes(center.id);
             return (
               <div key={center.id}>
-                {tier === "premium" && compareMode ? (
+                {compareMode ? (
                   <ActionButton
                     onClick={() => toggleCompare(center.id)}
                     style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -662,7 +652,7 @@ function LearningCentersContent() {
       </div>
 
       {/* Floating compare button */}
-      {tier === "premium" && compareIds.length >= 2 && (
+      {compareIds.length >= 2 && (
         <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
           <ActionButton onClick={goCompare} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -674,7 +664,6 @@ function LearningCentersContent() {
         </div>
       )}
 
-      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       <BottomNav active="explore" />
     </div>
   );

@@ -73,7 +73,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const { id }   = use(params);
   const router   = useRouter();
   const { t }    = useLang();
-  const { user, tier, loaded } = useAuth();
+  const { user, loaded } = useAuth();
   const [place, setPlace] = useState<Place | null>(null);
   const [placeLoaded, setPlaceLoaded] = useState(false);
   useEffect(() => { fetchPlaceById(id).then((p) => { setPlace(p); setPlaceLoaded(true); }); }, [id]);
@@ -101,12 +101,11 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
     setIsEditing(true);
   }
 
-  // Only premium users can write reviews
   useEffect(() => {
-    if (loaded && tier !== "premium") {
+    if (loaded && !user) {
       router.replace(`/place/${id}`);
     }
-  }, [loaded, tier, router, id]);
+  }, [loaded, user, router, id]);
 
   if (!placeLoaded) {
     return <div className="max-w-md mx-auto min-h-screen" style={{ background: "#fff" }} />;

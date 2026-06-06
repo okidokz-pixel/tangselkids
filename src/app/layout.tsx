@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Playfair_Display, Plus_Jakarta_Sans, Bricolage_Grotesque, Fraunces } from "next/font/google";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -181,6 +182,13 @@ export default function RootLayout({
           }
         `}</style>
       </head>
+      <Script src="https://www.googletagmanager.com/gtag/js?id=G-NF3ETB0YG4" strategy="afterInteractive" />
+      <Script id="gtag-init" strategy="afterInteractive">{`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-NF3ETB0YG4');
+      `}</Script>
       <body className="min-h-full font-jakarta text-gray-800 antialiased" suppressHydrationWarning>
         <LanguageProvider>
           <AuthProvider>

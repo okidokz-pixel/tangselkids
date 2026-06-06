@@ -11,9 +11,6 @@ import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { SkeletonList } from "@/components/SkeletonCard";
 import { ActionButton } from "@/components/ActionButton";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { useAuth } from "@/context/AuthContext";
-import { PremiumBadge } from "@/components/PremiumBadge";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 
 // ── Hidden radio style ────────────────────────────────────────────────────────
@@ -187,7 +184,6 @@ function matchesUpBucket(upMin: number | undefined, bucket: string): boolean {
 
 function SchoolsContent() {
   const { t, lang } = useLang();
-  const { tier, loaded } = useAuth();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
   const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
   const [allFeatured, setAllFeatured] = useState<Place[]>([]);
@@ -209,7 +205,6 @@ function SchoolsContent() {
     )].sort(),
   [allPlaces]);
 
-  const [showFilterGate, setShowFilterGate] = useState(false);
   const [premiumOpen,   setPremiumOpen]   = useState(false);
   const router = useRouter();
 
@@ -369,7 +364,6 @@ function SchoolsContent() {
                 {t.schoolsTitle}
               </h1>
             </div>
-            <PremiumBadge />
           </div>
         </div>
 
@@ -468,7 +462,7 @@ function SchoolsContent() {
             </div>
           </div>
 
-          {/* Collapsible premium filter section */}
+          {/* Murid / Kelas filter */}
           <div style={{ borderRadius: 16, overflow: "clip", border: "1.5px solid #bbf7d0" }}>
             <ActionButton
               onClick={() => setPremiumOpen(o => !o)}
@@ -482,8 +476,7 @@ function SchoolsContent() {
               } as React.CSSProperties}
             >
               <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#166534" }}>
-                Filter Lebih Dalam?{" "}
-                <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
+                Filter Lebih Dalam
               </span>
               <ChevronDown
                 size={18} color="#166534"
@@ -493,37 +486,15 @@ function SchoolsContent() {
 
             {premiumOpen && (
               <div style={{ padding: "16px 16px 4px", background: "#fff", borderTop: "1.5px solid #bbf7d0" }}>
-                {tier === "premium" ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                      color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                      Murid / Kelas
-                    </p>
-                    <div style={{ flex: 1 }}>
-                      <FilterDropdown value={classSizeBucket} onChange={setClassSizeBucket} options={classSizeOptions} />
-                    </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                  <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+                    color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
+                    Murid / Kelas
+                  </p>
+                  <div style={{ flex: 1 }}>
+                    <FilterDropdown value={classSizeBucket} onChange={setClassSizeBucket} options={classSizeOptions} />
                   </div>
-                ) : (
-                  <ActionButton
-                    onClick={() => setShowFilterGate(true)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
-                      width: "100%", padding: 0, background: "transparent" }}
-                  >
-                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                      color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>
-                      Murid / Kelas
-                    </p>
-                    <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                      fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                      color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                      display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span>Premium only</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    </div>
-                  </ActionButton>
-                )}
+                </div>
               </div>
             )}
           </div>
@@ -547,7 +518,6 @@ function SchoolsContent() {
             </button>
           </div>
         </div>
-        <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       </div>
     );
   }
@@ -574,7 +544,6 @@ function SchoolsContent() {
               </p>
             </div>
           </div>
-          <PremiumBadge />
         </div>
       </div>
 
@@ -628,23 +597,20 @@ function SchoolsContent() {
             <ArrowUpDown size={12} strokeWidth={2.5} color="#16a34a" />
           </div>
         </div>
-        {(tier === "premium" || tier === "free") && (
-          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "10px 12px", borderRadius: 999, flexShrink: 0,
-            background: compareMode ? "#2e8a5a" : "#fff",
-            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
-            fontWeight: 700, fontSize: 12,
-            opacity: tier === "free" ? 0.85 : 1,
-            border: `1.5px solid ${compareMode ? "#2e8a5a" : tier === "free" ? "#e2e8f0" : "#e2e8f0"}` }}>
-            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
-            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
-          </ActionButton>
-        )}
+        <ActionButton onClick={toggleCompareMode} style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "10px 12px", borderRadius: 999, flexShrink: 0,
+          background: compareMode ? "#2e8a5a" : "#fff",
+          color: compareMode ? "#fff" : "#374151",
+          fontWeight: 700, fontSize: 12,
+          border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+          {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+          {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+        </ActionButton>
       </div>
 
       {/* Compare status hint — only in compare mode */}
-      {tier === "premium" && compareMode && filtered.length > 0 && (
+      {compareMode && filtered.length > 0 && (
         <div style={{ padding: "8px 14px 0" }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 7,
@@ -702,7 +668,7 @@ function SchoolsContent() {
             }}>
               ✦ Featured
             </span>
-            {tier === "premium" && compareMode ? (
+            {compareMode ? (
               <ActionButton
                 onClick={() => toggleCompare(featuredSpot.id)}
                 style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -747,7 +713,7 @@ function SchoolsContent() {
             const isSelected = compareIds.includes(school.id);
             return (
               <div key={school.id}>
-                {tier === "premium" && compareMode ? (
+                {compareMode ? (
                   <ActionButton
                     onClick={() => toggleCompare(school.id)}
                     style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -781,7 +747,7 @@ function SchoolsContent() {
       </div>
 
       {/* Compare float button */}
-      {tier === "premium" && compareIds.length >= 2 && (
+      {compareIds.length >= 2 && (
         <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
           <ActionButton onClick={goCompare} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -792,8 +758,6 @@ function SchoolsContent() {
           </ActionButton>
         </div>
       )}
-      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
-
       <BottomNav active="explore" />
     </div>
   );

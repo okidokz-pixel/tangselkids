@@ -19,7 +19,6 @@ import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
 import { MapPicker } from "@/components/MapPicker";
 import { ImageCropper } from "@/components/ImageCropper";
 import { PremiumBadge } from "@/components/PremiumBadge";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
 
 // ── Support WhatsApp number ───────────────────────────────────────────────────
 const SUPPORT_WA_NUMBER = "6281234567890"; // TODO: replace with real support number
@@ -41,7 +40,6 @@ export default function ProfilePage() {
   const [savedCount,    setSavedCount]    = useState(0);
   const [reviewsCount,  setReviewsCount]  = useState(0);
   const [myNotes,       setMyNotes]       = useState<FacilityNote[]>([]);
-  const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState("");
   const [cropperSrc, setCropperSrc] = useState("");
   const [showCropper, setShowCropper] = useState(false);
@@ -290,7 +288,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          {tier === "premium" && !editing && (
+          {!!user && !editing && (
             <ActionButton
               onClick={openEdit}
               style={{
@@ -726,35 +724,17 @@ export default function ProfilePage() {
               <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatSaved}</span>
             </Link>
 
-            {/* Reviews — premium only */}
-            {tier === "premium" ? (
-              <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{reviewsCount}</span>
-                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatReviews}</span>
-              </Link>
-            ) : (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", background: "transparent", borderRight: "1px solid var(--tk-line)" }}>
-                <Pencil size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>—</span>
-                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatReviews}</span>
-              </ActionButton>
-            )}
+            <Link href="/my-reviews" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none", borderRight: "1px solid var(--tk-line)" }}>
+              <Pencil size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+              <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{reviewsCount}</span>
+              <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatReviews}</span>
+            </Link>
 
-            {/* Notes — premium only */}
-            {tier === "premium" ? (
-              <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none" }}>
-                <FileText size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{myNotes.length}</span>
-                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
-              </Link>
-            ) : (
-              <ActionButton onClick={() => setShowUpgradeSheet(true)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", background: "transparent" }}>
-                <FileText size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
-                <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>—</span>
-                <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
-              </ActionButton>
-            )}
+            <Link href="/my-notes" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "12px 6px", textDecoration: "none" }}>
+              <FileText size={14} strokeWidth={1.75} style={{ color: "var(--tk-blue-700)" }} />
+              <span style={{ color: "var(--tk-ink)", fontFamily: "var(--font-fraunces), Georgia, serif", lineHeight: 1, fontSize: 15, fontWeight: 700 }}>{myNotes.length}</span>
+              <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
+            </Link>
           </div>
         </section>
 
@@ -763,74 +743,36 @@ export default function ProfilePage() {
           <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
             {t.supportSectionTitle}
           </p>
-          {tier === "premium" ? (
-            <a
-              href={`https://wa.me/${SUPPORT_WA_NUMBER}?text=${encodeURIComponent(t.supportWaMessage)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 16px", borderRadius: 16,
-                background: "#dcfce7",
-                border: "1.5px solid #bbf7d0",
-                boxShadow: "0 4px 16px rgba(37,211,102,0.10)",
-                textDecoration: "none",
-              }}
-            >
-              <div style={{
-                width: 42, height: 42, borderRadius: 999, flexShrink: 0,
-                background: "rgba(22,163,74,0.12)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <WhatsAppIcon size={22} color="#16a34a" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d", margin: 0 }}>
-                  {t.supportWaBtn}
-                </p>
-                <p className="font-jakarta text-xs" style={{ color: "#16a34a", margin: "2px 0 0" }}>
-                  {t.supportWaDesc}
-                </p>
-              </div>
-              <ChevronRight size={18} color="#86efac" />
-            </a>
-          ) : (
-            <ActionButton
-              onClick={() => setShowUpgradeSheet(true)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 16px", borderRadius: 16,
-                background: "#F1F5F9", border: "1.5px dashed #CBD5E1",
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              <div style={{
-                width: 42, height: 42, borderRadius: 999, flexShrink: 0,
-                background: "#E2E8F0",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <WhatsAppIcon size={22} color="#94A3B8" />
-              </div>
-              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <p className="font-jakarta font-bold text-sm" style={{ color: "#64748B", margin: 0 }}>
-                  {t.supportWaBtn}
-                </p>
-                <p className="font-jakarta text-xs" style={{ color: "#94A3B8", margin: "2px 0 0", lineHeight: 1.4 }}>
-                  {t.supportLockedMsg}
-                </p>
-              </div>
-              <div style={{
-                width: 26, height: 26, borderRadius: 999, flexShrink: 0,
-                background: "#d97706",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
-              </div>
-            </ActionButton>
-          )}
+          <a
+            href={`https://wa.me/${SUPPORT_WA_NUMBER}?text=${encodeURIComponent(t.supportWaMessage)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "flex", alignItems: "center", gap: 14,
+              padding: "14px 16px", borderRadius: 16,
+              background: "#dcfce7",
+              border: "1.5px solid #bbf7d0",
+              boxShadow: "0 4px 16px rgba(37,211,102,0.10)",
+              textDecoration: "none",
+            }}
+          >
+            <div style={{
+              width: 42, height: 42, borderRadius: 999, flexShrink: 0,
+              background: "rgba(22,163,74,0.12)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <WhatsAppIcon size={22} color="#16a34a" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d", margin: 0 }}>
+                {t.supportWaBtn}
+              </p>
+              <p className="font-jakarta text-xs" style={{ color: "#16a34a", margin: "2px 0 0" }}>
+                {t.supportWaDesc}
+              </p>
+            </div>
+            <ChevronRight size={18} color="#86efac" />
+          </a>
         </section>
 
         {/* Preferences */}
@@ -856,38 +798,17 @@ export default function ProfilePage() {
           <div className="rounded-2xl overflow-hidden divide-y"
                style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)" }}>
             {appRows.map((row, idx) => {
-              const isFeedback = row.label === t.profileFeedback;
-              const feedbackLocked = isFeedback && tier !== "premium";
               const divider = idx > 0 ? { borderTop: "1px solid var(--tk-line)" } : {};
 
               const inner = (
                 <>
-                  <row.Icon size={20} strokeWidth={1.75} style={{ color: feedbackLocked ? "#cbd5e1" : "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
-                  <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: feedbackLocked ? "#94a3b8" : "var(--tk-ink)" }}>{row.label}</span>
+                  <row.Icon size={20} strokeWidth={1.75} style={{ color: "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
+                  <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{row.label}</span>
                   {row.value && <span className="font-jakarta text-xs" style={{ color: "var(--tk-muted)" }}>{row.value}</span>}
-                  {feedbackLocked ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  ) : (
-                    <ChevronRight size={16} style={{ color: "var(--tk-line)" }} />
-                  )}
+                  <ChevronRight size={16} style={{ color: "var(--tk-line)" }} />
                 </>
               );
 
-              if (feedbackLocked) {
-                return (
-                  <div key={row.label} style={divider}>
-                    <ActionButton
-                      onClick={() => setShowUpgradeSheet(true)}
-                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: "transparent", borderRadius: 0 }}
-                    >
-                      {inner}
-                    </ActionButton>
-                  </div>
-                );
-              }
               return row.href ? (
                 <Link key={row.label} href={row.href} className="flex items-center gap-3 px-4 py-3.5" style={divider}>
                   {inner}
@@ -927,7 +848,6 @@ export default function ProfilePage() {
       </div>
 
       <BottomNav active="profile" />
-      <FilterGateSheet isOpen={showUpgradeSheet} onClose={() => setShowUpgradeSheet(false)} />
 
       {/* ── Profile photo file input + cropper ───────────────────────────── */}
       <input

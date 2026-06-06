@@ -5,12 +5,13 @@ const SITE_URL = "https://tangselkids.com";
 
 const TABLES = [
   "schools", "learning_centers", "daycares", "playgrounds",
-  "clinics", "cafes", "mini_zoo", "swimming_pools", "bookstores", "others",
+  "clinics", "cafes", "mini_zoo", "swimming_pools", "bookstores",
 ] as const;
 
 const STATIC_ROUTES = [
   "/", "/schools", "/learning-centers", "/daycare", "/playgrounds",
   "/clinics", "/cafes", "/mini-zoo", "/swimming-pools", "/bookstores",
+  "/explore", "/berita", "/about",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -20,15 +21,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "/" ? 1.0 : 0.8,
   }));
 
-  const slugResults = await Promise.all(
-    TABLES.map(async (table) => {
-      const { data } = await supabase
-        .from(table)
-        .select("slug, id")
-        .order("is_featured", { ascending: false });
-      return (data ?? []).map((r) => r.slug ?? r.id as string).filter(Boolean);
-    }),
-  );
+  const [slugResults, articlesData] = await Promise.all([
+    Promise.all(
+      TABLES.map(async (table) => {
+        const { data } = await supabase
+          .from(table)
+          .select("slug, id");
+        return (data ?? []).map((r) => r.slug ?? r.id as string).filter(Boolean);
+      }),
+    ),
+    supabase
+      .from("articles")
+      .select("slug, published_at")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false }),
+  ]);
 
   const place_entries: MetadataRoute.Sitemap = slugResults.flat().map((slug) => ({
     url: `${SITE_URL}/place/${slug}`,
@@ -36,5 +43,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...static_entries, ...place_entries];
+  const article_entries: MetadataRoute.Sitemap = (articlesData.data ?? []).map((a) => ({
+    url: `${SITE_URL}/berita/${a.slug}`,
+    lastModified: a.published_at ? new Date(a.published_at) : undefined,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  return [...static_entries, ...place_entries, ...article_entries];
 }

@@ -10,9 +10,6 @@ import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
-import { useAuth } from "@/context/AuthContext";
-import { PremiumBadge } from "@/components/PremiumBadge";
 import { SkeletonList } from "@/components/SkeletonCard";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 
@@ -92,7 +89,6 @@ const HEADER_STYLE = {
 
 function MiniZooContent() {
   const { t } = useLang();
-  const { tier } = useAuth();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
   const PRICE_OPTIONS = [
@@ -114,7 +110,6 @@ function MiniZooContent() {
     });
   }, []);
 
-  const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -224,7 +219,6 @@ function MiniZooContent() {
                 {t.catMiniZoo}
               </h1>
             </div>
-            <PremiumBadge />
           </div>
         </div>
 
@@ -296,7 +290,6 @@ function MiniZooContent() {
               </p>
             </div>
           </div>
-          <PremiumBadge />
         </div>
       </div>
 
@@ -346,23 +339,20 @@ function MiniZooContent() {
         </div>
 
         {/* Compare button */}
-        {(tier === "premium" || tier === "free") && (
-          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
-            display: "inline-flex", alignItems: "center", gap: 5,
-            padding: "10px 14px", borderRadius: 999, flexShrink: 0,
-            background: compareMode ? "#2e8a5a" : "#fff",
-            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
-            fontWeight: 700, fontSize: 13,
-            opacity: tier === "free" ? 0.85 : 1,
-            border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
-            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
-            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
-          </ActionButton>
-        )}
+        <ActionButton onClick={toggleCompareMode} style={{
+          display: "inline-flex", alignItems: "center", gap: 5,
+          padding: "10px 14px", borderRadius: 999, flexShrink: 0,
+          background: compareMode ? "#2e8a5a" : "#fff",
+          color: compareMode ? "#fff" : "#374151",
+          fontWeight: 700, fontSize: 13,
+          border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+          {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+          {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+        </ActionButton>
       </div>
 
       {/* Compare hint */}
-      {tier === "premium" && compareMode && totalCount > 0 && (
+      {compareMode && totalCount > 0 && (
         <div style={{ padding: "8px 14px 0" }}>
           <div style={{
             display: "flex", alignItems: "center", gap: 7,
@@ -409,7 +399,7 @@ function MiniZooContent() {
             }}>
               ✦ Featured
             </span>
-            {tier === "premium" && compareMode ? (
+            {compareMode ? (
               <ActionButton
                 onClick={() => toggleCompare(featuredSpot.id)}
                 style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -453,7 +443,7 @@ function MiniZooContent() {
             const isSelected = compareIds.includes(place.id);
             return (
               <div key={place.id}>
-                {tier === "premium" && compareMode ? (
+                {compareMode ? (
                   <ActionButton
                     onClick={() => toggleCompare(place.id)}
                     style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
@@ -484,7 +474,7 @@ function MiniZooContent() {
       </div>
 
       {/* Floating compare button */}
-      {tier === "premium" && compareIds.length >= 2 && (
+      {compareIds.length >= 2 && (
         <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
           <ActionButton onClick={goCompare} style={{
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -496,7 +486,6 @@ function MiniZooContent() {
         </div>
       )}
 
-      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       <BottomNav active="explore" />
     </div>
   );

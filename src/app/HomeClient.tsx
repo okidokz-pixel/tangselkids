@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
-import { PremiumBadge } from "@/components/PremiumBadge";
 import { BottomNav } from "@/components/BottomNav";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { useLoginSheet } from "@/context/LoginSheetContext";
@@ -535,7 +534,7 @@ function StickyHeader({ visible }: { visible: boolean }) {
 // ─── Masthead ─────────────────────────────────────────────────────────────────
 function Masthead({ userInitial }: { userInitial: string }) {
   const { lang, t } = useLang();
-  const { tier, user } = useAuth();
+  const { user } = useAuth();
   const { openLoginSheet } = useLoginSheet();
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   useEffect(() => {
@@ -588,14 +587,8 @@ function Masthead({ userInitial }: { userInitial: string }) {
                   </svg>
                 </ActionButton>
               </>
-            ) : tier === "premium" ? (
-              /* Premium — lang toggle on top, badge below */
-              <>
-                <LangToggle variant="dark" />
-                <PremiumBadge />
-              </>
             ) : (
-              /* Logged in, free — lang toggle on top, avatar below */
+              /* Logged in — lang toggle on top, avatar below */
               <>
                 <LangToggle variant="dark" />
                 <Link href="/profile" style={{

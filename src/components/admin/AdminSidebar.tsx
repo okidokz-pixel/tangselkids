@@ -6,22 +6,21 @@ import { useState } from "react";
 import { createAdminClient } from "@/lib/supabase-browser";
 
 const NAV_MAIN = [
-  { label: "Dashboard", href: "/admin", icon: "▦" },
-  { label: "Sekolah", href: "/admin/schools", icon: "🏫" },
-  { label: "Tempat Kursus", href: "/admin/learning-centers", icon: "📚" },
-  { label: "Articles", href: "/admin/articles", icon: "📝" },
-  { label: "Analytics", href: "/admin/analytics", icon: "📊" },
+  { label: "Dashboard", href: "/admin" },
+  { label: "Articles", href: "/admin/articles" },
+  { label: "Analytics", href: "/admin/analytics" },
 ];
 
 const NAV_CATEGORIES = [
-  { label: "Daycares", href: "/admin/daycares", icon: "🍼" },
-  { label: "Playgrounds", href: "/admin/playgrounds", icon: "🎠" },
-  { label: "Klinik Tumbuh Kembang", href: "/admin/clinics", icon: "🏥" },
-  { label: "Kafe Ramah Anak", href: "/admin/cafes", icon: "☕" },
-  { label: "Animal Encounter", href: "/admin/mini-zoo", icon: "🦁" },
-  { label: "Kolam Renang", href: "/admin/swimming-pools", icon: "🏊" },
-  { label: "Toko Buku", href: "/admin/bookstores", icon: "📖" },
-  { label: "Lainnya", href: "/admin/others", icon: "⭐" },
+  { label: "Sekolah", href: "/admin/schools" },
+  { label: "Tempat Kursus", href: "/admin/learning-centers" },
+  { label: "Daycares", href: "/admin/daycares" },
+  { label: "Playgrounds", href: "/admin/playgrounds" },
+  { label: "Klinik Tumbuh Kembang", href: "/admin/clinics" },
+  { label: "Kafe Ramah Anak", href: "/admin/cafes" },
+  { label: "Mini Zoo", href: "/admin/mini-zoo" },
+  { label: "Kolam Renang", href: "/admin/swimming-pools" },
+  { label: "Toko Buku & Alat Tulis", href: "/admin/bookstores" },
 ];
 
 // Sidebar colour tokens
@@ -91,7 +90,6 @@ export function AdminSidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
                 padding: "8px 12px",
                 borderRadius: 8,
                 fontSize: 14,
@@ -103,14 +101,13 @@ export function AdminSidebar() {
                 transition: "background 0.1s",
               }}
             >
-              <span style={{ fontSize: 16, width: 20, textAlign: "center" }}>{item.icon}</span>
               {item.label}
             </Link>
           ))}
         </div>
 
         <div style={{ margin: "12px 8px 8px", fontSize: 11, fontWeight: 600, color: C.sectionLabel, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          Kategori Lain
+          Kategori
         </div>
 
         {NAV_CATEGORIES.map((item) => (
@@ -121,7 +118,6 @@ export function AdminSidebar() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
               padding: "7px 12px",
               borderRadius: 8,
               fontSize: 13,
@@ -132,7 +128,6 @@ export function AdminSidebar() {
               marginBottom: 1,
             }}
           >
-            <span style={{ fontSize: 14, width: 20, textAlign: "center" }}>{item.icon}</span>
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {item.label}
             </span>

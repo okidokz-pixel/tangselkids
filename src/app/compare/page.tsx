@@ -2,13 +2,12 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Scale, Lock } from "lucide-react";
+import { ChevronLeft, Scale } from "lucide-react";
 import { formatPriceRange, formatPrice, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
-import { PremiumBadge } from "@/components/PremiumBadge";
 
 // ── Shared fee formatter ──────────────────────────────────────────────────────
 function fmtFee(min: number | undefined, max: number | undefined): string {
@@ -87,7 +86,7 @@ function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t }  = useLang();
-  const { tier, loaded } = useAuth();
+  const { loaded } = useAuth();
   const { userLat, userLng, locationStatus } = useLocation();
 
   const isLc = searchParams.get("type") === "lc";
@@ -132,7 +131,7 @@ function CompareContent() {
       setPlaces(all.filter(p => p.category === category));
       setLoading(false);
     });
-  }, [loaded, tier, router, isLc]);
+  }, [loaded, isLc]);
 
   const title    = isLc ? t.lcCmpTitle    : t.cmpTitle;
   const selected = isLc ? t.lcCmpSelected(places.length) : t.cmpSelected(places.length);
@@ -141,9 +140,6 @@ function CompareContent() {
   const browseHref = isLc ? "/learning-centers" : "/schools";
   const browseLabel = isLc ? t.lcCmpBrowse : t.cmpBrowse;
   const backLabel  = isLc ? t.lcCmpBackTo  : t.cmpBackToSchools;
-  const premiumDesc = isLc
-    ? "Bandingkan hingga 3 tempat kursus secara bersamaan — tipe kursus, biaya, dan rasio guru — dengan akun Premium."
-    : "Bandingkan hingga 3 sekolah secara bersamaan — termasuk SPP, kurikulum, dan jenjang — dengan akun Premium.";
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col">
@@ -166,35 +162,13 @@ function CompareContent() {
               <p className="text-white/70 text-xs font-jakarta">{selected}</p>
             </div>
           </div>
-          <PremiumBadge />
         </div>
       </div>
 
       <div className="flex-1 px-4 py-5">
 
-        {/* Non-premium gate */}
-        {loaded && tier !== "premium" && (
-          <div className="flex flex-col items-center justify-center gap-4 text-center py-8 px-4">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "#FEF3C7" }}>
-              <Lock size={36} style={{ color: "#D97706" }} strokeWidth={1.5} />
-            </div>
-            <h2 className="text-xl font-semibold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-              Fitur Khusus Premium
-            </h2>
-            <p className="font-jakarta text-gray-500 text-sm leading-relaxed">{premiumDesc}</p>
-            <button
-              onClick={() => { sessionStorage.setItem("upgradeFrom", isLc ? "/compare?type=lc" : "/compare"); router.push("/upgrade"); }}
-              className="px-8 py-3 rounded-full text-white font-jakarta font-bold text-sm shadow-md"
-              style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
-            >
-              Upgrade ke Premium · Rp 29.000/bln
-            </button>
-            <button onClick={() => router.back()} className="font-jakarta text-sm text-gray-400">Kembali</button>
-          </div>
-        )}
-
         {/* Skeleton while fetching */}
-        {loaded && tier === "premium" && loading && (
+        {loaded && loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
             {/* Fake place headers */}
             <div style={{ display: "grid", gap: 8, gridTemplateColumns: "100px 1fr 1fr" }}>
@@ -218,7 +192,7 @@ function CompareContent() {
         )}
 
         {/* Empty state */}
-        {loaded && tier === "premium" && !loading && places.length === 0 && (
+        {loaded && !loading && places.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
             <Scale size={48} style={{ color: "#a7d4bc" }} strokeWidth={1.25} />
             <p className="text-xl font-semibold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>{emptyMsg}</p>
@@ -229,7 +203,7 @@ function CompareContent() {
           </div>
         )}
 
-        {loaded && tier === "premium" && !loading && places.length > 0 && (
+        {loaded && !loading && places.length > 0 && (
           <>
             {/* Place headers */}
             <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: `100px repeat(${places.length}, 1fr)` }}>

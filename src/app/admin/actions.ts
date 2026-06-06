@@ -268,6 +268,301 @@ export async function togglePlaygroundFeatured(id: string, value: boolean) {
   revalidatePath("/playgrounds");
 }
 
+// ── Clinics ───────────────────────────────────────────────────────────────────
+
+export async function getClinics() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("clinics")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getClinic(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("clinics")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveClinic(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("clinics").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("clinics").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/clinics");
+    revalidatePath("/admin/clinics");
+    redirect(`/admin/clinics/${data.id}`);
+  }
+
+  revalidatePath("/clinics");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/clinics");
+}
+
+export async function deleteClinic(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("clinics").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/clinics");
+  revalidatePath("/admin/clinics");
+  redirect("/admin/clinics");
+}
+
+export async function toggleClinicFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("clinics").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/clinics");
+  revalidatePath("/clinics");
+}
+
+// ── Cafes ─────────────────────────────────────────────────────────────────────
+
+export async function getCafes() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("cafes")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getCafe(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("cafes")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveCafe(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("cafes").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("cafes").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/cafes");
+    revalidatePath("/admin/cafes");
+    redirect(`/admin/cafes/${data.id}`);
+  }
+
+  revalidatePath("/cafes");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/cafes");
+}
+
+export async function deleteCafe(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("cafes").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/cafes");
+  revalidatePath("/admin/cafes");
+  redirect("/admin/cafes");
+}
+
+export async function toggleCafeFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("cafes").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/cafes");
+  revalidatePath("/cafes");
+}
+
+// ── Mini Zoo ──────────────────────────────────────────────────────────────────
+
+export async function getMiniZoos() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("mini_zoo")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getMiniZoo(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("mini_zoo")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveMiniZoo(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("mini_zoo").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("mini_zoo").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/mini-zoo");
+    revalidatePath("/admin/mini-zoo");
+    redirect(`/admin/mini-zoo/${data.id}`);
+  }
+
+  revalidatePath("/mini-zoo");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/mini-zoo");
+}
+
+export async function deleteMiniZoo(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("mini_zoo").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/mini-zoo");
+  revalidatePath("/admin/mini-zoo");
+  redirect("/admin/mini-zoo");
+}
+
+export async function toggleMiniZooFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("mini_zoo").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/mini-zoo");
+  revalidatePath("/mini-zoo");
+}
+
+// ── Swimming Pools ────────────────────────────────────────────────────────────
+
+export async function getSwimmingPools() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("swimming_pools")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getSwimmingPool(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("swimming_pools")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveSwimmingPool(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("swimming_pools").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("swimming_pools").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/swimming-pools");
+    revalidatePath("/admin/swimming-pools");
+    redirect(`/admin/swimming-pools/${data.id}`);
+  }
+
+  revalidatePath("/swimming-pools");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/swimming-pools");
+}
+
+export async function deleteSwimmingPool(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("swimming_pools").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/swimming-pools");
+  revalidatePath("/admin/swimming-pools");
+  redirect("/admin/swimming-pools");
+}
+
+export async function toggleSwimmingPoolFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("swimming_pools").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/swimming-pools");
+  revalidatePath("/swimming-pools");
+}
+
+// ── Bookstores ────────────────────────────────────────────────────────────────
+
+export async function getBookstores() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("bookstores")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getBookstore(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("bookstores")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveBookstore(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("bookstores").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("bookstores").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/bookstores");
+    revalidatePath("/admin/bookstores");
+    redirect(`/admin/bookstores/${data.id}`);
+  }
+
+  revalidatePath("/bookstores");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/bookstores");
+}
+
+export async function deleteBookstore(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("bookstores").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/bookstores");
+  revalidatePath("/admin/bookstores");
+  redirect("/admin/bookstores");
+}
+
+export async function toggleBookstoreFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("bookstores").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/bookstores");
+  revalidatePath("/bookstores");
+}
+
 // ── Articles ─────────────────────────────────────────────────────────────────
 
 export async function getArticles() {
@@ -330,18 +625,23 @@ export async function deleteArticle(id: string) {
 
 export async function getDashboardStats() {
   await assertAdmin();
-  const [schools, articles, featuredSchools, learningCenters, featuredLC] = await Promise.all([
-    supabaseAdmin.from("schools").select("*", { count: "exact", head: true }),
+  const tables = [
+    "schools", "learning_centers", "daycares", "playgrounds",
+    "clinics", "cafes", "mini_zoo", "swimming_pools", "bookstores",
+  ] as const;
+
+  const [results, featuredResults, articles] = await Promise.all([
+    Promise.all(tables.map((t) => supabaseAdmin.from(t).select("*", { count: "exact", head: true }))),
+    Promise.all(tables.map((t) => supabaseAdmin.from(t).select("*", { count: "exact", head: true }).eq("is_featured", true))),
     supabaseAdmin.from("articles").select("*", { count: "exact", head: true }),
-    supabaseAdmin.from("schools").select("*", { count: "exact", head: true }).eq("is_featured", true),
-    supabaseAdmin.from("learning_centers").select("*", { count: "exact", head: true }),
-    supabaseAdmin.from("learning_centers").select("*", { count: "exact", head: true }).eq("is_featured", true),
   ]);
+
   return {
-    schools: schools.count ?? 0,
     articles: articles.count ?? 0,
-    featuredSchools: featuredSchools.count ?? 0,
-    learningCenters: learningCenters.count ?? 0,
-    featuredLC: featuredLC.count ?? 0,
+    categories: tables.map((table, i) => ({
+      table,
+      total: results[i].count ?? 0,
+      featured: featuredResults[i].count ?? 0,
+    })),
   };
 }
