@@ -31,6 +31,7 @@ export type Place = {
   grades?: Grade[];
   centerType?: string;
   playgroundType?: "indoor" | "outdoor";
+  playgroundTypeRaw?: string;
   isFree?: boolean;
   priceMin: number;
   priceMax: number;
@@ -73,6 +74,10 @@ export type Place = {
   teachingLanguageDisplay?: string; // full Bahasa Pengantar text for display
   studentsPerClass?: number;    // e.g., 20 students per class
   jadwalPendaftaran?: string;   // registration schedule text
+  aboutEn?: string;             // English translation of description
+  facilitiesEn?: string;        // English translation of facilities
+  extracurricularsEn?: string;  // English translation of extracurriculars
+  jadwalPendaftaranEn?: string; // English translation of registration schedule
 
   // ── Learning-center-specific ─────────────────────────────────
   courseTypes?: string[];    // multi-valued, e.g. ["English", "Math"]
@@ -1344,6 +1349,7 @@ export const places: Place[] = [
     priceMax: 350000,
     clinicServices: ["Terapi Wicara", "Sensori Integrasi (SI)"],
     bpjs: true,
+    facilities: "Ruang Pemeriksaan Privat, Laboratorium Diagnostik, Ruang Terapi Ramah Anak, Pojok Bermain, Ruang Tunggu Ber-AC, Farmasi",
     rating: 4.8,
     reviews: 64,
     ageRange: "0 – 18 tahun",
@@ -1371,6 +1377,7 @@ export const places: Place[] = [
     priceMax: 500000,
     clinicServices: ["Psikologi Anak", "Perilaku / ABA"],
     bpjs: true,
+    facilities: "IGD 24 Jam, ICU Anak, NICU, Kamar Rawat Inap, Laboratorium Lengkap, Farmasi 24 Jam, Ambulans, Kafe RS",
     rating: 4.6,
     reviews: 128,
     ageRange: "Semua usia",
@@ -1398,6 +1405,7 @@ export const places: Place[] = [
     priceMax: 400000,
     clinicServices: ["Terapi Okupasi", "Fisioterapi"],
     bpjs: false,
+    facilities: "Ruang Pemeriksaan Privat, Ruang Terapi Okupasi, Ruang Fisioterapi, Laboratorium, Pojok Bermain, Ruang Tunggu Ber-AC",
     rating: 4.7,
     reviews: 45,
     ageRange: "0 – 14 tahun",
@@ -1425,6 +1433,7 @@ export const places: Place[] = [
     priceMax: 600000,
     clinicServices: ["Terapi Wicara", "Terapi Okupasi", "Fisioterapi"],
     bpjs: false,
+    facilities: "Ruang Terapi Wicara, Ruang Terapi Okupasi, Ruang Fisioterapi, Kolam Hidroterapi, Pojok Bermain, Ruang Konsultasi Orang Tua, Ruang Tunggu Ber-AC",
     rating: 4.8,
     reviews: 38,
     ageRange: "0 – 18 tahun",
@@ -1452,6 +1461,7 @@ export const places: Place[] = [
     priceMax: 900000,
     clinicServices: ["Sensori Integrasi (SI)", "Perilaku / ABA", "Psikologi Anak"],
     bpjs: false,
+    facilities: "Ruang Sensori Integrasi, Ruang ABA Therapy, Ruang Psikologi Anak, Gym Anak, Ruang Observasi, Ruang Tunggu Ber-AC, Parkir Luas",
     rating: 4.9,
     reviews: 22,
     ageRange: "0 – 12 tahun",
@@ -1617,6 +1627,7 @@ export const places: Place[] = [
     address: "Jl. Bintaro Utama VII No. 50, Sektor 7, Tangerang Selatan",
     priceMin: 75000,
     priceMax: 100000,
+    facilities: "Area Feeding Session, Zona Foto Bersama Hewan, Ruang Edukasi Satwa, Toilet Bersih, Kantin, Parkir",
     rating: 4.5,
     reviews: 76,
     ageRange: "2 – 12 tahun",
@@ -1642,6 +1653,7 @@ export const places: Place[] = [
     address: "Jl. BSD Raya No. 30, BSD City, Tangerang Selatan",
     priceMin: 50000,
     priceMax: 70000,
+    facilities: "Area Petting Zoo, Kandang Interaktif, Kolam Ikan Hias, Toilet Bersih, Kantin, Parkir Luas",
     rating: 4.3,
     reviews: 54,
     ageRange: "Semua usia",
@@ -1667,6 +1679,7 @@ export const places: Place[] = [
     address: "Taman Kota Bintaro Sektor 3, Tangerang Selatan",
     priceMin: 0,
     priceMax: 0,
+    facilities: "Area Bermain Terbuka, Kandang Kelinci & Marmut, Toilet Umum",
     rating: 4.1,
     reviews: 38,
     ageRange: "Semua usia",
@@ -1692,6 +1705,7 @@ export const places: Place[] = [
     address: "Jl. Sektor 9 Raya No. 55, Bintaro, Tangerang Selatan",
     priceMin: 15000,
     priceMax: 25000,
+    facilities: "Area Feeding Hewan, Kandang Unggas Interaktif, Kandang Kelinci, Toilet, Parkir",
     rating: 4.2,
     reviews: 31,
     ageRange: "2 – 12 tahun",
@@ -2107,6 +2121,7 @@ export const places: Place[] = [
     priceMax: 180000,
     clinicServices: ["Terapi Wicara"],
     bpjs: true,
+    facilities: "Ruang Pemeriksaan, Ruang Terapi Wicara, Apotek, Pojok Bermain, Ruang Tunggu Ber-AC",
     rating: 4.4,
     reviews: 29,
     ageRange: "0 – 12 tahun",
@@ -2132,6 +2147,7 @@ export const places: Place[] = [
     priceMax: 650000,
     clinicServices: ["Terapi Okupasi", "Sensori Integrasi (SI)"],
     bpjs: false,
+    facilities: "Ruang Terapi Okupasi, Ruang Sensori Integrasi, Pojok Bermain, Ruang Konsultasi, Ruang Tunggu Ber-AC",
     rating: 4.6,
     reviews: 17,
     ageRange: "1 – 10 tahun",
@@ -2157,6 +2173,7 @@ export const places: Place[] = [
     priceMax: 1000000,
     clinicServices: ["Psikologi Anak", "Perilaku / ABA", "Sensori Integrasi (SI)"],
     bpjs: false,
+    facilities: "Ruang ABA Therapy, Ruang Psikologi Klinis, Ruang Sensori Integrasi, Ruang Observasi 1-Way Mirror, Ruang Tunggu Premium, Parkir",
     rating: 4.9,
     reviews: 13,
     ageRange: "1 – 18 tahun",
@@ -2313,6 +2330,7 @@ export const places: Place[] = [
     address: "Taman Kota BSD City, Jl. BSD Raya, Tangerang Selatan",
     priceMin: 0,
     priceMax: 0,
+    facilities: "Area Bermain Terbuka, Kandang Kelinci & Marmut, Toilet Umum",
     rating: 4.0,
     reviews: 24,
     ageRange: "Semua usia",
@@ -2337,6 +2355,7 @@ export const places: Place[] = [
     address: "Jl. BSD Raya No. 65, BSD City, Tangerang Selatan",
     priceMin: 15000,
     priceMax: 20000,
+    facilities: "Area Feeding Hewan Ternak, Kandang Kelinci, Toilet, Parkir",
     rating: 4.2,
     reviews: 17,
     ageRange: "2 – 12 tahun",
@@ -2361,6 +2380,7 @@ export const places: Place[] = [
     address: "Jl. Pahlawan Seribu No. 77, BSD City, Tangerang Selatan",
     priceMin: 85000,
     priceMax: 120000,
+    facilities: "Area Feeding Session, Zona Reptil, Zona Burung Eksotis, Zona Mamalia, Ruang Edukasi, Toilet Bersih, Kantin, Parkir",
     rating: 4.5,
     reviews: 29,
     ageRange: "2 – 12 tahun",
@@ -2385,6 +2405,7 @@ export const places: Place[] = [
     address: "Jl. Ciputat Raya No. 88, Ciputat, Tangerang Selatan",
     priceMin: 35000,
     priceMax: 55000,
+    facilities: "Area Petting Zoo, Kolam Ikan Hias, Kandang Burung, Toilet, Parkir",
     rating: 4.1,
     reviews: 21,
     ageRange: "Semua usia",

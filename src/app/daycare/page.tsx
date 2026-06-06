@@ -1,10 +1,11 @@
-﻿"use client";
-import { useState, useEffect, Suspense } from "react";
+"use client";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, ChevronDown, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
-import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check, Scale } from "lucide-react";
+import { placeMatchesAreas, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
+import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
@@ -34,38 +35,23 @@ function Chip({ name, value, checked, onChange, children }: {
   );
 }
 
-function FilterDropdown({ value, onChange, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
+function MultiChip({ checked, onChange, children }: {
+  checked: boolean; onChange: () => void; children: React.ReactNode;
 }) {
-  const active = value !== "all";
   return (
-    <div style={{ position: "relative" }}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          appearance: "none", WebkitAppearance: "none",
-          width: "100%", padding: "10px 36px 10px 14px",
-          borderRadius: 12, fontSize: 13.5, fontWeight: 600,
-          fontFamily: "var(--font-jakarta),sans-serif",
-          border: active ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
-          background: active ? "#e6f4ed" : "#fff",
-          color: active ? "#2e8a5a" : "#374151",
-          cursor: "pointer", outline: "none",
-        }}
-      >
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <div style={{ position: "absolute", right: 12, top: 0, bottom: 0,
-        display: "flex", alignItems: "center", pointerEvents: "none" }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-    </div>
+    <label style={{ cursor: "pointer", userSelect: "none", WebkitUserSelect: "none" }}>
+      <input type="checkbox" checked={checked} onChange={onChange} style={HI} />
+      <span style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "6px 13px", borderRadius: 999,
+        fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", transition: "all 0.15s",
+        border: checked ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
+        background: checked ? "#2e8a5a" : "#fff", color: checked ? "#fff" : "#374151",
+      }}>
+        {checked && <Check size={10} color="white" strokeWidth={3} />}
+        {children}
+      </span>
+    </label>
   );
 }
 
@@ -84,23 +70,41 @@ function FTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
+function SectionHead({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+      color: "#94a3b8", textTransform: "uppercase" as const }}>
+      {children}
+    </p>
+  );
+}
 
-const CARER_RATIO_OPTIONS = [
+const AGE_GROUP_OPTIONS = [
+  "Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)", "Usia 4+ thn",
+];
+
+const PRICE_BUCKETS: Record<string, string> = {
+  all:      "Semua",
+  lt1jt:    "< Rp 1 jt",
+  "1to2jt": "Rp 1–2 jt",
+  "2to3jt": "Rp 2–3 jt",
+  gt3jt:    "> Rp 3 jt",
+};
+
+const CARER_RATIO_OPTIONS: { value: string; label: string }[] = [
   { value: "all",   label: "Semua" },
   { value: "1to3",  label: "≤ 1:3" },
   { value: "1to5",  label: "1:4–1:5" },
   { value: "1to8",  label: "1:6+" },
 ];
-const DAYCARE_METHOD_OPTIONS = [
-  { value: "all",           label: "Semua" },
-  { value: "Montessori",    label: "Montessori" },
-  { value: "Play-based",    label: "Play-based" },
-  { value: "Structured",    label: "Structured" },
-  { value: "Waldorf",       label: "Waldorf" },
-  { value: "Reggio Emilia", label: "Reggio Emilia" },
+
+const METHOD_OPTIONS = ["Montessori", "Play-based", "Structured", "Waldorf", "Reggio Emilia"];
+
+const ADA_OPTIONS: { value: string; label: string }[] = [
+  { value: "all", label: "Semua" },
+  { value: "yes", label: "Ada" },
+  { value: "no",  label: "Tidak Ada" },
 ];
-const ADA_LABELS_DC: Record<string, string> = { all: "Semua", yes: "Ada", no: "Tidak Ada" };
-const adaOptionsDC = Object.entries(ADA_LABELS_DC).map(([v, l]) => ({ value: v, label: l }));
 
 const HEADER_STYLE = {
   background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
@@ -110,27 +114,20 @@ const HEADER_STYLE = {
 function DaycareContent() {
   const { t } = useLang();
   const { tier } = useAuth();
+  const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
-  const USIA_OPTIONS = [
-    { value: "all",                label: t.filterAll },
-    { value: "Bayi (0–1 thn)",    label: t.daycareAgeBaby },
-    { value: "Toddler (1–2 thn)", label: t.daycareAgeToddler },
-    { value: "Balita (2–4 thn)",  label: t.daycareAgeBalita },
-    { value: "Usia 4+ thn",       label: t.daycareAge4Plus },
-  ];
-  const PRICE_OPTIONS = [
-    { value: "all",      label: t.filterAll },
-    { value: "lt1jt",   label: "< Rp 1 jt" },
-    { value: "1to2jt",  label: "Rp 1–2 jt" },
-    { value: "2to3jt",  label: "Rp 2–3 jt" },
-    { value: "gt3jt",   label: "> Rp 3 jt" },
-  ];
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  useEffect(() => { fetchPlacesByCategory("daycare").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+  const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
+  const [allFeatured, setAllFeatured] = useState<Place[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  useEffect(() => {
+    fetchPlacesByCategory("daycare").then(d => {
+      setAllPlaces(d);
+      setAllFeatured(d.filter(p => p.isFeatured));
+      setLoading(false);
+    });
+  }, []);
 
   const [showFilterGate, setShowFilterGate] = useState(false);
-  const [premiumOpen,    setPremiumOpen]    = useState(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -138,14 +135,37 @@ function DaycareContent() {
   const view: "filter" | "results" =
     searchParams.get("view") === "results" ? "results" : "filter";
 
-  const [area,        setArea]        = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
-  const [usia,        setUsia]        = useState(searchParams.get("usia") ?? "all");
-  const [priceBucket, setPriceBucket] = useState(searchParams.get("price") ?? "all");
-  const [carerRatio,       setCarerRatio]       = useState(searchParams.get("cr") ?? "all");
-  const [daycareMethod,    setDaycareMethod]    = useState(searchParams.get("method") ?? "all");
-  const [hasCctv,          setHasCctv]          = useState(searchParams.get("cctv") ?? "all");
+  const [area,          setArea]          = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
+  const [usiaSelections, setUsiaSelections] = useState<string[]>(() => {
+    const v = searchParams.get("usia");
+    return v && v !== "all" ? v.split(",") : [];
+  });
+  const [priceBucket,   setPriceBucket]   = useState(searchParams.get("price") ?? "all");
+  const [carerRatio,    setCarerRatio]    = useState(searchParams.get("cr") ?? "all");
+  const [daycareMethod, setDaycareMethod] = useState(searchParams.get("method") ?? "all");
+  const [hasCctv,       setHasCctv]       = useState(searchParams.get("cctv") ?? "all");
   const [hasAccreditation, setHasAccreditation] = useState(searchParams.get("acc") ?? "all");
-  const [sortBy,      setSortBy]      = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
+  const [sortBy,        setSortBy]        = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
+  const [sortSeed]                        = useState(() => Math.random());
+  const [compareIds,  setCompareIds]  = useState<string[]>([]);
+  const [compareMode, setCompareMode] = useState(false);
+
+  useEffect(() => {
+    if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
+  }, [sortBy, locationStatus, requestLocation]);
+
+  function toggleCompare(id: string) {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length >= 3 ? prev : [...prev, id]
+    );
+  }
+  function toggleCompareMode() {
+    setCompareMode(prev => { if (prev) setCompareIds([]); return !prev; });
+  }
+  function goCompare() {
+    if (typeof window !== "undefined") localStorage.setItem("compareDcIds", JSON.stringify(compareIds));
+    window.location.href = "/compare?type=dc";
+  }
 
   function matchesPriceBucket(d: { priceMin: number }): boolean {
     if (priceBucket === "lt1jt")  return d.priceMin < 1_000_000;
@@ -155,67 +175,90 @@ function DaycareContent() {
     return true;
   }
 
-  const filtered = allPlaces
-    .filter(d => area === "all" || placeMatchesAreas(d, [area]))
-    .filter(d => usia === "all" || d.daycareAgeGroups?.includes(usia))
-    .filter(d => matchesPriceBucket(d))
-    .filter(d => {
-      if (carerRatio === "all") return true;
-      const n = parseInt((d.carerChildRatio ?? "").split(":")[1] ?? "0");
-      if (carerRatio === "1to3") return n > 0 && n <= 3;
-      if (carerRatio === "1to5") return n >= 4 && n <= 5;
-      if (carerRatio === "1to8") return n >= 6;
-      return true;
-    })
-    .filter(d => daycareMethod === "all" || d.daycareMethod === daycareMethod)
-    .filter(d => {
-      if (hasCctv === "all") return true;
-      return hasCctv === "yes" ? d.hasCctv === true : d.hasCctv !== true;
-    })
-    .filter(d => {
-      if (hasAccreditation === "all") return true;
-      return hasAccreditation === "yes" ? d.hasAccreditation === true : d.hasAccreditation !== true;
-    })
-    .sort((a, b) => {
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
-  });
+  function applyFilters(list: Place[]) {
+    return list
+      .filter(d => area === "all" || placeMatchesAreas(d, [area]))
+      .filter(d => usiaSelections.length === 0 || usiaSelections.some(u => d.daycareAgeGroups?.includes(u)))
+      .filter(d => matchesPriceBucket(d))
+      .filter(d => {
+        if (carerRatio === "all") return true;
+        const n = parseInt((d.carerChildRatio ?? "").split(":")[1] ?? "0");
+        if (carerRatio === "1to3") return n > 0 && n <= 3;
+        if (carerRatio === "1to5") return n >= 4 && n <= 5;
+        if (carerRatio === "1to8") return n >= 6;
+        return true;
+      })
+      .filter(d => daycareMethod === "all" || d.daycareMethod === daycareMethod)
+      .filter(d => {
+        if (hasCctv === "all") return true;
+        return hasCctv === "yes" ? d.hasCctv === true : d.hasCctv !== true;
+      })
+      .filter(d => {
+        if (hasAccreditation === "all") return true;
+        return hasAccreditation === "yes" ? d.hasAccreditation === true : d.hasAccreditation !== true;
+      });
+  }
+
+  const featuredSpot = useMemo(() => {
+    const candidates = applyFilters(allFeatured);
+    if (!candidates.length) return null;
+    return candidates[Math.floor(sortSeed * candidates.length) % candidates.length];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allFeatured, area, usiaSelections, priceBucket, carerRatio, daycareMethod, hasCctv, hasAccreditation, sortSeed]);
+
+  function sortList(list: Place[]) {
+    return [...list].sort((a, b) => {
+      if (sortBy === "za") return b.name.localeCompare(a.name);
+      if (sortBy === "alpha") return a.name.localeCompare(b.name);
+      if (sortBy === "nearest" && userLat && userLng) {
+        const dA = (a.lat && a.lng) ? haversineKm(userLat, userLng, a.lat, a.lng) : 9999;
+        const dB = (b.lat && b.lng) ? haversineKm(userLat, userLng, b.lat, b.lng) : 9999;
+        return dA - dB;
+      }
+      const h = (id: string) => { let v = sortSeed; for (let i = 0; i < id.length; i++) v = Math.sin(v + id.charCodeAt(i)) * 10000; return v - Math.floor(v); };
+      return h(a.id) - h(b.id);
+    });
+  }
+
+  const filtered = sortList(applyFilters(allPlaces).filter(d => d.id !== featuredSpot?.id));
 
   const activeCount = [
-    area !== "all", usia !== "all", priceBucket !== "all",
+    area !== "all", usiaSelections.length > 0, priceBucket !== "all",
     carerRatio !== "all", daycareMethod !== "all", hasCctv !== "all", hasAccreditation !== "all",
   ].filter(Boolean).length;
+
   function resetFilters() {
-    setArea("all"); setUsia("all"); setPriceBucket("all");
+    setArea("all"); setUsiaSelections([]); setPriceBucket("all");
     setCarerRatio("all"); setDaycareMethod("all"); setHasCctv("all"); setHasAccreditation("all");
   }
 
   function toResults() {
     const p = new URLSearchParams({ view: "results" });
     if (area !== "all") p.set("area", area);
-    if (usia !== "all") p.set("usia", usia);
+    if (usiaSelections.length > 0) p.set("usia", usiaSelections.join(","));
     if (priceBucket !== "all") p.set("price", priceBucket);
     if (carerRatio !== "all") p.set("cr", carerRatio);
     if (daycareMethod !== "all") p.set("method", daycareMethod);
     if (hasCctv !== "all") p.set("cctv", hasCctv);
     if (hasAccreditation !== "all") p.set("acc", hasAccreditation);
-    if (sortBy !== "alpha") p.set("sort", sortBy);
+    if (sortBy !== "nearest") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
   function toFilter() {
     const p = new URLSearchParams();
     if (area !== "all") p.set("area", area);
-    if (usia !== "all") p.set("usia", usia);
+    if (usiaSelections.length > 0) p.set("usia", usiaSelections.join(","));
     if (priceBucket !== "all") p.set("price", priceBucket);
     if (carerRatio !== "all") p.set("cr", carerRatio);
     if (daycareMethod !== "all") p.set("method", daycareMethod);
     if (hasCctv !== "all") p.set("cctv", hasCctv);
     if (hasAccreditation !== "all") p.set("acc", hasAccreditation);
-    if (sortBy !== "alpha") p.set("sort", sortBy);
+    if (sortBy !== "nearest") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
+
+  const totalCount = filtered.length + (featuredSpot ? 1 : 0);
 
   // ── Filter View ──────────────────────────────────────────────────────────────
   if (view === "filter") {
@@ -241,12 +284,11 @@ function DaycareContent() {
           </div>
         </div>
 
-        <div style={{ padding: "24px 20px 130px" }}>
+        <div style={{ padding: "16px 16px 130px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Area chips */}
-          <div style={{ marginBottom: 28 }}>
-            <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase" }}>Area</p>
+          {/* Area */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               {(["all","bintaro","bsd"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
@@ -257,90 +299,89 @@ function DaycareContent() {
             </div>
           </div>
 
-          {/* Free filters */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{t.filterUsia}</p>
-            <div style={{ flex: 1 }}>
-              <FilterDropdown value={usia} onChange={setUsia} options={USIA_OPTIONS} />
+          {/* Kelompok Usia */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Kelompok Usia</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <Chip name="f-usia-all" value="all" checked={usiaSelections.length === 0} onChange={() => setUsiaSelections([])}>
+                {t.filterAll}
+              </Chip>
+              {AGE_GROUP_OPTIONS.map(g => (
+                <MultiChip
+                  key={g}
+                  checked={usiaSelections.includes(g)}
+                  onChange={() => setUsiaSelections(prev =>
+                    prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]
+                  )}
+                >
+                  {g}
+                </MultiChip>
+              ))}
             </div>
           </div>
 
-          {/* Collapsible premium filter section */}
-          <ActionButton
-            onClick={() => setPremiumOpen(o => !o)}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              width: "100%", padding: "13px 16px", marginBottom: premiumOpen ? 0 : 8,
-              borderRadius: premiumOpen ? "14px 14px 0 0" : 14,
-              background: "#f0fdf4",
-              border: "1.5px solid #bbf7d0",
-              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-              cursor: "pointer",
-            } as React.CSSProperties}
-          >
-            <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#166534" }}>
-              Filter Lebih Dalam?{" "}
-              <span style={{ fontWeight: 500, color: "#15803d" }}>(Fitur Khusus Premium)</span>
-            </span>
-            <ChevronDown
-              size={18} color="#166534"
-              style={{ transform: premiumOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
-            />
-          </ActionButton>
-
-          {premiumOpen && (
-            <div style={{
-              border: "1.5px solid #bbf7d0", borderTop: "none",
-              borderRadius: "0 0 14px 14px",
-              padding: "16px 16px 4px",
-              marginBottom: 8,
-              background: "#fff",
-            }}>
-              {tier === "premium" ? (
-                <>
-                  {([
-                    { label: t.filterPrice,         value: priceBucket,      set: setPriceBucket,      opts: PRICE_OPTIONS          },
-                    { label: "Rasio Pengasuh:Anak",  value: carerRatio,       set: setCarerRatio,       opts: CARER_RATIO_OPTIONS    },
-                    { label: "Kurikulum / Metode",   value: daycareMethod,    set: setDaycareMethod,    opts: DAYCARE_METHOD_OPTIONS  },
-                    { label: "CCTV & Akses",         value: hasCctv,          set: setHasCctv,          opts: adaOptionsDC           },
-                    { label: "Akreditasi",            value: hasAccreditation, set: setHasAccreditation, opts: adaOptionsDC           },
-                  ] as const).map(({ label, value, set, opts }) => (
-                    <div key={String(label)} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
-                      <div style={{ flex: 1 }}>
-                        <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts as { value: string; label: string }[]} />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  {([t.filterPrice, "Rasio Pengasuh:Anak", "Kurikulum / Metode", "CCTV & Akses", "Akreditasi"] as const).map((label) => (
-                    <ActionButton
-                      key={String(label)}
-                      onClick={() => setShowFilterGate(true)}
-                      style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14,
-                        width: "100%", padding: 0, background: "transparent" }}
-                    >
-                      <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                        color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
-                      <div style={{ flex: 1, padding: "11px 14px", borderRadius: 12, fontSize: 13.5,
-                        fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
-                        color: "#cbd5e1", border: "2px dashed #e2e8f0", background: "#fafafa",
-                        display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span>Premium only</span>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </div>
-                    </ActionButton>
-                  ))}
-                </>
-              )}
+          {/* Harga Bulanan */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Harga Bulanan</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {Object.entries(PRICE_BUCKETS).map(([v, label]) => (
+                <Chip key={v} name="f-price" value={v} checked={priceBucket === v} onChange={() => setPriceBucket(v)}>
+                  {label}
+                </Chip>
+              ))}
             </div>
-          )}
+          </div>
+
+          {/* Rasio Pengasuh:Anak */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Rasio Pengasuh:Anak</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {CARER_RATIO_OPTIONS.map(({ value, label }) => (
+                <Chip key={value} name="f-cr" value={value} checked={carerRatio === value} onChange={() => setCarerRatio(value)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* Kurikulum / Metode */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Kurikulum / Metode</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <Chip name="f-method" value="all" checked={daycareMethod === "all"} onChange={() => setDaycareMethod("all")}>
+                {t.filterAll}
+              </Chip>
+              {METHOD_OPTIONS.map(m => (
+                <Chip key={m} name="f-method" value={m} checked={daycareMethod === m} onChange={() => setDaycareMethod(m)}>
+                  {m}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* CCTV & Akses */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>CCTV & Akses</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {ADA_OPTIONS.map(({ value, label }) => (
+                <Chip key={value} name="f-cctv" value={value} checked={hasCctv === value} onChange={() => setHasCctv(value)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* Akreditasi */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Akreditasi</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {ADA_OPTIONS.map(({ value, label }) => (
+                <Chip key={value} name="f-acc" value={value} checked={hasAccreditation === value} onChange={() => setHasAccreditation(value)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          </div>
 
         </div>
 
@@ -357,11 +398,10 @@ function DaycareContent() {
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-              {`Tampilkan ${filtered.length} Daycares →`}
+              {t.dcShowResults(totalCount)}
             </button>
           </div>
         </div>
-        <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       </div>
     );
   }
@@ -384,7 +424,7 @@ function DaycareContent() {
                 {t.dpDaycareTab}
               </h1>
               <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
-                {t.dcShowResults(filtered.length)}
+                {t.dcShowResults(totalCount)}
               </p>
             </div>
           </div>
@@ -409,26 +449,81 @@ function DaycareContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "10px 16px", borderRadius: 999,
-          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
-          border: "1.5px solid #e2e8f0" }}>
-          <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
-        </ActionButton>
+
+        {/* Sort dropdown */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const v = e.target.value as typeof sortBy;
+              setSortBy(v);
+              if (v === "nearest" && locationStatus !== "granted") requestLocation();
+            }}
+            style={{
+              padding: "10px 36px 10px 14px", borderRadius: 999, fontSize: 13.5,
+              fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 600,
+              color: "#16a34a", border: "1.5px solid #16a34a", background: "#e6f4ed",
+              outline: "none", appearance: "none" as const, WebkitAppearance: "none" as const, cursor: "pointer",
+            }}
+          >
+            <option value="random">Acak</option>
+            <option value="alpha">Urut A–Z</option>
+            <option value="za">Urut Z–A</option>
+            <option value="nearest">{t.sortNearest}</option>
+          </select>
+          <div style={{ position: "absolute", right: 10, top: 0, bottom: 0,
+            display: "flex", alignItems: "center", pointerEvents: "none" }}>
+            <ArrowUpDown size={13} strokeWidth={2.5} color="#16a34a" />
+          </div>
+        </div>
+
+        {/* Compare button */}
+        {(tier === "premium" || tier === "free") && (
+          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "10px 14px", borderRadius: 999, flexShrink: 0,
+            background: compareMode ? "#2e8a5a" : "#fff",
+            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
+            fontWeight: 700, fontSize: 13,
+            opacity: tier === "free" ? 0.85 : 1,
+            border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+          </ActionButton>
+        )}
       </div>
+
+      {/* Compare hint */}
+      {tier === "premium" && compareMode && totalCount > 0 && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "9px 13px", borderRadius: 10,
+            background: compareIds.length === 0 ? "#fef9c3" : "#e6f4ed",
+            border: `1.5px solid ${compareIds.length === 0 ? "#fde68a" : "#a7d4bc"}`,
+          }}>
+            <Scale size={14} color={compareIds.length === 0 ? "#854d0e" : "#2e8a5a"} />
+            <span style={{ fontSize: 12, fontWeight: 600,
+              color: compareIds.length === 0 ? "#854d0e" : "#2e8a5a",
+              fontFamily: "var(--font-jakarta), sans-serif" }}>
+              {compareIds.length === 0 ? t.lcCmpHint : t.lcCmpSelectedFor(compareIds.length)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Active filter tags */}
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
           {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
-          {usia !== "all" && <FTag label={`${t.filterUsia}: ${USIA_OPTIONS.find(o => o.value === usia)?.label ?? usia}`} onRemove={() => setUsia("all")} />}
-          {priceBucket !== "all" && <FTag label={PRICE_OPTIONS.find(o => o.value === priceBucket)?.label ?? priceBucket} onRemove={() => setPriceBucket("all")} />}
+          {usiaSelections.map(u => (
+            <FTag key={u} label={u} onRemove={() => setUsiaSelections(prev => prev.filter(x => x !== u))} />
+          ))}
+          {priceBucket !== "all" && <FTag label={PRICE_BUCKETS[priceBucket] ?? priceBucket} onRemove={() => setPriceBucket("all")} />}
           {carerRatio !== "all" && <FTag label={`Pengasuh: ${CARER_RATIO_OPTIONS.find(o => o.value === carerRatio)?.label ?? carerRatio}`} onRemove={() => setCarerRatio("all")} />}
           {daycareMethod !== "all" && <FTag label={`Metode: ${daycareMethod}`} onRemove={() => setDaycareMethod("all")} />}
-          {hasCctv !== "all" && <FTag label={`CCTV: ${ADA_LABELS_DC[hasCctv] ?? hasCctv}`} onRemove={() => setHasCctv("all")} />}
-          {hasAccreditation !== "all" && <FTag label={`Akreditasi: ${ADA_LABELS_DC[hasAccreditation] ?? hasAccreditation}`} onRemove={() => setHasAccreditation("all")} />}
+          {hasCctv !== "all" && <FTag label={`CCTV: ${ADA_OPTIONS.find(o => o.value === hasCctv)?.label ?? hasCctv}`} onRemove={() => setHasCctv("all")} />}
+          {hasAccreditation !== "all" && <FTag label={`Akreditasi: ${ADA_OPTIONS.find(o => o.value === hasAccreditation)?.label ?? hasAccreditation}`} onRemove={() => setHasAccreditation("all")} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>
@@ -438,21 +533,109 @@ function DaycareContent() {
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
         {loading && <SkeletonList count={6} />}
-        {!loading && filtered.length === 0 && (
+
+        {/* ✦ Featured */}
+        {!loading && featuredSpot && (
+          <div style={{
+            marginBottom: 14, background: "#fef9c3",
+            border: "1.5px dashed #f59e0b", padding: "8px 10px",
+          }}>
+            <span style={{
+              display: "block", marginBottom: 7,
+              fontSize: 10, fontWeight: 800, letterSpacing: 1.3,
+              color: "#b45309", textTransform: "uppercase" as const,
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              ✦ Featured
+            </span>
+            {tier === "premium" && compareMode ? (
+              <ActionButton
+                onClick={() => toggleCompare(featuredSpot.id)}
+                style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+              >
+                <PlaceCard
+                  place={featuredSpot}
+                  selected={compareIds.includes(featuredSpot.id)}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng) : null
+                  }
+                />
+              </ActionButton>
+            ) : (
+              <Link href={`/place/${featuredSpot.slug ?? featuredSpot.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <PlaceCard
+                  place={featuredSpot}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng) : null
+                  }
+                />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && !featuredSpot && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
             {t.dpNoResults}
           </div>
         )}
+        {!loading && filtered.length === 0 && featuredSpot && (
+          <div style={{ textAlign: "center", padding: "12px 0 32px", color: "#94a3b8", fontSize: 13 }}>
+            {t.dpNoResults}
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map(dc => (
-            <Link key={dc.id} href={`/place/${dc.id}`} style={{ textDecoration: "none", display: "block" }}>
-              <PlaceCard place={dc} />
-            </Link>
-          ))}
+          {filtered.map(dc => {
+            const isSelected = compareIds.includes(dc.id);
+            return (
+              <div key={dc.id}>
+                {tier === "premium" && compareMode ? (
+                  <ActionButton
+                    onClick={() => toggleCompare(dc.id)}
+                    style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+                  >
+                    <PlaceCard
+                      place={dc} selected={isSelected}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && dc.lat && dc.lng
+                          ? haversineKm(userLat, userLng, dc.lat, dc.lng) : null
+                      }
+                    />
+                  </ActionButton>
+                ) : (
+                  <Link href={`/place/${dc.slug ?? dc.id}`} style={{ textDecoration: "none", display: "block" }}>
+                    <PlaceCard
+                      place={dc}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && dc.lat && dc.lng
+                          ? haversineKm(userLat, userLng, dc.lat, dc.lng) : null
+                      }
+                    />
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
-      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
 
+      {/* Floating compare button */}
+      {tier === "premium" && compareIds.length >= 2 && (
+        <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
+          <ActionButton onClick={goCompare} style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "16px 20px", borderRadius: 18,
+            background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff", fontWeight: 700, fontSize: 14,
+            boxShadow: "0 8px 24px rgba(30,63,176,0.36)" }}>
+            <Scale size={16} />{t.lcCmpBtn(compareIds.length)}
+          </ActionButton>
+        </div>
+      )}
+
+      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       <BottomNav active="explore" />
     </div>
   );

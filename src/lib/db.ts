@@ -103,7 +103,11 @@ function mapRow(row: any, category: Place["category"]): Place {
         bahasa:                 (row.kategori_bahasa as string[] | null) ?? undefined,
         teachingLanguageDisplay: row.teaching_language  ?? undefined,
         studentsPerClass:       row.students_per_class  ?? undefined,
-        jadwalPendaftaran:      row.jadwal_pendaftaran  ?? undefined,
+        jadwalPendaftaran:      row.jadwal_pendaftaran    ?? undefined,
+        aboutEn:                row.about_en              ?? undefined,
+        facilitiesEn:           row.facilities_en         ?? undefined,
+        extracurricularsEn:     row.extracurriculars_en   ?? undefined,
+        jadwalPendaftaranEn:    row.jadwal_pendaftaran_en ?? undefined,
         priceMin:               row.price_min ?? 0,
         priceMax:               row.price_max ?? row.price_min ?? 0,
       };
@@ -122,6 +126,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         registrationFeeMax:   row.registration_fee_max   ?? undefined,
         priceMin:             row.price_min ?? 0,
         priceMax:             row.price_max ?? row.price_min ?? 0,
+        aboutEn:              row.about_en ?? undefined,
       };
 
     case "daycare":
@@ -132,6 +137,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         daycareMethod:    row.method            ?? undefined,
         hasCctv:          row.has_cctv          ?? undefined,
         hasAccreditation: row.has_accreditation ?? undefined,
+        aboutEn:          row.about_en          ?? undefined,
         priceMin:         row.price_min ?? 0,
         priceMax:         row.price_max ?? row.price_min ?? 0,
       };
@@ -139,15 +145,20 @@ function mapRow(row: any, category: Place["category"]): Place {
     case "playground":
       return {
         ...base,
-        playgroundType: normalizePlaygroundType(row.playground_type),
-        priceMin:       row.price_min ?? 0,
-        priceMax:       row.price_max ?? row.price_min ?? 0,
+        playgroundType:    normalizePlaygroundType(row.playground_type),
+        playgroundTypeRaw: row.playground_type_raw ?? row.playground_type ?? undefined,
+        aboutEn:           row.about_en       ?? undefined,
+        facilitiesEn:      row.facilities_en  ?? undefined,
+        priceMin:          row.price_min ?? 0,
+        priceMax:          row.price_max ?? row.price_min ?? 0,
       };
 
     case "clinic":
       return {
         ...base,
         clinicServices: (row.services as string[] | null) ?? undefined,
+        aboutEn:        row.about_en    ?? undefined,
+        facilitiesEn:   row.facilities_en ?? undefined,
         priceMin:       row.price_min ?? 0,
         priceMax:       row.price_max ?? row.price_min ?? 0,
       };
@@ -156,6 +167,8 @@ function mapRow(row: any, category: Place["category"]): Place {
       return {
         ...base,
         priceCategory: row.price_category ?? undefined,
+        aboutEn:       row.about_en       ?? undefined,
+        facilitiesEn:  row.facilities_en  ?? undefined,
         priceMin:      0,
         priceMax:      0,
       };
@@ -163,6 +176,8 @@ function mapRow(row: any, category: Place["category"]): Place {
     case "mini-zoo":
       return {
         ...base,
+        aboutEn:      row.about_en      ?? undefined,
+        facilitiesEn: row.facilities_en ?? undefined,
         priceMin: row.price_min ?? 0,
         priceMax: row.price_max ?? row.price_min ?? 0,
       };
@@ -170,8 +185,16 @@ function mapRow(row: any, category: Place["category"]): Place {
     case "swimming-pool":
       return {
         ...base,
+        aboutEn:      row.about_en      ?? undefined,
+        facilitiesEn: row.facilities_en ?? undefined,
         priceMin: row.price_min ?? 0,
         priceMax: row.price_max ?? row.price_min ?? 0,
+      };
+
+    case "bookstore":
+      return {
+        ...base,
+        aboutEn: row.about_en ?? undefined,
       };
 
     default:
@@ -384,6 +407,97 @@ export async function fetchSimilarLearningCenters(
     .order("is_featured", { ascending: false })
     .limit(limit);
   return (data ?? []).map((row) => mapRow(row, "learning-center"));
+}
+
+export async function fetchSimilarPlaygrounds(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("playgrounds")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "playground"));
+}
+
+export async function fetchSimilarDaycares(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("daycares")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "daycare"));
+}
+
+export async function fetchSimilarClinics(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("clinics")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "clinic"));
+}
+
+export async function fetchSimilarCafes(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("cafes")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "cafe"));
+}
+
+export async function fetchSimilarMiniZoos(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("mini_zoo")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "mini-zoo"));
+}
+
+export async function fetchSimilarSwimmingPools(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("swimming_pools")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "swimming-pool"));
+}
+
+export async function fetchSimilarBookstores(
+  excludeId: string,
+  limit = 8,
+): Promise<Place[]> {
+  const { data } = await supabase
+    .from("bookstores")
+    .select("*")
+    .neq("id", excludeId)
+    .order("is_featured", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((row) => mapRow(row, "bookstore"));
 }
 
 export async function fetchPlacesByIds(ids: string[]): Promise<Place[]> {

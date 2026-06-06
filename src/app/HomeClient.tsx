@@ -1726,13 +1726,12 @@ function IndexList() {
 
   const INDEX_CATS = [
     { icon: "daycare",    name: t.catDaycare,       count: counts["daycare"]        ?? null, href: "/daycare?view=results"        },
-    { icon: "playground", name: t.catPlayground,    count: counts["playground"]     ?? null, href: "/playgrounds?view=results"    },
     { icon: "clinic",     name: t.catClinic,        count: counts["clinic"]         ?? null, href: "/clinics?view=results"        },
-    { icon: "cafe",       name: t.catCafe,          count: counts["cafe"]           ?? null, href: "/cafes?view=results"          },
+    { icon: "playground", name: t.catPlayground,    count: counts["playground"]     ?? null, href: "/playgrounds?view=results"    },
     { icon: "animals",    name: t.catMiniZoo,       count: counts["mini-zoo"]       ?? null, href: "/mini-zoo?view=results"       },
     { icon: "pool",       name: t.catSwimmingPool,  count: counts["swimming-pool"]  ?? null, href: "/swimming-pools?view=results" },
+    { icon: "cafe",       name: t.catCafe,          count: counts["cafe"]           ?? null, href: "/cafes?view=results"          },
     { icon: "books",      name: t.catBookstore,     count: counts["bookstore"]      ?? null, href: "/bookstores?view=results"     },
-    { icon: "more",       name: t.homeOthers,       count: null,                             href: "/others"                      },
   ];
 
   return (

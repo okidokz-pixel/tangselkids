@@ -11,7 +11,7 @@ import {
   CreditCard, Activity, Baby, Home,
 } from "lucide-react";
 import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } from "@/lib/mockData";
-import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters } from "@/lib/db";
+import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters, fetchSimilarDaycares, fetchSimilarPlaygrounds, fetchSimilarClinics, fetchSimilarCafes, fetchSimilarMiniZoos, fetchSimilarSwimmingPools, fetchSimilarBookstores } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
@@ -174,6 +174,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
   const [similarSchools,    setSimilarSchools]    = useState<Place[]>([]);
   const [similarCenters,   setSimilarCenters]    = useState<Place[]>([]);
+  const [similarDaycares,    setSimilarDaycares]    = useState<Place[]>([]);
+  const [similarPlaygrounds, setSimilarPlaygrounds] = useState<Place[]>([]);
+  const [similarClinics,     setSimilarClinics]     = useState<Place[]>([]);
+  const [similarCafes,       setSimilarCafes]       = useState<Place[]>([]);
+  const [similarMiniZoos,    setSimilarMiniZoos]    = useState<Place[]>([]);
+  const [similarPools,       setSimilarPools]       = useState<Place[]>([]);
+  const [similarBookstores,  setSimilarBookstores]  = useState<Place[]>([]);
   const similarRailRef = useRef<HTMLDivElement>(null);
   const [similarCanL, setSimilarCanL] = useState(false);
   const [similarCanR, setSimilarCanR] = useState(true);
@@ -266,6 +273,111 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
       setTimeout(() => updateSimilarArrows(), 50);
     });
   }, [place?.id, place?.courseTypes?.join(",")]);
+
+  useEffect(() => {
+    if (!place || place.category !== "daycare") return;
+    fetchSimilarDaycares(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarDaycares(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "playground") return;
+    fetchSimilarPlaygrounds(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarPlaygrounds(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "clinic") return;
+    fetchSimilarClinics(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarClinics(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "cafe") return;
+    fetchSimilarCafes(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarCafes(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "mini-zoo") return;
+    fetchSimilarMiniZoos(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarMiniZoos(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "swimming-pool") return;
+    fetchSimilarSwimmingPools(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarPools(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
+
+  useEffect(() => {
+    if (!place || place.category !== "bookstore") return;
+    fetchSimilarBookstores(place.id).then((results) => {
+      const sorted = (place.lat && place.lng)
+        ? [...results].sort((a, b) => {
+            const da = (a.lat && a.lng) ? haversineKm(place.lat!, place.lng!, a.lat, a.lng) : 999;
+            const db2 = (b.lat && b.lng) ? haversineKm(place.lat!, place.lng!, b.lat, b.lng) : 999;
+            return da - db2;
+          })
+        : results;
+      setSimilarBookstores(sorted.slice(0, 6));
+      setTimeout(() => updateSimilarArrows(), 50);
+    });
+  }, [place?.id]);
 
   // Guests can freely view place detail pages (no gate)
 
@@ -820,23 +932,10 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   </span>
                 </div>
               )}
-              {/* Distance — priority: homeKm (premium) > geoKm > geo prompt */}
+              {/* Distance — priority: geoKm (current location) > homeKm (saved address) > geo prompt */}
               {place.lat && place.lng ? (
-                homeKm !== null ? (
-                  // Premium user with saved home address
-                  <ActionButton
-                    onClick={() => setMapOpen(true)}
-                    style={{
-                      margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
-                      background: "none", border: "none", padding: 0, cursor: "pointer",
-                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
-                      color: "#16a34a", fontWeight: 700,
-                    }}
-                  >
-                    🏠 {t.distanceFromHome(homeKm)}
-                  </ActionButton>
-                ) : geoKm !== null ? (
-                  // Browser geolocation obtained
+                geoKm !== null ? (
+                  // Browser geolocation obtained — matches the distance shown in filter list
                   <ActionButton
                     onClick={() => setMapOpen(true)}
                     style={{
@@ -847,6 +946,19 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                     }}
                   >
                     📍 {t.distanceFromLocation(geoKm)}
+                  </ActionButton>
+                ) : homeKm !== null ? (
+                  // Fallback: premium user with saved home address, no geo available
+                  <ActionButton
+                    onClick={() => setMapOpen(true)}
+                    style={{
+                      margin: "3px 0 0", display: "flex", alignItems: "center", gap: 4,
+                      background: "none", border: "none", padding: 0, cursor: "pointer",
+                      fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14,
+                      color: "#16a34a", fontWeight: 700,
+                    }}
+                  >
+                    🏠 {t.distanceFromHome(homeKm)}
                   </ActionButton>
                 ) : locationStatus === "loading" ? (
                   <p style={{ margin: "3px 0 0", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b" }}>
@@ -1038,6 +1150,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             [t.pdAccreditation]:   ic(Award),
             [t.pdType]:            ic(Layers, true),
             [t.pdChipTicket]:      ic(Ticket, true),
+            ["Harga"]:             ic(Ticket, true),
             [t.pdChipCost]:        ic(CreditCard, true),
             [t.pdChipServices]:    ic(Activity),
             [t.pdChipBudget]:      ic(Wallet, true),
@@ -1176,22 +1289,25 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             heroItems = [];
             freeRows = [
               [t.pdAgeRange,   place.daycareAgeGroups?.join(", ") ?? place.ageRange],
-              [t.pdMonthlyFee, fmtBulanan],
+              [t.pdMonthlyFee, place.priceMin > 0 ? fmtBulanan : "—"],
             ];
             if (place.carerChildRatio !== undefined)
-              gatedRows.push([t.pdCarerRatio, place.carerChildRatio]);
+              freeRows.push([t.pdCarerRatio, place.carerChildRatio]);
             if (place.daycareMethod !== undefined)
-              gatedRows.push([t.pdDaycareMethod, place.daycareMethod]);
+              freeRows.push([t.pdDaycareMethod, place.daycareMethod]);
             if (place.hasCctv !== undefined)
-              gatedRows.push([t.pdCctv, place.hasCctv ? "Ada" : "Tidak Ada"]);
+              freeRows.push([t.pdCctv, place.hasCctv ? "Ada" : "Tidak Ada"]);
             if (place.hasAccreditation !== undefined)
-              gatedRows.push([t.pdAccreditation, place.hasAccreditation ? "Ada" : "Tidak Ada"]);
+              freeRows.push([t.pdAccreditation, place.hasAccreditation ? "Ada" : "Tidak Ada"]);
 
           } else if (place.category === "playground") {
             heroItems = [];
+            const rawType = place.playgroundTypeRaw ?? (place.playgroundType === "indoor" ? "Indoor" : "Outdoor");
+            const typeEmoji = rawType.toLowerCase().includes("outdoor") && !rawType.toLowerCase().includes("indoor")
+              ? "🌳" : "🏠";
             freeRows = [
-              [t.pdType,       place.playgroundType === "indoor" ? "🏠 Indoor" : "🌳 Outdoor"],
-              [t.pdChipTicket, fmtTicket],
+              [t.pdType,  `${typeEmoji} ${rawType}`],
+              ["Harga",   fmtTicket],
             ];
 
           } else if (place.category === "clinic") {
@@ -1207,10 +1323,16 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             freeRows = [];
             if (place.priceCategory) freeRows.push([t.pdChipBudget, place.priceCategory]);
 
-          } else if (place.category === "mini-zoo" || place.category === "swimming-pool") {
+          } else if (place.category === "mini-zoo") {
             heroItems = [];
             freeRows = [
-              [t.pdChipTicket, fmtTicket],
+              ["Harga", fmtTicket],
+            ];
+
+          } else if (place.category === "swimming-pool") {
+            heroItems = [];
+            freeRows = [
+              ["Harga", fmtTicket],
             ];
 
           } else if (place.category === "bookstore") {
@@ -1246,8 +1368,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 </div>
               )}
 
-              {/* Collapsible: fee image (schools & learning-centers) or gated rows (other categories) */}
-              {(place.category === "school" || place.category === "learning-center" || gatedRows.length > 0) && (
+              {/* Collapsible: fee image (schools, learning-centers & daycares) or gated rows (other categories) */}
+              {(place.category === "school" || place.category === "learning-center" || place.category === "daycare" || gatedRows.length > 0) && (
                 <>
                   <ActionButton
                     onClick={() => setDetailOpen((o) => !o)}
@@ -1275,7 +1397,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
                   {detailOpen && (
                     <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
-                      {(place.category === "school" || place.category === "learning-center") ? (
+                      {(place.category === "school" || place.category === "learning-center" || place.category === "daycare") ? (
                         /* Fee detail image — premium gated */
                         place.feeImageUrl ? (
                         <div
@@ -1329,6 +1451,25 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           );
         })()}
 
+        {/* Detail image — playgrounds, mini-zoos, swimming-pools, free (no gate) */}
+        {(place.category === "playground" || place.category === "mini-zoo" || place.category === "swimming-pool") && place.feeImageUrl && (
+          <div>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: "#2e8a5a", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {lang === "id" ? "Detail Lengkap" : "Full Details"}
+            </h2>
+            <div
+              style={{ borderRadius: 14, overflow: "clip", cursor: "pointer" }}
+              onClick={() => setFeeImageOpen(true)}
+            >
+              <img
+                src={place.feeImageUrl}
+                alt="Detail info"
+                style={{ width: "100%", borderRadius: 14, display: "block" }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* TangselKids Rating — playgrounds only */}
         {place.category === "playground" && place.tangselKidsRating && (() => {
           const tkr = place.tangselKidsRating!;
@@ -1369,15 +1510,16 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         <div>
           <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>{t.pdAbout}</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(place.description ?? "").split(/\n+/).filter(Boolean).map((para, i) => (
+            {((lang === "en" && place.aboutEn ? place.aboutEn : place.description) ?? "").split(/\n+/).filter(Boolean).map((para, i) => (
               <p key={i} className="font-jakarta text-gray-600 text-sm leading-relaxed" style={{ margin: 0 }}>{para}</p>
             ))}
           </div>
         </div>
 
         {/* Fasilitas */}
-        {place.facilities && (() => {
-          const items = place.facilities.split(",").map(x => x.trim()).filter(Boolean);
+        {place.category !== "bookstore" && (place.facilitiesEn || place.facilities) && (() => {
+          const raw = lang === "en" && place.facilitiesEn ? place.facilitiesEn : place.facilities;
+          const items = (raw ?? "").split(",").map(x => x.trim()).filter(Boolean);
           return (
             <div>
               <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
@@ -1395,9 +1537,46 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           );
         })()}
 
+        {/* Clinic DETAIL LENGKAP — premium gated */}
+        {place.category === "clinic" && place.feeImageUrl && (
+          <div>
+            <h2 style={{ fontSize: 13, fontWeight: 700, color: "#2e8a5a", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              {lang === "id" ? "Detail Lengkap" : "Full Details"}
+            </h2>
+            <div
+              style={{ position: "relative", borderRadius: 14, overflow: "clip", cursor: "pointer" }}
+              onClick={tier === "premium" ? () => setFeeImageOpen(true) : () => setShowPsbGate(true)}
+            >
+              <img
+                src={place.feeImageUrl}
+                alt="Detail info"
+                style={{
+                  width: "100%", borderRadius: 14, display: "block",
+                  filter: tier === "premium" ? "none" : "blur(6px)",
+                }}
+              />
+              {tier !== "premium" && (
+                <div style={{
+                  position: "absolute", inset: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 999,
+                    background: "#f1f5f9",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Lock size={20} color="#d97706" strokeWidth={2.5} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Ekstrakurikuler */}
-        {place.extracurriculars && (() => {
-          const items = place.extracurriculars.split(",").map(x => x.trim()).filter(Boolean);
+        {(place.extracurricularsEn || place.extracurriculars) && (() => {
+          const raw = lang === "en" && place.extracurricularsEn ? place.extracurricularsEn : place.extracurriculars;
+          const items = (raw ?? "").split(",").map(x => x.trim()).filter(Boolean);
           return (
             <div>
               <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
@@ -1559,7 +1738,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               {t.pdEnrollTitle}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {(place.jadwalPendaftaran ?? t.pdEnrollSoon)
+              {((lang === "en" && place.jadwalPendaftaranEn ? place.jadwalPendaftaranEn : place.jadwalPendaftaran) ?? t.pdEnrollSoon)
                 .split(/\n+/)
                 .filter(Boolean)
                 .map((line, i) => (
@@ -1947,6 +2126,392 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   WebkitTapHighlightColor: "transparent", padding: 0,
                 }}
               >
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Daycare Terdekat ─────────────────────────────────────────────── */}
+        {place.category === "daycare" && similarDaycares.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{
+              fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12,
+            }}>
+              {lang === "id" ? "Daycare Terdekat" : "Nearby Daycares"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{
+                  display: "flex", gap: 10, overflowX: "auto",
+                  scrollbarWidth: "none", paddingBottom: 4,
+                }}
+              >
+                {similarDaycares.map((s) => (
+                  <a key={s.id} href={`/place/${s.slug ?? s.id}`}
+                    style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                    <div style={{
+                      borderRadius: 14, overflow: "clip",
+                      border: "1.5px solid #d1ead9", background: "#fff",
+                    }}>
+                      <img
+                        src={s.photo}
+                        alt={s.name}
+                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
+                      />
+                      <div style={{ padding: "8px 9px" }}>
+                        <p style={{
+                          fontFamily: "var(--font-fraunces), Georgia, serif",
+                          fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                          margin: 0, lineHeight: 1.3,
+                          display: "-webkit-box", WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical", overflow: "hidden",
+                        }}>
+                          {s.name}
+                        </p>
+                        {s.daycareMethod && (
+                          <p style={{
+                            fontFamily: "var(--font-jakarta), sans-serif",
+                            fontSize: 12, color: "#64748b", margin: "3px 0 0",
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                          }}>
+                            {s.daycareMethod}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              {/* Left arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanL ? 1 : 0,
+                  pointerEvents: similarCanL ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanR ? 1 : 0,
+                  pointerEvents: similarCanR ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Similar Playgrounds */}
+        {place.category === "playground" && similarPlaygrounds.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{
+              fontFamily: "var(--font-fraunces), Georgia, serif",
+              fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12,
+            }}>
+              {lang === "id" ? "Playground Terdekat" : "Nearby Playgrounds"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarPlaygrounds.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng)
+                    ? haversineKm(place.lat, place.lng, s.lat, s.lng)
+                    : null;
+                  const distLabel = distKm !== null
+                    ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`)
+                    : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`}
+                      style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img
+                          src={s.photo}
+                          alt={s.name}
+                          style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
+                        />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{
+                            fontFamily: "var(--font-fraunces), Georgia, serif",
+                            fontSize: 14, fontWeight: 700, color: "#0e1d4f",
+                            margin: 0, lineHeight: 1.3,
+                            display: "-webkit-box", WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical", overflow: "hidden",
+                          }}>
+                            {s.name}
+                          </p>
+                          {distLabel && (
+                            <p style={{
+                              fontFamily: "var(--font-jakarta), sans-serif",
+                              fontSize: 12, color: "#64748b", margin: "3px 0 0",
+                              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>
+                              📍 {distLabel}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanL ? 1 : 0,
+                  pointerEvents: similarCanL ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+
+              <button
+                onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }}
+                style={{
+                  position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)",
+                  width: 30, height: 30, borderRadius: 999,
+                  background: "#fff", border: "1px solid #d1ead9",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: similarCanR ? 1 : 0,
+                  pointerEvents: similarCanR ? "auto" : "none",
+                  transition: "opacity .2s",
+                  cursor: "pointer", touchAction: "manipulation",
+                  WebkitTapHighlightColor: "transparent", padding: 0,
+                }}
+              >
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Klinik Tumbuh Kembang Terdekat ──────────────────────────────── */}
+        {place.category === "clinic" && similarClinics.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Klinik Tumbuh Kembang Terdekat" : "Nearby Clinics"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarClinics.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng) ? haversineKm(place.lat, place.lng, s.lat, s.lng) : null;
+                  const distLabel = distKm !== null ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`) : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
+                          {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} style={{ position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanL ? 1 : 0, pointerEvents: similarCanL ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} style={{ position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanR ? 1 : 0, pointerEvents: similarCanR ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Kafe Ramah Anak Terdekat ─────────────────────────────────────── */}
+        {place.category === "cafe" && similarCafes.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Kafe Ramah Anak Terdekat" : "Nearby Kid-Friendly Cafes"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarCafes.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng) ? haversineKm(place.lat, place.lng, s.lat, s.lng) : null;
+                  const distLabel = distKm !== null ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`) : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
+                          {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} style={{ position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanL ? 1 : 0, pointerEvents: similarCanL ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} style={{ position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanR ? 1 : 0, pointerEvents: similarCanR ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Mini Zoo Terdekat ──────────────────────────────────────────────── */}
+        {place.category === "mini-zoo" && similarMiniZoos.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Mini Zoo Terdekat" : "Nearby Mini Zoos"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarMiniZoos.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng) ? haversineKm(place.lat, place.lng, s.lat, s.lng) : null;
+                  const distLabel = distKm !== null ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`) : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
+                          {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} style={{ position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanL ? 1 : 0, pointerEvents: similarCanL ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} style={{ position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanR ? 1 : 0, pointerEvents: similarCanR ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Kolam Renang Terdekat ─────────────────────────────────────────── */}
+        {place.category === "swimming-pool" && similarPools.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Kolam Renang Terdekat" : "Nearby Swimming Pools"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarPools.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng) ? haversineKm(place.lat, place.lng, s.lat, s.lng) : null;
+                  const distLabel = distKm !== null ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`) : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
+                          {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} style={{ position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanL ? 1 : 0, pointerEvents: similarCanL ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} style={{ position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanR ? 1 : 0, pointerEvents: similarCanR ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Toko Buku Terdekat ───────────────────────────────────────────── */}
+        {place.category === "bookstore" && similarBookstores.length > 0 && (
+          <div style={{ margin: "28px -20px 0", background: "#e8eaed", padding: "20px 20px 22px" }}>
+            <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 12 }}>
+              {lang === "id" ? "Toko Buku & Alat Tulis Terdekat" : "Nearby Bookstores"}
+            </h2>
+            <div style={{ position: "relative" }}>
+              <div
+                ref={similarRailRef}
+                onScroll={updateSimilarArrows}
+                style={{ display: "flex", gap: 10, overflowX: "auto", scrollbarWidth: "none", paddingBottom: 4 }}
+              >
+                {similarBookstores.map((s) => {
+                  const distKm = (place.lat && place.lng && s.lat && s.lng) ? haversineKm(place.lat, place.lng, s.lat, s.lng) : null;
+                  const distLabel = distKm !== null ? (distKm < 1 ? `${Math.round(distKm * 1000)} m` : `${distKm.toFixed(1)} km`) : null;
+                  return (
+                    <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
+                      <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
+                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ padding: "8px 9px" }}>
+                          <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
+                          {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: -160, behavior: "smooth" }); }} style={{ position: "absolute", left: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanL ? 1 : 0, pointerEvents: similarCanL ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
+                <ChevronLeft size={16} color="#0e1d4f" strokeWidth={2.5} />
+              </button>
+              <button onClick={() => { similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} onTouchEnd={(e) => { e.preventDefault(); similarRailRef.current?.scrollBy({ left: 160, behavior: "smooth" }); }} style={{ position: "absolute", right: -8, top: "40%", transform: "translateY(-50%)", width: 30, height: 30, borderRadius: 999, background: "#fff", border: "1px solid #d1ead9", boxShadow: "0 2px 8px rgba(0,0,0,0.12)", display: "flex", alignItems: "center", justifyContent: "center", opacity: similarCanR ? 1 : 0, pointerEvents: similarCanR ? "auto" : "none", transition: "opacity .2s", cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent", padding: 0 }}>
                 <ChevronRight size={16} color="#0e1d4f" strokeWidth={2.5} />
               </button>
             </div>

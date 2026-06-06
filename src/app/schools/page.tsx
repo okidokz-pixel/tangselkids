@@ -189,15 +189,14 @@ function SchoolsContent() {
   const { t, lang } = useLang();
   const { tier, loaded } = useAuth();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
-  const [allPlaces,    setAllPlaces]    = useState<Place[]>([]);
-  const [featuredSpot, setFeaturedSpot] = useState<Place | null>(null);
-  const [loading,      setLoading]      = useState(true);
+  const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
+  const [allFeatured, setAllFeatured] = useState<Place[]>([]);
+  const [loading,     setLoading]     = useState(true);
   useEffect(() => {
     fetchPlacesByCategory("school").then(d => {
       setAllPlaces(d);
+      setAllFeatured(d.filter(p => p.isFeatured));
       setLoading(false);
-      const featured = d.filter(p => p.isFeatured);
-      if (featured.length) setFeaturedSpot(featured[Math.floor(Math.random() * featured.length)]);
     });
   }, []);
 
@@ -241,6 +240,27 @@ function SchoolsContent() {
   useEffect(() => {
     if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
   }, [sortBy, locationStatus, requestLocation]);
+
+  const featuredSpot = useMemo(() => {
+    const candidates = allFeatured
+      .filter(s => area === "all" || placeMatchesAreas(s, [area]))
+      .filter(s => grade === "all" || s.jenjang === grade)
+      .filter(s => curricula.length === 0 || (s.curriculumCategory ?? "").split(",").map(v => v.trim()).some(v => curricula.includes(v)))
+      .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
+      .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
+      .filter(s => matchesSppBucket(s.priceMin, sppBucket))
+      .filter(s => {
+        if (classSizeBucket === "all") return true;
+        if (s.studentsPerClass === undefined) return false;
+        if (classSizeBucket === "small")  return s.studentsPerClass <= 15;
+        if (classSizeBucket === "medium") return s.studentsPerClass >= 16 && s.studentsPerClass <= 20;
+        if (classSizeBucket === "large")  return s.studentsPerClass >= 21 && s.studentsPerClass <= 25;
+        if (classSizeBucket === "xlarge") return s.studentsPerClass >= 26;
+        return true;
+      });
+    if (!candidates.length) return null;
+    return candidates[Math.floor(sortSeed * candidates.length) % candidates.length];
+  }, [allFeatured, area, grade, curricula, bahasaFilter, upBucket, sppBucket, classSizeBucket, sortSeed]);
 
   const filtered = allPlaces
     .filter(s => s.id !== featuredSpot?.id)

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check, Scale } from "lucide-react";
@@ -173,15 +173,14 @@ function LearningCentersContent() {
   const { t } = useLang();
   const { tier, loaded } = useAuth();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
-  const [allPlaces,    setAllPlaces]    = useState<Place[]>([]);
-  const [featuredSpot, setFeaturedSpot] = useState<Place | null>(null);
-  const [loading,      setLoading]      = useState(true);
+  const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
+  const [allFeatured, setAllFeatured] = useState<Place[]>([]);
+  const [loading,     setLoading]     = useState(true);
   useEffect(() => {
     fetchPlacesByCategory("learning-center").then(d => {
       setAllPlaces(d);
+      setAllFeatured(d.filter(p => p.isFeatured));
       setLoading(false);
-      const featured = d.filter(p => p.isFeatured);
-      if (featured.length) setFeaturedSpot(featured[Math.floor(Math.random() * featured.length)]);
     });
   }, []);
 
@@ -225,6 +224,19 @@ function LearningCentersContent() {
   useEffect(() => {
     if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
   }, [sortBy, locationStatus, requestLocation]);
+
+  // ── Featured — filtered to only show candidates matching active filters ───────
+  const featuredSpot = useMemo(() => {
+    const candidates = allFeatured
+      .filter(c => area === "all" || placeMatchesAreas(c, [area]))
+      .filter(c => courseTypes.length === 0 || courseTypes.some(ct => c.courseTypes?.includes(ct)))
+      .filter(c => matchesRegFee(c.registrationFeeMin, regFeeBucket))
+      .filter(c => matchesMonthlyFee(c.priceMin, monthlyBucket))
+      .filter(c => matchesAgeBucket(c.ageRange, ageGroup))
+      .filter(c => teachingLang === "all" || c.teachingLanguage === teachingLang);
+    if (!candidates.length) return null;
+    return candidates[Math.floor(sortSeed * candidates.length) % candidates.length];
+  }, [allFeatured, area, courseTypes, regFeeBucket, monthlyBucket, ageGroup, teachingLang, sortSeed]);
 
   // ── Filtering ─────────────────────────────────────────────────────────────────
   const filtered = allPlaces

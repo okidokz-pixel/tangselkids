@@ -19,6 +19,7 @@ export function PlaceCard({
     if (place.category === "school") return place.curriculum ?? place.curriculumCategory ?? null;
     if (place.category === "learning-center") return place.centerType ?? (place.courseTypes?.[0] ?? null);
     if (place.category === "bookstore") return null;
+    if (place.category === "daycare") return place.priceMin > 0 ? formatPriceRange(place.priceMin, place.priceMax) : "–";
     return place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax);
   })();
 
@@ -152,6 +153,73 @@ export function PlaceCard({
                   {bottomRow}
                 </span>
               </div>
+            )}
+          </>
+        ) : place.category === "daycare" ? (
+          /* Daycare — Usia then price */
+          <>
+            {place.daycareAgeGroups && place.daycareAgeGroups.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Usia:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {place.daycareAgeGroups.join(", ")}
+                </span>
+              </div>
+            )}
+            {bottomRow && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Harga:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                  {bottomRow}
+                </span>
+              </div>
+            )}
+          </>
+        ) : place.category === "playground" ? (
+          /* Playground — Tipe then price */
+          <>
+            {(place.playgroundTypeRaw ?? place.playgroundType) && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Tipe:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {place.playgroundTypeRaw ?? (place.playgroundType === "indoor" ? "Indoor" : "Outdoor")}
+                </span>
+              </div>
+            )}
+            {bottomRow && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Harga:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                  {bottomRow}
+                </span>
+              </div>
+            )}
+          </>
+        ) : place.category === "clinic" ? (
+          /* Clinic — Layanan then price */
+          <>
+            {place.clinicServices && place.clinicServices.length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                <span style={{ fontSize: 12, color: "var(--tk-muted)", fontFamily: "var(--font-jakarta, sans-serif)", flexShrink: 0 }}>
+                  Layanan:
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {place.clinicServices.join(", ")}
+                </span>
+              </div>
+            )}
+            {bottomRow && (
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "var(--tk-blue-700)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
+                {bottomRow}
+              </p>
             )}
           </>
         ) : (

@@ -1,11 +1,13 @@
-﻿"use client";
-import { useState, useEffect, Suspense } from "react";
+"use client";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X } from "lucide-react";
-import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Scale } from "lucide-react";
+import { placeMatchesAreas, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
+import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import { BottomNav } from "@/components/BottomNav";
 import { PlaceCard } from "@/components/PlaceCard";
 import { ActionButton } from "@/components/ActionButton";
@@ -33,38 +35,12 @@ function Chip({ name, value, checked, onChange, children }: {
   );
 }
 
-function FilterDropdown({ value, onChange, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  const active = value !== "all";
+function SectionHead({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ position: "relative" }}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          appearance: "none", WebkitAppearance: "none",
-          width: "100%", padding: "10px 36px 10px 14px",
-          borderRadius: 12, fontSize: 13.5, fontWeight: 600,
-          fontFamily: "var(--font-jakarta),sans-serif",
-          border: active ? "2px solid #2e8a5a" : "2px solid #e2e8f0",
-          background: active ? "#e6f4ed" : "#fff",
-          color: active ? "#2e8a5a" : "#374151",
-          cursor: "pointer", outline: "none",
-        }}
-      >
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <div style={{ position: "absolute", right: 12, top: 0, bottom: 0,
-        display: "flex", alignItems: "center", pointerEvents: "none" }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke={active ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-    </div>
+    <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
+      color: "#94a3b8", textTransform: "uppercase" as const }}>
+      {children}
+    </p>
   );
 }
 
@@ -83,7 +59,6 @@ function FTag({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-
 const HEADER_STYLE = {
   background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
@@ -91,6 +66,8 @@ const HEADER_STYLE = {
 
 function PlaygroundsContent() {
   const { t } = useLang();
+  const { tier } = useAuth();
+  const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
   const TYPE_OPTIONS = [
     { value: "all",     label: t.filterAll },
@@ -105,9 +82,17 @@ function PlaygroundsContent() {
     { value: "100to200",  label: "Rp 100–200 rb" },
     { value: "gt200",     label: "> Rp 200 rb" },
   ];
-  const [allPlaces, setAllPlaces] = useState<Place[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  useEffect(() => { fetchPlacesByCategory("playground").then(d => { setAllPlaces(d); setLoading(false); }); }, []);
+
+  const [allPlaces,   setAllPlaces]   = useState<Place[]>([]);
+  const [allFeatured, setAllFeatured] = useState<Place[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  useEffect(() => {
+    fetchPlacesByCategory("playground").then(d => {
+      setAllPlaces(d);
+      setAllFeatured(d.filter(p => p.isFeatured));
+      setLoading(false);
+    });
+  }, []);
 
   const [showFilterGate, setShowFilterGate] = useState(false);
   const router = useRouter();
@@ -120,7 +105,27 @@ function PlaygroundsContent() {
   const [area,    setArea]    = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
   const [pgType,  setPgType]  = useState(searchParams.get("type") ?? "all");
   const [pgPrice, setPgPrice] = useState(searchParams.get("price") ?? "all");
-  const [sortBy,  setSortBy]  = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
+  const [sortBy,  setSortBy]  = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
+  const [sortSeed]            = useState(() => Math.random());
+  const [compareIds,  setCompareIds]  = useState<string[]>([]);
+  const [compareMode, setCompareMode] = useState(false);
+
+  useEffect(() => {
+    if (sortBy === "nearest" && locationStatus === "idle") requestLocation();
+  }, [sortBy, locationStatus, requestLocation]);
+
+  function toggleCompare(id: string) {
+    setCompareIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : prev.length >= 3 ? prev : [...prev, id]
+    );
+  }
+  function toggleCompareMode() {
+    setCompareMode(prev => { if (prev) setCompareIds([]); return !prev; });
+  }
+  function goCompare() {
+    if (typeof window !== "undefined") localStorage.setItem("comparePgIds", JSON.stringify(compareIds));
+    window.location.href = "/compare?type=pg";
+  }
 
   function matchesPriceBucket(p: { priceMin: number; priceMax: number }): boolean {
     if (pgPrice === "gratis")   return p.priceMin === 0 && p.priceMax === 0;
@@ -131,15 +136,35 @@ function PlaygroundsContent() {
     return true;
   }
 
-  const filtered = allPlaces
-    .filter(p => area === "all" || placeMatchesAreas(p, [area]))
-    .filter(p => pgType === "all" || p.playgroundType === pgType)
-    .filter(p => matchesPriceBucket(p))
-    .sort((a, b) => {
-    if (a.isFeatured && !b.isFeatured) return -1;
-    if (!a.isFeatured && b.isFeatured) return 1;
-    return sortBy === "za" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
-  });
+  function applyFilters(list: Place[]) {
+    return list
+      .filter(p => area === "all" || placeMatchesAreas(p, [area]))
+      .filter(p => pgType === "all" || p.playgroundType === pgType)
+      .filter(p => matchesPriceBucket(p));
+  }
+
+  const featuredSpot = useMemo(() => {
+    const candidates = applyFilters(allFeatured);
+    if (!candidates.length) return null;
+    return candidates[Math.floor(sortSeed * candidates.length) % candidates.length];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allFeatured, area, pgType, pgPrice, sortSeed]);
+
+  function sortList(list: Place[]) {
+    return [...list].sort((a, b) => {
+      if (sortBy === "za") return b.name.localeCompare(a.name);
+      if (sortBy === "alpha") return a.name.localeCompare(b.name);
+      if (sortBy === "nearest" && userLat && userLng) {
+        const dA = (a.lat && a.lng) ? haversineKm(userLat, userLng, a.lat, a.lng) : 9999;
+        const dB = (b.lat && b.lng) ? haversineKm(userLat, userLng, b.lat, b.lng) : 9999;
+        return dA - dB;
+      }
+      const h = (id: string) => { let v = sortSeed; for (let i = 0; i < id.length; i++) v = Math.sin(v + id.charCodeAt(i)) * 10000; return v - Math.floor(v); };
+      return h(a.id) - h(b.id);
+    });
+  }
+
+  const filtered = sortList(applyFilters(allPlaces).filter(p => p.id !== featuredSpot?.id));
 
   const activeCount = [area !== "all", pgType !== "all", pgPrice !== "all"].filter(Boolean).length;
   function resetFilters() { setArea("all"); setPgType("all"); setPgPrice("all"); }
@@ -149,7 +174,7 @@ function PlaygroundsContent() {
     if (area !== "all") p.set("area", area);
     if (pgType !== "all") p.set("type", pgType);
     if (pgPrice !== "all") p.set("price", pgPrice);
-    if (sortBy !== "alpha") p.set("sort", sortBy);
+    if (sortBy !== "nearest") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
   function toFilter() {
@@ -157,7 +182,7 @@ function PlaygroundsContent() {
     if (area !== "all") p.set("area", area);
     if (pgType !== "all") p.set("type", pgType);
     if (pgPrice !== "all") p.set("price", pgPrice);
-    if (sortBy !== "alpha") p.set("sort", sortBy);
+    if (sortBy !== "nearest") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
   }
@@ -186,12 +211,11 @@ function PlaygroundsContent() {
           </div>
         </div>
 
-        <div style={{ padding: "24px 20px 130px" }}>
+        <div style={{ padding: "16px 16px 130px", display: "flex", flexDirection: "column", gap: 10 }}>
 
-          {/* Area chips */}
-          <div style={{ marginBottom: 28 }}>
-            <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-              color: "#94a3b8", textTransform: "uppercase" }}>Area</p>
+          {/* Area */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               {(["all","bintaro","bsd"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
@@ -202,19 +226,29 @@ function PlaygroundsContent() {
             </div>
           </div>
 
-          {/* Dropdowns */}
-          {([
-            { label: t.filterType,       value: pgType,  set: setPgType,  opts: TYPE_OPTIONS },
-            { label: t.filterHargaTiket, value: pgPrice, set: setPgPrice, opts: PRICE_OPTIONS },
-          ] as const).map(({ label, value, set, opts }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: 1.2,
-                color: "#94a3b8", textTransform: "uppercase", flexShrink: 0, width: 96 }}>{label}</p>
-              <div style={{ flex: 1 }}>
-                <FilterDropdown value={value} onChange={set as (v: string) => void} options={opts} />
-              </div>
+          {/* Tipe */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>{t.filterType}</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {TYPE_OPTIONS.map(({ value, label }) => (
+                <Chip key={value} name="f-type" value={value} checked={pgType === value} onChange={() => setPgType(value)}>
+                  {label}
+                </Chip>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Harga Tiket */}
+          <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
+            <SectionHead>{t.filterHargaTiket}</SectionHead>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {PRICE_OPTIONS.map(({ value, label }) => (
+                <Chip key={value} name="f-price" value={value} checked={pgPrice === value} onChange={() => setPgPrice(value)}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+          </div>
 
         </div>
 
@@ -231,7 +265,7 @@ function PlaygroundsContent() {
                 fontFamily: "var(--font-jakarta),system-ui,sans-serif",
                 fontSize: 15, fontWeight: 700, cursor: "pointer",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}>
-              {t.pgShowResults(filtered.length)}
+              {t.pgShowResults(filtered.length + (featuredSpot ? 1 : 0))}
             </button>
           </div>
         </div>
@@ -240,6 +274,7 @@ function PlaygroundsContent() {
   }
 
   // ── Results View ─────────────────────────────────────────────────────────────
+  const totalCount = filtered.length + (featuredSpot ? 1 : 0);
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 110, background: "#f6f1e8" }}>
       <div style={HEADER_STYLE}>
@@ -257,7 +292,7 @@ function PlaygroundsContent() {
                 {t.catPlayground}
               </h1>
               <p style={{ margin: "3px 0 0", color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
-                {t.pgShowResults(filtered.length)}
+                {t.pgShowResults(totalCount)}
               </p>
             </div>
           </div>
@@ -267,7 +302,7 @@ function PlaygroundsContent() {
 
       {/* Filter / Sort bar */}
       <div style={{ display: "flex", gap: 10, margin: "12px 14px 0", alignItems: "center" }}>
-        <ActionButton onClick={() => router.replace(toFilter())} style={{
+        <ActionButton onClick={() => router.push(toFilter())} style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "10px 16px", borderRadius: 999,
           background: "#0e1d4f", color: "#fff", fontWeight: 700, fontSize: 13.5, flexShrink: 0,
@@ -282,15 +317,76 @@ function PlaygroundsContent() {
             </span>
           )}
         </ActionButton>
-        <ActionButton onClick={() => setSortBy(s => s === "alpha" ? "za" : "alpha")} style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "10px 16px", borderRadius: 999,
-          background: "#fff", color: "#374151", fontWeight: 600, fontSize: 13.5,
-          border: "1.5px solid #e2e8f0" }}>
-          <ArrowUpDown size={14} strokeWidth={2.5} />
-          {sortBy === "alpha" ? "Urut abjad A–Z" : "Urut abjad Z–A"}
-        </ActionButton>
+
+        {/* Sort dropdown */}
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              const v = e.target.value as typeof sortBy;
+              setSortBy(v);
+              if (v === "nearest" && locationStatus !== "granted") requestLocation();
+            }}
+            style={{
+              padding: "10px 36px 10px 14px",
+              borderRadius: 999,
+              fontSize: 13.5,
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontWeight: 600,
+              color: "#16a34a",
+              border: "1.5px solid #16a34a",
+              background: "#e6f4ed",
+              outline: "none",
+              appearance: "none" as const,
+              WebkitAppearance: "none" as const,
+              cursor: "pointer",
+            }}
+          >
+            <option value="random">Acak</option>
+            <option value="alpha">Urut A–Z</option>
+            <option value="za">Urut Z–A</option>
+            <option value="nearest">{t.sortNearest}</option>
+          </select>
+          <div style={{ position: "absolute", right: 10, top: 0, bottom: 0,
+            display: "flex", alignItems: "center", pointerEvents: "none" }}>
+            <ArrowUpDown size={13} strokeWidth={2.5} color="#16a34a" />
+          </div>
+        </div>
+
+        {/* Compare button */}
+        {(tier === "premium" || tier === "free") && (
+          <ActionButton onClick={tier === "premium" ? toggleCompareMode : () => setShowFilterGate(true)} style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "10px 14px", borderRadius: 999, flexShrink: 0,
+            background: compareMode ? "#2e8a5a" : "#fff",
+            color: compareMode ? "#fff" : tier === "free" ? "#94a3b8" : "#374151",
+            fontWeight: 700, fontSize: 13,
+            opacity: tier === "free" ? 0.85 : 1,
+            border: `1.5px solid ${compareMode ? "#2e8a5a" : "#e2e8f0"}` }}>
+            {compareMode ? <X size={13} strokeWidth={2.5} /> : <Scale size={13} strokeWidth={2.5} />}
+            {compareMode ? t.schoolsCompareCancelBtn : t.schoolsCompareModeBtn}
+          </ActionButton>
+        )}
       </div>
+
+      {/* Compare hint */}
+      {tier === "premium" && compareMode && totalCount > 0 && (
+        <div style={{ padding: "8px 14px 0" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 7,
+            padding: "9px 13px", borderRadius: 10,
+            background: compareIds.length === 0 ? "#fef9c3" : "#e6f4ed",
+            border: `1.5px solid ${compareIds.length === 0 ? "#fde68a" : "#a7d4bc"}`,
+          }}>
+            <Scale size={14} color={compareIds.length === 0 ? "#854d0e" : "#2e8a5a"} />
+            <span style={{ fontSize: 12, fontWeight: 600,
+              color: compareIds.length === 0 ? "#854d0e" : "#2e8a5a",
+              fontFamily: "var(--font-jakarta), sans-serif" }}>
+              {compareIds.length === 0 ? t.lcCmpHint : t.lcCmpSelectedFor(compareIds.length)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Active filter tags */}
       {activeCount > 0 && (
@@ -307,21 +403,116 @@ function PlaygroundsContent() {
       {/* Results */}
       <div style={{ padding: "12px 14px 0" }}>
         {loading && <SkeletonList count={6} />}
-        {!loading && filtered.length === 0 && (
+
+        {/* Featured spot */}
+        {!loading && featuredSpot && (
+          <div style={{
+            marginBottom: 14,
+            background: "#fef9c3",
+            border: "1.5px dashed #f59e0b",
+            padding: "8px 10px",
+          }}>
+            <span style={{
+              display: "block", marginBottom: 7,
+              fontSize: 10, fontWeight: 800, letterSpacing: 1.3,
+              color: "#b45309", textTransform: "uppercase" as const,
+              fontFamily: "var(--font-jakarta), sans-serif",
+            }}>
+              ✦ Featured
+            </span>
+            {tier === "premium" && compareMode ? (
+              <ActionButton
+                onClick={() => toggleCompare(featuredSpot.id)}
+                style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+              >
+                <PlaceCard
+                  place={featuredSpot}
+                  selected={compareIds.includes(featuredSpot.id)}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </ActionButton>
+            ) : (
+              <Link href={`/place/${featuredSpot.slug ?? featuredSpot.id}`} style={{ textDecoration: "none", display: "block" }}>
+                <PlaceCard
+                  place={featuredSpot}
+                  distanceKm={
+                    locationStatus === "granted" && userLat && userLng && featuredSpot.lat && featuredSpot.lng
+                      ? haversineKm(userLat, userLng, featuredSpot.lat, featuredSpot.lng)
+                      : null
+                  }
+                />
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!loading && filtered.length === 0 && !featuredSpot && (
           <div style={{ textAlign: "center", padding: "48px 0", color: "#94a3b8", fontSize: 13 }}>
             {t.dpNoResults}
           </div>
         )}
+        {!loading && filtered.length === 0 && featuredSpot && (
+          <div style={{ textAlign: "center", padding: "12px 0 32px", color: "#94a3b8", fontSize: 13 }}>
+            {t.dpNoResults}
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {filtered.map(place => (
-            <Link key={place.id} href={`/place/${place.id}`} style={{ textDecoration: "none", display: "block" }}>
-              <PlaceCard place={place} />
-            </Link>
-          ))}
+          {filtered.map(place => {
+            const isSelected = compareIds.includes(place.id);
+            return (
+              <div key={place.id}>
+                {tier === "premium" && compareMode ? (
+                  <ActionButton
+                    onClick={() => toggleCompare(place.id)}
+                    style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0 }}
+                  >
+                    <PlaceCard
+                      place={place}
+                      selected={isSelected}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && place.lat && place.lng
+                          ? haversineKm(userLat, userLng, place.lat, place.lng)
+                          : null
+                      }
+                    />
+                  </ActionButton>
+                ) : (
+                  <Link href={`/place/${place.slug ?? place.id}`} style={{ textDecoration: "none", display: "block" }}>
+                    <PlaceCard
+                      place={place}
+                      distanceKm={
+                        locationStatus === "granted" && userLat && userLng && place.lat && place.lng
+                          ? haversineKm(userLat, userLng, place.lat, place.lng)
+                          : null
+                      }
+                    />
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
-      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
 
+      {/* Floating compare button */}
+      {tier === "premium" && compareIds.length >= 2 && (
+        <div style={{ position: "fixed", bottom: 96, left: 14, right: 14, margin: "0 auto", maxWidth: 420, zIndex: 20 }}>
+          <ActionButton onClick={goCompare} style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            width: "100%", padding: "16px 20px", borderRadius: 18,
+            background: "linear-gradient(135deg,#1f6b43,#2e8a5a)", color: "#fff", fontWeight: 700, fontSize: 14,
+            boxShadow: "0 8px 24px rgba(30,63,176,0.36)" }}>
+            <Scale size={16} />{t.lcCmpBtn(compareIds.length)}
+          </ActionButton>
+        </div>
+      )}
+
+      <FilterGateSheet isOpen={showFilterGate} onClose={() => setShowFilterGate(false)} />
       <BottomNav active="explore" />
     </div>
   );

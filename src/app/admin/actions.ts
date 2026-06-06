@@ -150,6 +150,124 @@ export async function toggleLearningCenterFeatured(id: string, value: boolean) {
   revalidatePath("/learning-centers");
 }
 
+// ── Daycares ─────────────────────────────────────────────────────────────────
+
+export async function getDaycares() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("daycares")
+    .select("id,name,slug,area,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getDaycare(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("daycares")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function saveDaycare(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("daycares").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("daycares").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/daycare");
+    revalidatePath("/admin/daycares");
+    redirect(`/admin/daycares/${data.id}`);
+  }
+
+  revalidatePath("/daycare");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/daycares");
+}
+
+export async function deleteDaycare(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("daycares").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/daycare");
+  revalidatePath("/admin/daycares");
+  redirect("/admin/daycares");
+}
+
+export async function toggleDaycareFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("daycares").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/daycares");
+  revalidatePath("/daycare");
+}
+
+// ── Playgrounds ───────────────────────────────────────────────────────────────
+
+export async function getPlaygrounds() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("playgrounds")
+    .select("id,name,slug,area,playground_type,playground_type_raw,is_featured,logo_url,photo_1")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getPlayground(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("playgrounds")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function savePlayground(id: string | null, payload: Record<string, unknown>) {
+  await assertAdmin();
+
+  if (id) {
+    const { error } = await supabaseAdmin.from("playgrounds").update(payload).eq("id", id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await supabaseAdmin.from("playgrounds").insert(payload).select("id").single();
+    if (error) throw error;
+    revalidatePath("/playgrounds");
+    revalidatePath("/admin/playgrounds");
+    redirect(`/admin/playgrounds/${data.id}`);
+  }
+
+  revalidatePath("/playgrounds");
+  revalidatePath(`/place/${payload.slug}`);
+  revalidatePath("/admin/playgrounds");
+}
+
+export async function deletePlayground(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("playgrounds").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/playgrounds");
+  revalidatePath("/admin/playgrounds");
+  redirect("/admin/playgrounds");
+}
+
+export async function togglePlaygroundFeatured(id: string, value: boolean) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("playgrounds").update({ is_featured: value }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/playgrounds");
+  revalidatePath("/playgrounds");
+}
+
 // ── Articles ─────────────────────────────────────────────────────────────────
 
 export async function getArticles() {
