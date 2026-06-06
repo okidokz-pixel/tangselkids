@@ -263,6 +263,20 @@ export default function ProfilePage() {
             <p className="font-jakarta text-white/60 text-xs mt-0.5 leading-snug">
               {user?.phone || t.profileGuestDesc}
             </p>
+            {!user && (
+              <ActionButton
+                onClick={openLoginSheet}
+                style={{
+                  marginTop: 6, display: "inline-flex", alignItems: "center", gap: 3,
+                  fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.7)",
+                  background: "transparent",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                Sudah punya akun? Masuk &rsaquo;
+              </ActionButton>
+            )}
             {tier === "premium" && (
               <div style={{
                 marginTop: 6, display: "inline-flex", alignItems: "center", gap: 4,
@@ -304,7 +318,7 @@ export default function ProfilePage() {
           )}
           {!user && (
             <ActionButton
-              onClick={() => openLoginSheet()}
+              onClick={() => openRegisterSheet()}
               style={{
                 display: "inline-flex", alignItems: "center",
                 padding: "7px 14px", borderRadius: 999, flexShrink: 0,
@@ -313,7 +327,7 @@ export default function ProfilePage() {
                 fontFamily: "var(--font-jakarta), sans-serif",
               }}
             >
-              Masuk &rsaquo;
+              Daftar Gratis &rsaquo;
             </ActionButton>
           )}
         </div>
@@ -321,72 +335,6 @@ export default function ProfilePage() {
 
       <div className="px-5 py-5 space-y-5">
 
-        {/* ── TIER CARD ───────────────────────────────────────────────────── */}
-        {tier === "premium" ? (
-          <div className="rounded-2xl p-4 flex items-center gap-3"
-               style={{
-                 position: "relative", overflow: "hidden",
-                 background: "linear-gradient(135deg, #78350f 0%, #b45309 25%, #d97706 50%, #fbbf24 68%, #b45309 85%, #78350f 100%)",
-                 color: "#fff",
-                 boxShadow: "0 4px 20px rgba(217,119,6,0.45)",
-               }}>
-            {/* Shimmer sweep */}
-            <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%)",
-              animation: "gold-shimmer 2.8s ease-in-out infinite",
-              pointerEvents: "none",
-            }} />
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: "rgba(0,0,0,0.18)", fontSize: 22, position: "relative" }}>
-              {user?.lifetime ? "💎" : "⭐"}
-            </div>
-            <div className="flex-1" style={{ position: "relative" }}>
-              <p className="font-jakarta font-bold text-sm">
-                {user?.lifetime ? t.profileLifetimeStatus : t.profilePremiumStatus}
-              </p>
-              <p className="font-jakarta text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>
-                {user?.lifetime
-                  ? t.profileLifetimeDesc
-                  : <>
-                      {t.profilePremiumDesc}{" "}
-                      {user?.premiumExpiresAt
-                        ? new Date(user.premiumExpiresAt).toLocaleDateString(lang === "en" ? "en-GB" : "id-ID", { day: "numeric", month: "long", year: "numeric" })
-                        : "—"}
-                    </>}
-              </p>
-            </div>
-            <PremiumBadge />
-          </div>
-        ) : (
-          /* ── Guest / not logged-in card ─────────────────────── */
-          <div className="rounded-2xl p-4 flex items-center gap-3 border-2"
-               style={{ borderColor: "#94a3b8", background: "#f8fafc" }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: "#e2e8f0", fontSize: 22 }}>👤</div>
-            <div className="flex-1">
-              <p className="font-jakarta font-bold text-sm" style={{ color: "#334155" }}>{t.profileGuestStatus}</p>
-              <p className="font-jakarta text-xs mt-0.5" style={{ color: "#64748b" }}>
-                {t.profileGuestStatusDesc}
-              </p>
-            </div>
-            <ActionButton
-              onClick={() => { sessionStorage.setItem("upgradeFrom", "/profile"); router.push("/upgrade"); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "10px 16px", borderRadius: 999, flexShrink: 0,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)",
-                color: "#fff", fontSize: 13, fontWeight: 800,
-                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
-                fontFamily: "var(--font-jakarta), sans-serif",
-                animation: "upgrade-pulse 1.8s ease-in-out infinite",
-              }}
-            >
-              <Crown size={14} strokeWidth={2.5} />
-              {t.profileFreeUpgradeBtn}
-            </ActionButton>
-          </div>
-        )}
 
         {/* ── EDIT FORM (centered modal) ───────────────────────────────────── */}
         {editing && (
@@ -736,44 +684,9 @@ export default function ProfilePage() {
               <span className="font-jakarta font-semibold" style={{ color: "var(--tk-muted)", fontSize: 12 }}>{t.profileStatNotes}</span>
             </Link>
           </div>
+
         </section>
 
-        {/* ── Priority Support ────────────────────────────────────── */}
-        <section>
-          <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
-            {t.supportSectionTitle}
-          </p>
-          <a
-            href={`https://wa.me/${SUPPORT_WA_NUMBER}?text=${encodeURIComponent(t.supportWaMessage)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: "flex", alignItems: "center", gap: 14,
-              padding: "14px 16px", borderRadius: 16,
-              background: "#dcfce7",
-              border: "1.5px solid #bbf7d0",
-              boxShadow: "0 4px 16px rgba(37,211,102,0.10)",
-              textDecoration: "none",
-            }}
-          >
-            <div style={{
-              width: 42, height: 42, borderRadius: 999, flexShrink: 0,
-              background: "rgba(22,163,74,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <WhatsAppIcon size={22} color="#16a34a" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="font-jakarta font-bold text-sm" style={{ color: "#15803d", margin: 0 }}>
-                {t.supportWaBtn}
-              </p>
-              <p className="font-jakarta text-xs" style={{ color: "#16a34a", margin: "2px 0 0" }}>
-                {t.supportWaDesc}
-              </p>
-            </div>
-            <ChevronRight size={18} color="#86efac" />
-          </a>
-        </section>
 
         {/* Preferences */}
         <section>

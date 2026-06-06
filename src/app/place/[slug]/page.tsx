@@ -19,6 +19,7 @@ import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
 import { useLoginSheet } from "@/context/LoginSheetContext";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
@@ -154,6 +155,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const { t, lang } = useLang();
   const { loaded, user } = useAuth();
   const { openLoginSheet } = useLoginSheet();
+  const { openRegisterSheet } = useRegisterSheet();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
   const [place,   setPlace]   = useState<Place | null>(null);
@@ -1362,7 +1364,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               )}
 
               {/* Collapsible: fee image (schools, learning-centers & daycares) or gated rows (other categories) */}
-              {(place.category === "school" || place.category === "learning-center" || place.category === "daycare" || gatedRows.length > 0) && (
+              {(place.category === "school" || place.category === "learning-center" || place.category === "daycare" || place.category === "clinic" || gatedRows.length > 0) && (
                 <>
                   <ActionButton
                     onClick={() => setDetailOpen((o) => !o)}
@@ -1390,21 +1392,58 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
                   {detailOpen && (
                     <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
-                      {(place.category === "school" || place.category === "learning-center" || place.category === "daycare") ? (
+                      {(place.category === "school" || place.category === "learning-center" || place.category === "daycare" || place.category === "clinic") ? (
                         place.feeImageUrl ? (
-                        <div
-                          style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
-                          onClick={() => setFeeImageOpen(true)}
-                        >
-                          <img
-                            src={place.feeImageUrl}
-                            alt="Detail biaya"
-                            style={{
-                              width: "100%", borderRadius: 12, display: "block",
-                              cursor: "pointer",
-                            }}
-                          />
-                        </div>
+                          user ? (
+                            /* Logged in — full image */
+                            <div
+                              style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
+                              onClick={() => setFeeImageOpen(true)}
+                            >
+                              <img
+                                src={place.feeImageUrl}
+                                alt="Detail biaya"
+                                style={{ width: "100%", borderRadius: 12, display: "block", cursor: "pointer" }}
+                              />
+                            </div>
+                          ) : (
+                            /* Guest — blurred with register prompt */
+                            <div style={{ position: "relative", borderRadius: 12, overflow: "clip" }}>
+                              <img
+                                src={place.feeImageUrl}
+                                alt="Detail biaya"
+                                style={{ width: "100%", borderRadius: 12, display: "block", filter: "blur(8px)", transform: "scale(1.05)" }}
+                              />
+                              <div
+                                style={{
+                                  position: "absolute", inset: 0,
+                                  display: "flex", flexDirection: "column",
+                                  alignItems: "center", justifyContent: "center", gap: 10,
+                                  background: "rgba(14,29,79,0.35)",
+                                }}
+                              >
+                                <div style={{
+                                  width: 44, height: 44, borderRadius: 999,
+                                  background: "#fff",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  <Lock size={20} color="#0e1d4f" strokeWidth={2.5} />
+                                </div>
+                                <ActionButton
+                                  onClick={openRegisterSheet}
+                                  style={{
+                                    padding: "8px 18px", borderRadius: 999,
+                                    background: "#2e8a5a", color: "#fff",
+                                    fontSize: 12, fontWeight: 700,
+                                    fontFamily: "var(--font-jakarta), sans-serif",
+                                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                                  }}
+                                >
+                                  {lang === "id" ? "Daftar untuk melihat" : "Register to view"}
+                                </ActionButton>
+                              </div>
+                            </div>
+                          )
                         ) : (
                           <div style={{
                             padding: "20px 0", textAlign: "center",
@@ -1513,24 +1552,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           );
         })()}
 
-        {/* Clinic DETAIL LENGKAP — premium gated */}
-        {place.category === "clinic" && place.feeImageUrl && (
-          <div>
-            <h2 style={{ fontSize: 13, fontWeight: 700, color: "#2e8a5a", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              {lang === "id" ? "Detail Lengkap" : "Full Details"}
-            </h2>
-            <div
-              style={{ position: "relative", borderRadius: 14, overflow: "clip", cursor: "pointer" }}
-              onClick={() => setFeeImageOpen(true)}
-            >
-              <img
-                src={place.feeImageUrl}
-                alt="Detail info"
-                style={{ width: "100%", borderRadius: 14, display: "block" }}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Ekstrakurikuler */}
         {(place.extracurricularsEn || place.extracurriculars) && (() => {

@@ -8,6 +8,7 @@ import { LangToggle } from "@/components/LangToggle";
 import { BottomNav } from "@/components/BottomNav";
 import { AreaCoverageButton } from "@/components/AreaCoverageButton";
 import { useLoginSheet } from "@/context/LoginSheetContext";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getAreaGroup } from "@/lib/mockData";
 import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, fetchPrimaryCountsFast, getCachedCategory, getCachedCounts, searchAllPlaces } from "@/lib/db";
@@ -536,6 +537,7 @@ function Masthead({ userInitial }: { userInitial: string }) {
   const { lang, t } = useLang();
   const { user } = useAuth();
   const { openLoginSheet } = useLoginSheet();
+  const { openRegisterSheet } = useRegisterSheet();
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   useEffect(() => {
     setProfilePhoto(localStorage.getItem("profilePhoto"));
@@ -571,21 +573,29 @@ function Masthead({ userInitial }: { userInitial: string }) {
             {!user ? (
               <>
                 <LangToggle variant="dark" />
-                <ActionButton
-                  onClick={() => openLoginSheet()}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 5,
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    fontSize: 12, fontWeight: 700, color: "#0e1d4f",
-                  }}
-                >
-                  {t.loginSignIn}
-                  <svg width="16" height="9" viewBox="0 0 22 10" fill="none" style={{ flexShrink: 0 }}>
-                    <path d="M0 5H16M16 5L11 1M16 5L11 9"
-                      stroke="#0e1d4f" strokeWidth="1.8"
-                      strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </ActionButton>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <ActionButton
+                    onClick={() => openLoginSheet()}
+                    style={{
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                      fontSize: 12, fontWeight: 700, color: "#0e1d4f",
+                    }}
+                  >
+                    {t.loginSignIn}
+                  </ActionButton>
+                  <ActionButton
+                    onClick={() => openRegisterSheet()}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5,
+                      fontFamily: "var(--font-jakarta), sans-serif",
+                      fontSize: 12, fontWeight: 700, color: "#fff",
+                      background: "#0e1d4f",
+                      padding: "6px 12px", borderRadius: 999,
+                    }}
+                  >
+                    {t.profileGuestRegister}
+                  </ActionButton>
+                </div>
               </>
             ) : (
               /* Logged in — lang toggle on top, avatar below */
