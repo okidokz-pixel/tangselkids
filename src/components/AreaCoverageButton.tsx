@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { X, MapPin } from "lucide-react";
+import { useLang } from "@/context/LanguageContext";
 
 const COVERAGE = {
   bintaro: ["Bintaro Jaya", "Pondok Aren", "Pesanggrahan", "Ciputat", "Ciputat Timur", "Pamulang"],
@@ -8,6 +9,7 @@ const COVERAGE = {
 };
 
 export function AreaCoverageButton() {
+  const { t } = useLang();
   const [show, setShow] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -111,7 +113,7 @@ export function AreaCoverageButton() {
                   fontFamily: "var(--font-fraunces), Georgia, serif",
                   fontSize: 22, fontWeight: 700, color: "#0f172a",
                 }}>
-                  Cakupan Wilayah
+                  {t.coverageTitle}
                 </span>
               </div>
               <button
