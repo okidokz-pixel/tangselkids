@@ -69,6 +69,7 @@ export function RegisterSheet() {
   const [legalDoc, setLegalDoc] = useState<"terms" | "privacy" | null>(null);
 
   // OTP
+  const phoneRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
@@ -97,6 +98,17 @@ export function RegisterSheet() {
   const onRegisteredRef = useRef(options.onRegistered);
   useEffect(() => { onRegisteredRef.current = options.onRegistered; });
 
+  // Lock body scroll while sheet is open (prevents iOS from scrolling the page
+  // when the keyboard appears or the backdrop is tapped)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
   // Reset state when sheet opens
   useEffect(() => {
     if (isOpen) {
@@ -116,6 +128,15 @@ export function RegisterSheet() {
       pendingData.current = null;
     }
   }, [isOpen]);
+
+  // Focus phone input after the sheet slide-up animation (380ms) to avoid
+  // triggering iOS's scroll-to-input behaviour before the sheet is settled
+  useEffect(() => {
+    if (isOpen && step === "phone") {
+      const timer = setTimeout(() => phoneRef.current?.focus(), 430);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, step]);
 
   // Auto-focus first OTP field
   useEffect(() => {
@@ -344,7 +365,7 @@ export function RegisterSheet() {
         onClick={handleBackdropClick}
         style={{
           position: "fixed", inset: 0, zIndex: 1000,
-          background: "rgba(0,0,0,0.55)",
+          background: "rgba(0,0,0,0.65)",
           animation: "sheet-fade-in 0.25s ease both",
         }}
       />
@@ -717,12 +738,12 @@ export function RegisterSheet() {
                     🇮🇩 +62
                   </div>
                   <input
+                    ref={phoneRef}
                     type="tel"
                     placeholder={t.obPhonePlaceholder}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/[^\d-]/g, ""))}
                     style={{ ...inputStyle, flex: 1 }}
-                    autoFocus
                   />
                 </div>
 

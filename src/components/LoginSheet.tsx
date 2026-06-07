@@ -42,9 +42,21 @@ export function LoginSheet() {
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
 
+  const phoneRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [otpError, setOtpError] = useState("");
+
+  // Lock body scroll while sheet is open (prevents iOS from scrolling the page
+  // when the keyboard appears or the backdrop is tapped)
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -57,6 +69,15 @@ export function LoginSheet() {
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  // Focus phone input after the sheet slide-up animation (380ms) to avoid
+  // triggering iOS's scroll-to-input behaviour before the sheet is settled
+  useEffect(() => {
+    if (isOpen && step === "phone") {
+      const timer = setTimeout(() => phoneRef.current?.focus(), 430);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, step]);
 
   useEffect(() => {
     if (step === "otp") {
@@ -135,7 +156,7 @@ export function LoginSheet() {
         onClick={closeLoginSheet}
         style={{
           position: "fixed", inset: 0, zIndex: 1000,
-          background: "rgba(0,0,0,0.55)",
+          background: "rgba(0,0,0,0.65)",
           animation: "ls-fadeIn 0.25s ease both",
         }}
       />
@@ -224,6 +245,7 @@ export function LoginSheet() {
                     🇮🇩 +62
                   </div>
                   <input
+                    ref={phoneRef}
                     type="tel"
                     inputMode="numeric"
                     placeholder="8xxxxxxxxxx"
@@ -231,7 +253,6 @@ export function LoginSheet() {
                     onChange={e => setPhone(e.target.value.replace(/[^\d-]/g, ""))}
                     onKeyDown={e => e.key === "Enter" && handleSendOtp()}
                     style={{ ...inputStyle, flex: 1 }}
-                    autoFocus
                     autoComplete="tel"
                   />
                 </div>
