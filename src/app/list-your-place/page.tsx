@@ -159,6 +159,14 @@ function TtIcon() {
     </svg>
   );
 }
+function YtIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000">
+      <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"/>
+      <polygon fill="white" points="9.75,15.5 15.5,12 9.75,8.5"/>
+    </svg>
+  );
+}
 function WebIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2e8a5a" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -171,8 +179,8 @@ function WebIcon() {
 
 // ── Social link row ───────────────────────────────────────────────────────────
 function SocialRow({
-  icon, value, onChange, placeholder,
-}: { icon: React.ReactNode; value: string; onChange: (v: string) => void; placeholder: string }) {
+  icon, value, onChange, placeholder, prefix, type = "text",
+}: { icon: React.ReactNode; value: string; onChange: (v: string) => void; placeholder: string; prefix?: string; type?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
       <div style={{
@@ -181,13 +189,21 @@ function SocialRow({
       }}>
         {icon}
       </div>
-      <input
-        type="url"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{ ...INPUT, marginBottom: 0 }}
-      />
+      <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center" }}>
+        {prefix && (
+          <span style={{
+            position: "absolute", left: 14, fontSize: 14, color: "#94a3b8",
+            pointerEvents: "none", fontFamily: "var(--font-jakarta), sans-serif",
+          }}>{prefix}</span>
+        )}
+        <input
+          type={type}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ ...INPUT, marginBottom: 0, paddingLeft: prefix ? `${14 + prefix.length * 8}px` : undefined }}
+        />
+      </div>
     </div>
   );
 }
@@ -209,7 +225,6 @@ export default function ListYourPlacePage() {
     { value: "mini-zoo",       label: t.exploreMiniZoo       },
     { value: "swimming-pool",  label: t.exploreSwimmingPools },
     { value: "bookstore",      label: t.exploreBookstores    },
-    { value: "other",          label: t.homeOthers           },
   ];
 
   // ── Base fields ──────────────────────────────────────────────────────────────
@@ -284,12 +299,14 @@ export default function ListYourPlacePage() {
   const [miniZooPriceMin,   setMiniZooPriceMin]   = useState("");
   const [miniZooPriceMax,   setMiniZooPriceMax]   = useState("");
 
-  // ── Hours & social ───────────────────────────────────────────────────────────
-  const [hours,     setHours]     = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [facebook,  setFacebook]  = useState("");
-  const [tiktok,    setTiktok]    = useState("");
-  const [website,   setWebsite]   = useState("");
+  // ── Hours, year & social ─────────────────────────────────────────────────────
+  const [hours,        setHours]        = useState("");
+  const [yearFounded,  setYearFounded]  = useState("");
+  const [instagram,    setInstagram]    = useState("");
+  const [facebook,     setFacebook]     = useState("");
+  const [tiktok,       setTiktok]       = useState("");
+  const [youtube,      setYoutube]      = useState("");
+  const [website,      setWebsite]      = useState("");
 
   // ── Photos (up to 5) ─────────────────────────────────────────────────────────
   const [photos, setPhotos] = useState<string[]>([]);
@@ -317,11 +334,12 @@ export default function ListYourPlacePage() {
 
   function validate() {
     const e: Record<string, boolean> = {};
-    if (!name.trim())    e.name    = true;
-    if (!area)           e.area    = true;
-    if (!address.trim()) e.address = true;
-    if (!phone.trim())   e.phone   = true;
-    if (!category)       e.category = true;
+    if (!name.trim())       e.name      = true;
+    if (!area)              e.area      = true;
+    if (!address.trim())    e.address   = true;
+    if (!phone.trim())      e.phone     = true;
+    if (!whatsapp.trim())   e.whatsapp  = true;
+    if (!category)          e.category  = true;
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -470,7 +488,7 @@ export default function ListYourPlacePage() {
         {/* ── 4. Phone & WhatsApp ─────────────────────────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
           <div>
-            <label style={LABEL}>{t.listLabelPhone} <span style={{ color: "#ef4444" }}>*</span></label>
+            <label style={LABEL}>Phone <span style={{ color: "#ef4444" }}>*</span></label>
             <input
               type="tel"
               value={phone}
@@ -481,14 +499,15 @@ export default function ListYourPlacePage() {
             {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
           </div>
           <div>
-            <label style={LABEL}>WhatsApp <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+            <label style={LABEL}>WhatsApp <span style={{ color: "#ef4444" }}>*</span></label>
             <input
               type="tel"
               value={whatsapp}
-              onChange={e => setWhatsapp(e.target.value)}
+              onChange={e => { setWhatsapp(e.target.value); setErrors(prev => ({ ...prev, whatsapp: false })); }}
               placeholder="0812-3456-7890"
-              style={INPUT}
+              style={{ ...INPUT, border: `1.5px solid ${errors.whatsapp ? "#ef4444" : "#e2e8f0"}`, background: errors.whatsapp ? "#fff5f5" : "#fff" }}
             />
+            {errors.whatsapp && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>Wajib diisi</p>}
           </div>
         </div>
 
@@ -835,19 +854,34 @@ export default function ListYourPlacePage() {
           </div>
         )}
 
-        {/* ── 7. Operating Hours ──────────────────────────────────────────────── */}
-        <div style={FIELD}>
-          <label style={LABEL}>
-            {t.listLabelHours}{" "}
-            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
-          </label>
-          <input
-            type="text"
-            value={hours}
-            onChange={e => setHours(e.target.value)}
-            placeholder={t.listHoursPlaceholder}
-            style={INPUT}
-          />
+        {/* ── 7. Operating Hours & Year Established ───────────────────────────── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 18 }}>
+          <div>
+            <label style={LABEL}>
+              {t.listLabelHours}{" "}
+              <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
+            </label>
+            <input
+              type="text"
+              value={hours}
+              onChange={e => setHours(e.target.value)}
+              placeholder={t.listHoursPlaceholder}
+              style={INPUT}
+            />
+          </div>
+          <div style={{ minWidth: 110 }}>
+            <label style={LABEL}>
+              Tahun Berdiri{" "}
+              <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
+            </label>
+            <input
+              type="number"
+              value={yearFounded}
+              onChange={e => setYearFounded(e.target.value)}
+              placeholder="2015"
+              style={{ ...INPUT, minWidth: 0 }}
+            />
+          </div>
         </div>
 
         {/* ── 8. Social Media ─────────────────────────────────────────────────── */}
@@ -860,25 +894,35 @@ export default function ListYourPlacePage() {
             icon={<IgIcon />}
             value={instagram}
             onChange={setInstagram}
-            placeholder="instagram.com/namatempatmu"
+            prefix="@"
+            placeholder="namatempatmu"
           />
           <SocialRow
             icon={<FbIcon />}
             value={facebook}
             onChange={setFacebook}
-            placeholder="facebook.com/namatempatmu"
+            placeholder="namatempatmu"
           />
           <SocialRow
             icon={<TtIcon />}
             value={tiktok}
             onChange={setTiktok}
-            placeholder="tiktok.com/@namatempatmu"
+            prefix="@"
+            placeholder="namatempatmu"
+          />
+          <SocialRow
+            icon={<YtIcon />}
+            value={youtube}
+            onChange={setYoutube}
+            prefix="@"
+            placeholder="NamaChannel"
           />
           <SocialRow
             icon={<WebIcon />}
             value={website}
             onChange={setWebsite}
-            placeholder="www.namatempatmu.com"
+            placeholder="https://www.namatempatmu.com"
+            type="url"
           />
         </div>
 
