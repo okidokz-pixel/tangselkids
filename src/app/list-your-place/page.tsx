@@ -182,7 +182,7 @@ function SocialRow({
   icon, value, onChange, placeholder, prefix, type = "text",
 }: { icon: React.ReactNode; value: string; onChange: (v: string) => void; placeholder: string; prefix?: string; type?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{
         width: 38, height: 38, borderRadius: 10, flexShrink: 0,
         background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center",
@@ -390,30 +390,6 @@ export default function ListYourPlacePage() {
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 100, background: "#fff" }}>
-
-      <style>{`
-        .lyp-form input[type="text"]:focus,
-        .lyp-form input[type="text"]:not(:placeholder-shown),
-        .lyp-form input[type="tel"]:focus,
-        .lyp-form input[type="tel"]:not(:placeholder-shown),
-        .lyp-form input[type="number"]:focus,
-        .lyp-form input[type="number"]:not(:placeholder-shown),
-        .lyp-form input[type="url"]:focus,
-        .lyp-form input[type="url"]:not(:placeholder-shown),
-        .lyp-form textarea:focus,
-        .lyp-form textarea:not(:placeholder-shown) {
-          border-color: #2e8a5a !important;
-          background: #e6f4ed !important;
-          color: #1f6b43 !important;
-          outline: none;
-        }
-        .lyp-form select:focus {
-          outline: none;
-          border-color: #2e8a5a !important;
-          background: #e6f4ed !important;
-          color: #1f6b43 !important;
-        }
-      `}</style>
 
       {/* Hidden logo file input */}
       <input
@@ -819,7 +795,7 @@ export default function ListYourPlacePage() {
             Google Maps Location{" "}
             <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional but recommended)</span>
           </label>
-          <p style={{ fontSize: 11, color: "#64748b", margin: "0 0 12px", fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 12px", fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.5 }}>
             Open Google Maps → search your place → tap <strong>Share</strong> → <strong>Copy link</strong> → paste below.
           </p>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -897,45 +873,47 @@ export default function ListYourPlacePage() {
         </div>
 
         {/* ── 8. Social Media ─────────────────────────────────────────────────── */}
-        <div style={{ ...FIELD, background: "#f8fafc", borderRadius: 16, padding: "14px 14px 4px", border: "1.5px solid #e2e8f0" }}>
+        <div style={{ ...FIELD, background: "#f8fafc", borderRadius: 16, padding: "14px", border: "1.5px solid #e2e8f0" }}>
           <label style={{ ...LABEL, marginBottom: 12 }}>
             {t.listLabelSocial}{" "}
             <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
           </label>
-          <SocialRow
-            icon={<IgIcon />}
-            value={instagram}
-            onChange={setInstagram}
-            prefix="@"
-            placeholder="namatempatmu"
-          />
-          <SocialRow
-            icon={<FbIcon />}
-            value={facebook}
-            onChange={setFacebook}
-            placeholder="namatempatmu"
-          />
-          <SocialRow
-            icon={<TtIcon />}
-            value={tiktok}
-            onChange={setTiktok}
-            prefix="@"
-            placeholder="namatempatmu"
-          />
-          <SocialRow
-            icon={<YtIcon />}
-            value={youtube}
-            onChange={setYoutube}
-            prefix="@"
-            placeholder="NamaChannel"
-          />
-          <SocialRow
-            icon={<WebIcon />}
-            value={website}
-            onChange={setWebsite}
-            placeholder="https://www.namatempatmu.com"
-            type="url"
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <SocialRow
+              icon={<IgIcon />}
+              value={instagram}
+              onChange={setInstagram}
+              prefix="@"
+              placeholder="namatempatmu"
+            />
+            <SocialRow
+              icon={<FbIcon />}
+              value={facebook}
+              onChange={setFacebook}
+              placeholder="namatempatmu"
+            />
+            <SocialRow
+              icon={<TtIcon />}
+              value={tiktok}
+              onChange={setTiktok}
+              prefix="@"
+              placeholder="namatempatmu"
+            />
+            <SocialRow
+              icon={<YtIcon />}
+              value={youtube}
+              onChange={setYoutube}
+              prefix="@"
+              placeholder="NamaChannel"
+            />
+            <SocialRow
+              icon={<WebIcon />}
+              value={website}
+              onChange={setWebsite}
+              placeholder="https://www.namatempatmu.com"
+              type="url"
+            />
+          </div>
         </div>
 
         {/* ── 9. Logo ─────────────────────────────────────────────────────────── */}
@@ -1058,7 +1036,7 @@ export default function ListYourPlacePage() {
                   v[i] = e.target.value;
                   setYtVideos(v);
                 }}
-                placeholder="https://www.youtube.com/watch?v=..."
+                placeholder="www.youtube.com/watch?v=..."
                 style={INPUT}
               />
             </div>

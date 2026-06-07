@@ -175,6 +175,29 @@ input[type="range"].tk-range::-moz-range-track {
   to   { transform: translateY(0); }
 }
 
+/* ─── List-Your-Place form: input filled/focus states ───────────────────────── */
+.lyp-form input[type="text"]:focus,
+.lyp-form input[type="text"]:not(:placeholder-shown),
+.lyp-form input[type="tel"]:focus,
+.lyp-form input[type="tel"]:not(:placeholder-shown),
+.lyp-form input[type="number"]:focus,
+.lyp-form input[type="number"]:not(:placeholder-shown),
+.lyp-form input[type="url"]:focus,
+.lyp-form input[type="url"]:not(:placeholder-shown),
+.lyp-form textarea:focus,
+.lyp-form textarea:not(:placeholder-shown) {
+  border-color: #2e8a5a !important;
+  background: #e6f4ed !important;
+  color: #1f6b43 !important;
+  outline: none;
+}
+.lyp-form select:focus {
+  outline: none;
+  border-color: #2e8a5a !important;
+  background: #e6f4ed !important;
+  color: #1f6b43 !important;
+}
+
 .font-playfair {
   font-family: var(--font-playfair), Georgia, serif;
 }
