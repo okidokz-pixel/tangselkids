@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, X } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
+import { BottomNav } from "@/components/BottomNav";
 
 
 // ── Category-specific options ─────────────────────────────────────────────────
@@ -18,10 +19,10 @@ const BUDGET_LEVELS= ["Murah Sekali","Murah","Normal","Agak Mahal","Mahal"];
 
 // ── Shared input styles ───────────────────────────────────────────────────────
 const INPUT: React.CSSProperties = {
-  width: "100%", padding: "12px 14px", borderRadius: 12, fontSize: 14,
-  fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500,
+  width: "100%", padding: "12px 14px", borderRadius: 14, fontSize: 14,
+  fontFamily: "var(--font-jakarta), sans-serif",
   outline: "none", border: "1.5px solid #e2e8f0",
-  color: "#0e1d4f", background: "#f6f1e8",
+  color: "#0f172a", background: "#fff",
   boxSizing: "border-box",
 };
 const LABEL: React.CSSProperties = {
@@ -96,7 +97,7 @@ function FieldSelect({
           padding: "12px 40px 12px 14px",
           color: active ? "#1f6b43" : "#94a3b8",
           border: `1.5px solid ${active ? "#2e8a5a" : "#e2e8f0"}`,
-          background: active ? "#e6f4ed" : "#f6f1e8",
+          background: active ? "#e6f4ed" : "#fff",
           appearance: "none", WebkitAppearance: "none", cursor: "pointer",
         } as React.CSSProperties}
       >
@@ -319,7 +320,7 @@ export default function ListYourPlacePage() {
 
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 40, background: "#fff" }}>
+    <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 100, background: "#fff" }}>
 
       {/* Hidden photo file input */}
       <input
@@ -334,8 +335,8 @@ export default function ListYourPlacePage() {
       {/* Header */}
       <div
         style={{
-          padding: "48px 20px 28px",
-          background: "linear-gradient(160deg, #0a2018 0%, #1f6b43 60%, #2e8a5a 100%)",
+          padding: "52px 20px 24px",
+          background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)",
           borderRadius: "0 0 32px 32px",
         }}
       >
@@ -372,7 +373,7 @@ export default function ListYourPlacePage() {
             value={name}
             onChange={e => { setName(e.target.value); setErrors(prev => ({ ...prev, name: false })); }}
             placeholder="mis. Happy Kids Cafe, Sekolah Bintaro Jaya..."
-            style={{ ...INPUT, border: `1.5px solid ${errors.name ? "#ef4444" : "#e2e8f0"}`, background: errors.name ? "#fff5f5" : "#f6f1e8" }}
+            style={{ ...INPUT, border: `1.5px solid ${errors.name ? "#ef4444" : "#e2e8f0"}`, background: errors.name ? "#fff5f5" : "#fff" }}
           />
           {errors.name && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrName}</p>}
         </div>
@@ -399,7 +400,7 @@ export default function ListYourPlacePage() {
             onChange={e => { setAddress(e.target.value); setErrors(prev => ({ ...prev, address: false })); }}
             rows={3}
             placeholder="Jl. Contoh No. 123, Bintaro Sektor 7..."
-            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#f6f1e8" }}
+            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#fff" }}
           />
           {errors.address && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrAddress}</p>}
         </div>
@@ -412,7 +413,7 @@ export default function ListYourPlacePage() {
             value={phone}
             onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
             placeholder="0812-3456-7890"
-            style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#f6f1e8" }}
+            style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#fff" }}
           />
           {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
         </div>
@@ -429,7 +430,7 @@ export default function ListYourPlacePage() {
                 padding: "12px 40px 12px 14px",
                 color: category ? "#1f6b43" : "#94a3b8",
                 border: `1.5px solid ${errors.category ? "#ef4444" : category ? "#2e8a5a" : "#e2e8f0"}`,
-                background: category ? "#e6f4ed" : errors.category ? "#fff5f5" : "#f6f1e8",
+                background: category ? "#e6f4ed" : errors.category ? "#fff5f5" : "#fff",
                 appearance: "none", WebkitAppearance: "none", cursor: "pointer",
               } as React.CSSProperties}
             >
@@ -617,7 +618,7 @@ export default function ListYourPlacePage() {
         </div>
 
         {/* ── 8. Social Media ─────────────────────────────────────────────────── */}
-        <div style={{ ...FIELD, background: "#f6f1e8", borderRadius: 16, padding: "14px 14px 4px", border: "1.5px solid #e2e8f0" }}>
+        <div style={{ ...FIELD, background: "#f8fafc", borderRadius: 16, padding: "14px 14px 4px", border: "1.5px solid #e2e8f0" }}>
           <label style={{ ...LABEL, marginBottom: 12 }}>
             {t.listLabelSocial}{" "}
             <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
@@ -686,7 +687,7 @@ export default function ListYourPlacePage() {
                 onClick={() => photoInputRef.current?.click()}
                 style={{
                   aspectRatio: "1 / 1", borderRadius: 12,
-                  border: "2px dashed #cbd5e1", background: "#f6f1e8",
+                  border: "2px dashed #cbd5e1", background: "#f8fafc",
                   display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 4,
                   touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
@@ -750,6 +751,8 @@ export default function ListYourPlacePage() {
           {t.listSubmitNote}
         </p>
       </div>
+
+      <BottomNav active="profile" />
     </div>
   );
 }
