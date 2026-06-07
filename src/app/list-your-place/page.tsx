@@ -201,7 +201,7 @@ function SocialRow({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          style={{ ...INPUT, marginBottom: 0, paddingLeft: prefix ? 32 : undefined }}
+          style={{ ...INPUT, marginBottom: 0, paddingLeft: prefix ? 32 : 14 }}
         />
       </div>
     </div>
