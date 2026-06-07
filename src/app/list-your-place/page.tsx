@@ -201,7 +201,7 @@ function SocialRow({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder}
-          style={{ ...INPUT, marginBottom: 0, paddingLeft: prefix ? `${14 + prefix.length * 8}px` : undefined }}
+          style={{ ...INPUT, marginBottom: 0, paddingLeft: prefix ? 32 : undefined }}
         />
       </div>
     </div>
@@ -308,22 +308,40 @@ export default function ListYourPlacePage() {
   const [youtube,      setYoutube]      = useState("");
   const [website,      setWebsite]      = useState("");
 
-  // ── Photos (up to 5) ─────────────────────────────────────────────────────────
+  // ── Logo ─────────────────────────────────────────────────────────────────────
+  const [logo, setLogo] = useState("");
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  function handleLogoAdd(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setLogo(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  // ── Photos (up to 10) ────────────────────────────────────────────────────────
   const [photos, setPhotos] = useState<string[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || photos.length >= 5) return;
+    if (!file || photos.length >= 10) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const result = ev.target?.result as string;
       setPhotos(prev => [...prev, result]);
     };
     reader.readAsDataURL(file);
-    // Reset so the same file can be re-selected if removed
     e.target.value = "";
   }
+
+  // ── Related YouTube videos ────────────────────────────────────────────────────
+  const [ytVideos, setYtVideos] = useState(["", "", "", ""]);
+
+  // ── Google Maps location ──────────────────────────────────────────────────────
+  const [gmapsUrl, setGmapsUrl] = useState("");
 
   // ── Errors ───────────────────────────────────────────────────────────────────
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -373,11 +391,45 @@ export default function ListYourPlacePage() {
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", paddingBottom: 100, background: "#fff" }}>
 
+      <style>{`
+        .lyp-form input[type="text"]:focus,
+        .lyp-form input[type="text"]:not(:placeholder-shown),
+        .lyp-form input[type="tel"]:focus,
+        .lyp-form input[type="tel"]:not(:placeholder-shown),
+        .lyp-form input[type="number"]:focus,
+        .lyp-form input[type="number"]:not(:placeholder-shown),
+        .lyp-form input[type="url"]:focus,
+        .lyp-form input[type="url"]:not(:placeholder-shown),
+        .lyp-form textarea:focus,
+        .lyp-form textarea:not(:placeholder-shown) {
+          border-color: #2e8a5a !important;
+          background: #e6f4ed !important;
+          color: #1f6b43 !important;
+          outline: none;
+        }
+        .lyp-form select:focus {
+          outline: none;
+          border-color: #2e8a5a !important;
+          background: #e6f4ed !important;
+          color: #1f6b43 !important;
+        }
+      `}</style>
+
+      {/* Hidden logo file input */}
+      <input
+        ref={logoInputRef}
+        type="file"
+        accept="image/jpeg,image/png"
+        onChange={handleLogoAdd}
+        style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
+        tabIndex={-1}
+      />
+
       {/* Hidden photo file input */}
       <input
         ref={photoInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png"
         onChange={handlePhotoAdd}
         style={{ position: "absolute", width: 1, height: 1, opacity: 0, pointerEvents: "none" }}
         tabIndex={-1}
@@ -414,7 +466,7 @@ export default function ListYourPlacePage() {
       </div>
 
       {/* Form body */}
-      <div style={{ padding: "24px 20px" }}>
+      <div className="lyp-form" style={{ padding: "24px 20px" }}>
 
         {/* ── 1. Place Name ───────────────────────────────────────────────────── */}
         <div style={FIELD}>
@@ -458,60 +510,7 @@ export default function ListYourPlacePage() {
           {errors.category && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrCategory}</p>}
         </div>
 
-        {/* ── 3. Area & Contact ───────────────────────────────────────────────── */}
-        <div style={FIELD}>
-          <label style={LABEL}>{t.listLabelArea} <span style={{ color: "#ef4444" }}>*</span></label>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {(["Bintaro", "BSD"] as const).map(v => (
-              <RadioChip
-                key={v} name="list-area" value={v} label={v}
-                checked={area === v} onChange={() => { setArea(v); setErrors(prev => ({ ...prev, area: false })); }}
-              />
-            ))}
-          </div>
-          {errors.area && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 6, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrArea}</p>}
-        </div>
-
-        {/* ── 3. Full Address ──────────────────────────────────────────────────── */}
-        <div style={FIELD}>
-          <label style={LABEL}>{t.listLabelAddress} <span style={{ color: "#ef4444" }}>*</span></label>
-          <textarea
-            value={address}
-            onChange={e => { setAddress(e.target.value); setErrors(prev => ({ ...prev, address: false })); }}
-            rows={3}
-            placeholder="Jl. Contoh No. 123, Bintaro Sektor 7..."
-            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#fff" }}
-          />
-          {errors.address && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrAddress}</p>}
-        </div>
-
-        {/* ── 4. Phone & WhatsApp ─────────────────────────────────────────────── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-          <div>
-            <label style={LABEL}>Phone <span style={{ color: "#ef4444" }}>*</span></label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
-              placeholder="021-7654321"
-              style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#fff" }}
-            />
-            {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
-          </div>
-          <div>
-            <label style={LABEL}>WhatsApp <span style={{ color: "#ef4444" }}>*</span></label>
-            <input
-              type="tel"
-              value={whatsapp}
-              onChange={e => { setWhatsapp(e.target.value); setErrors(prev => ({ ...prev, whatsapp: false })); }}
-              placeholder="0812-3456-7890"
-              style={{ ...INPUT, border: `1.5px solid ${errors.whatsapp ? "#ef4444" : "#e2e8f0"}`, background: errors.whatsapp ? "#fff5f5" : "#fff" }}
-            />
-            {errors.whatsapp && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>Wajib diisi</p>}
-          </div>
-        </div>
-
-        {/* ── 6. Category-specific fields ─────────────────────────────────────── */}
+        {/* ── 3. Category-specific fields ─────────────────────────────────────── */}
 
         {/* SCHOOL */}
         {category === "school" && (
@@ -539,13 +538,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Siswa per Kelas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <input
-                type="number"
-                value={studentsPerClass}
-                onChange={e => setStudentsPerClass(e.target.value)}
-                placeholder="mis. 25"
-                style={INPUT}
-              />
+              <input type="number" value={studentsPerClass} onChange={e => setStudentsPerClass(e.target.value)} placeholder="mis. 25" style={INPUT} />
             </div>
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelUangPangkal}</label>
@@ -570,23 +563,11 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={schoolFacilities}
-                onChange={e => setSchoolFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Lab Komputer, Kolam Renang, Lapangan Olahraga..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={schoolFacilities} onChange={e => setSchoolFacilities(e.target.value)} rows={3} placeholder="mis. Lab Komputer, Kolam Renang, Lapangan Olahraga..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>Ekstrakurikuler <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={extracurriculars}
-                onChange={e => setExtracurriculars(e.target.value)}
-                rows={3}
-                placeholder="mis. Basket, Pramuka, Paduan Suara, Robotik..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={extracurriculars} onChange={e => setExtracurriculars(e.target.value)} rows={3} placeholder="mis. Basket, Pramuka, Paduan Suara, Robotik..." style={{ ...INPUT, resize: "none" }} />
             </div>
           </div>
         )}
@@ -614,13 +595,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Rasio Guru:Murid <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <input
-                type="text"
-                value={lcTeacherRatio}
-                onChange={e => setLcTeacherRatio(e.target.value)}
-                placeholder="mis. 1:6"
-                style={INPUT}
-              />
+              <input type="text" value={lcTeacherRatio} onChange={e => setLcTeacherRatio(e.target.value)} placeholder="mis. 1:6" style={INPUT} />
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Free Trial <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
@@ -661,18 +636,11 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Metode / Kurikulum <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <FieldSelect value={daycareMethod} onChange={setDaycareMethod}
-                options={["Montessori","Play-based","Structured","Waldorf","Reggio Emilia"]} placeholder="—" />
+              <FieldSelect value={daycareMethod} onChange={setDaycareMethod} options={["Montessori","Play-based","Structured","Waldorf","Reggio Emilia"]} placeholder="—" />
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Rasio Pengasuh:Anak <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <input
-                type="text"
-                value={daycareCarerRatio}
-                onChange={e => setDaycareCarerRatio(e.target.value)}
-                placeholder="mis. 1:4"
-                style={INPUT}
-              />
+              <input type="text" value={daycareCarerRatio} onChange={e => setDaycareCarerRatio(e.target.value)} placeholder="mis. 1:4" style={INPUT} />
             </div>
             <div style={FIELD}>
               <label style={LABEL}>CCTV <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
@@ -692,13 +660,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={daycareFacilities}
-                onChange={e => setDaycareFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Ruang bermain, CCTV, Makan siang, Antar jemput..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={daycareFacilities} onChange={e => setDaycareFacilities(e.target.value)} rows={3} placeholder="mis. Ruang bermain, CCTV, Makan siang, Antar jemput..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMonthlyPrice}</label>
@@ -724,13 +686,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={pgFacilities}
-                onChange={e => setPgFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Trampolin, Climbing wall, Kolam bola, Kafetaria..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={pgFacilities} onChange={e => setPgFacilities(e.target.value)} rows={3} placeholder="mis. Trampolin, Climbing wall, Kolam bola, Kafetaria..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelTicket}</label>
@@ -756,13 +712,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={clinicFacilities}
-                onChange={e => setClinicFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Ruang terapi individual, Area tunggu anak, Parkir..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={clinicFacilities} onChange={e => setClinicFacilities(e.target.value)} rows={3} placeholder="mis. Ruang terapi individual, Area tunggu anak, Parkir..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelBiaya}</label>
@@ -795,13 +745,7 @@ export default function ListYourPlacePage() {
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={cafeFacilities}
-                onChange={e => setCafeFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Play area, Nursing room, Stroller-friendly, Parkir..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={cafeFacilities} onChange={e => setCafeFacilities(e.target.value)} rows={3} placeholder="mis. Play area, Nursing room, Stroller-friendly, Parkir..." style={{ ...INPUT, resize: "none" }} />
             </div>
           </div>
         )}
@@ -812,13 +756,7 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.exploreMiniZoo}`} />
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={miniZooFacilities}
-                onChange={e => setMiniZooFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Feeding session, Kandang interaktif, Area bermain, Kafetaria..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={miniZooFacilities} onChange={e => setMiniZooFacilities(e.target.value)} rows={3} placeholder="mis. Feeding session, Kandang interaktif, Area bermain, Kafetaria..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMiniZooTicket}</label>
@@ -836,13 +774,7 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.exploreSwimmingPools}`} />
             <div style={FIELD}>
               <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
-              <textarea
-                value={poolFacilities}
-                onChange={e => setPoolFacilities(e.target.value)}
-                rows={3}
-                placeholder="mis. Kolam anak, Kolam dewasa, Loker, Kantin..."
-                style={{ ...INPUT, resize: "none" }}
-              />
+              <textarea value={poolFacilities} onChange={e => setPoolFacilities(e.target.value)} rows={3} placeholder="mis. Kolam anak, Kolam dewasa, Loker, Kantin..." style={{ ...INPUT, resize: "none" }} />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelPoolPrice}</label>
@@ -853,6 +785,86 @@ export default function ListYourPlacePage() {
             </div>
           </div>
         )}
+
+        {/* ── 4. Area & Contact ───────────────────────────────────────────────── */}
+        <div style={FIELD}>
+          <label style={LABEL}>{t.listLabelArea} <span style={{ color: "#ef4444" }}>*</span></label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {(["Bintaro", "BSD"] as const).map(v => (
+              <RadioChip
+                key={v} name="list-area" value={v} label={v}
+                checked={area === v} onChange={() => { setArea(v); setErrors(prev => ({ ...prev, area: false })); }}
+              />
+            ))}
+          </div>
+          {errors.area && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 6, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrArea}</p>}
+        </div>
+
+        {/* ── 3. Full Address ──────────────────────────────────────────────────── */}
+        <div style={FIELD}>
+          <label style={LABEL}>{t.listLabelAddress} <span style={{ color: "#ef4444" }}>*</span></label>
+          <textarea
+            value={address}
+            onChange={e => { setAddress(e.target.value); setErrors(prev => ({ ...prev, address: false })); }}
+            rows={3}
+            placeholder="Jl. Contoh No. 123, Bintaro Sektor 7..."
+            style={{ ...INPUT, resize: "none", border: `1.5px solid ${errors.address ? "#ef4444" : "#e2e8f0"}`, background: errors.address ? "#fff5f5" : "#fff" }}
+          />
+          {errors.address && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrAddress}</p>}
+        </div>
+
+        {/* ── Google Maps Location ─────────────────────────────────────────────── */}
+        <div style={{ ...FIELD, background: "#f8fafc", borderRadius: 16, padding: "14px 14px 14px", border: "1.5px solid #e2e8f0" }}>
+          <label style={{ ...LABEL, marginBottom: 4 }}>
+            Google Maps Location{" "}
+            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional but recommended)</span>
+          </label>
+          <p style={{ fontSize: 11, color: "#64748b", margin: "0 0 12px", fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.5 }}>
+            Open Google Maps → search your place → tap <strong>Share</strong> → <strong>Copy link</strong> → paste below.
+          </p>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: "#fff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#EA4335"/>
+                <circle cx="12" cy="9" r="2.5" fill="#fff"/>
+              </svg>
+            </div>
+            <input
+              type="url"
+              value={gmapsUrl}
+              onChange={e => setGmapsUrl(e.target.value)}
+              placeholder="https://maps.app.goo.gl/..."
+              style={INPUT}
+            />
+          </div>
+        </div>
+
+        {/* ── 4. Phone & WhatsApp ─────────────────────────────────────────────── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+          <div>
+            <label style={LABEL}>Phone <span style={{ color: "#ef4444" }}>*</span></label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
+              placeholder="021-7654321"
+              style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#fff" }}
+            />
+            {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
+          </div>
+          <div>
+            <label style={LABEL}>WhatsApp <span style={{ color: "#ef4444" }}>*</span></label>
+            <input
+              type="tel"
+              value={whatsapp}
+              onChange={e => { setWhatsapp(e.target.value); setErrors(prev => ({ ...prev, whatsapp: false })); }}
+              placeholder="0812-3456-7890"
+              style={{ ...INPUT, border: `1.5px solid ${errors.whatsapp ? "#ef4444" : "#e2e8f0"}`, background: errors.whatsapp ? "#fff5f5" : "#fff" }}
+            />
+            {errors.whatsapp && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>Wajib diisi</p>}
+          </div>
+        </div>
+
 
         {/* ── 7. Operating Hours & Year Established ───────────────────────────── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, marginBottom: 18 }}>
@@ -926,11 +938,54 @@ export default function ListYourPlacePage() {
           />
         </div>
 
-        {/* ── 9. Photos ───────────────────────────────────────────────────────── */}
+        {/* ── 9. Logo ─────────────────────────────────────────────────────────── */}
         <div style={FIELD}>
           <label style={LABEL}>
-            {t.listLabelPhotos}{" "}
-            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>{t.listLabelOptional}</span>
+            Logo{" "}
+            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional, JPG or PNG)</span>
+          </label>
+          {logo ? (
+            <div style={{ position: "relative", width: 96, height: 96, borderRadius: 16, overflow: "clip", background: "#f1f5f9", border: "1.5px solid #e2e8f0" }}>
+              <img
+                src={logo}
+                alt="Logo"
+                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", padding: 8, boxSizing: "border-box" }}
+              />
+              <ActionButton
+                onClick={() => setLogo("")}
+                style={{
+                  position: "absolute", top: 4, right: 4,
+                  width: 22, height: 22, borderRadius: 999,
+                  background: "rgba(0,0,0,0.60)", border: "none",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                <X size={11} color="#fff" strokeWidth={3} />
+              </ActionButton>
+            </div>
+          ) : (
+            <ActionButton
+              onClick={() => logoInputRef.current?.click()}
+              style={{
+                width: 96, height: 96, borderRadius: 16,
+                border: "2px dashed #cbd5e1", background: "#f8fafc",
+                display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center", gap: 4,
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <span style={{ fontSize: 28, lineHeight: 1, color: "#94a3b8" }}>+</span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif", letterSpacing: 0.3 }}>Logo</span>
+            </ActionButton>
+          )}
+        </div>
+
+        {/* ── 10. Photos ──────────────────────────────────────────────────────── */}
+        <div style={FIELD}>
+          <label style={LABEL}>
+            Place Photos{" "}
+            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional, up to 10 photos, JPG or PNG only)</span>
           </label>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
@@ -958,8 +1013,8 @@ export default function ListYourPlacePage() {
               </div>
             ))}
 
-            {/* Add photo tile — shown while count < 5 */}
-            {photos.length < 5 && (
+            {/* Add photo tile — shown while count < 10 */}
+            {photos.length < 10 && (
               <ActionButton
                 onClick={() => photoInputRef.current?.click()}
                 style={{
@@ -979,16 +1034,38 @@ export default function ListYourPlacePage() {
             )}
           </div>
 
-          {/* Hint */}
-          <p style={{
-            marginTop: 8, fontSize: 11, color: "#94a3b8",
-            fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.4,
-          }}>
-            {t.listPhotosHint}
-          </p>
         </div>
 
-        {/* ── 10. Description ─────────────────────────────────────────────────── */}
+        {/* ── 11. Related YouTube Videos ──────────────────────────────────────── */}
+        <div style={FIELD}>
+          <label style={LABEL}>
+            Related YouTube Videos{" "}
+            <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+          </label>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <div style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <YtIcon />
+              </div>
+              <input
+                type="url"
+                value={ytVideos[i]}
+                onChange={e => {
+                  const v = [...ytVideos];
+                  v[i] = e.target.value;
+                  setYtVideos(v);
+                }}
+                placeholder="https://www.youtube.com/watch?v=..."
+                style={INPUT}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* ── 13. Description ─────────────────────────────────────────────────── */}
         <div style={FIELD}>
           <label style={LABEL}>
             {t.listLabelDesc}{" "}
