@@ -8,14 +8,14 @@ import { BottomNav } from "@/components/BottomNav";
 
 
 // ── Category-specific options ─────────────────────────────────────────────────
-const CURRICULA    = ["Nasional","Nasional Plus","Merdeka","Cambridge","IB","Montessori","Islam Terpadu","Blended Learning","Lainnya"];
-const BAHASA       = ["Indonesian","English","Bilingual (ID+EN)","Bilingual (ID+MND)","Bilingual (ID+ARB)","Japanese","German"];
-const GRADES       = ["Preschool","TK","SD","SMP","SMA"];
-const COURSE_TYPES = ["Bahasa Inggris","Matematika","Seni","Musik","Coding/Robotik","Tari & Balet","Gimnastik","Lainnya"];
-const AGE_GROUPS   = ["Toddler","Kids","Tween","Teen"];
-const DAYCARE_AGES = ["Bayi (0–1 thn)","Toddler (1–2 thn)","Balita (2–4 thn)","Usia 4+ thn"];
-const CLINIC_SVC   = ["Terapi Wicara","Terapi Okupasi","Fisioterapi","Sensori Integrasi (SI)","Psikologi Anak","Perilaku / ABA"];
-const BUDGET_LEVELS= ["Murah Sekali","Murah","Normal","Agak Mahal","Mahal"];
+const CURRICULA       = ["Nasional","Cambridge","International Baccalaureate (IB)","Islamic","Montessori","Lainnya"];
+const BAHASA          = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"];
+const GRADES          = ["Preschool","TK","SD","SMP","SMA"];
+const COURSE_TYPES    = ["Bahasa Inggris","Matematika","Seni Rupa","Musik & Vokal","Coding / Robotik","Tari & Balet","Gimnastik","Bahasa Mandarin"];
+const DAYCARE_AGES    = ["Bayi (0–1 thn)","Toddler (1–2 thn)","Balita (2–4 thn)","Usia 4+ thn"];
+const PLAYGROUND_TYPES = ["Indoor","Outdoor","Arcade","Trampoline"];
+const CLINIC_SVC      = ["Terapi Wicara","Terapi Okupasi","Sensori Integrasi","Fisioterapi","Terapi Perilaku (ABA)","Psikologi Anak","Terapi Bermain","Terapi Kognitif","Snoezel / Stimulasi Multisensori","Terapi Renang"];
+const BUDGET_LEVELS   = ["Murah Sekali","Murah","Normal","Agak Mahal","Mahal"];
 
 // ── Shared input styles ───────────────────────────────────────────────────────
 const INPUT: React.CSSProperties = {
@@ -221,35 +221,44 @@ export default function ListYourPlacePage() {
   const [description, setDescription] = useState("");
 
   // ── School extras ────────────────────────────────────────────────────────────
-  const [curriculum, setCurriculum] = useState("");
-  const [bahasa,     setBahasa]     = useState("");
-  const [grades,     setGrades]     = useState<string[]>([]);
-  const [uangPangkal,setUangPangkal] = useState("");
-  const [spp,        setSpp]        = useState("");
+  const [curriculum,      setCurriculum]      = useState("");
+  const [bahasa,          setBahasa]          = useState<string[]>([]);
+  const [grades,          setGrades]          = useState<string[]>([]);
+  const [uangPangkalMin,  setUangPangkalMin]  = useState("");
+  const [uangPangkalMax,  setUangPangkalMax]  = useState("");
+  const [sppMin,          setSppMin]          = useState("");
+  const [sppMax,          setSppMax]          = useState("");
 
   // ── Learning center extras ───────────────────────────────────────────────────
-  const [courseType,     setCourseType]     = useState("");
-  const [lcAgeGroups,    setLcAgeGroups]    = useState<string[]>([]);
-  const [lcPriceSession, setLcPriceSession] = useState("");
+  const [courseTypes,   setCourseTypes]   = useState<string[]>([]);
+  const [lcPriceMin,    setLcPriceMin]    = useState("");
+  const [lcPriceMax,    setLcPriceMax]    = useState("");
 
   // ── Daycare extras ───────────────────────────────────────────────────────────
-  const [daycareAges,  setDaycareAges]  = useState<string[]>([]);
-  const [daycarePrice, setDaycarePrice] = useState("");
+  const [daycareAges,    setDaycareAges]    = useState<string[]>([]);
+  const [daycarePriceMin,setDaycarePriceMin] = useState("");
+  const [daycarePriceMax,setDaycarePriceMax] = useState("");
 
   // ── Playground extras ────────────────────────────────────────────────────────
-  const [pgTicket, setPgTicket] = useState("");
-  const [pgType,   setPgType]   = useState("");
+  const [pgTypes,    setPgTypes]    = useState<string[]>([]);
+  const [pgPriceMin, setPgPriceMin] = useState("");
+  const [pgPriceMax, setPgPriceMax] = useState("");
 
   // ── Clinic extras ────────────────────────────────────────────────────────────
-  const [clinicServices, setClinicServices] = useState<string[]>([]);
-  const [clinicBiaya,    setClinicBiaya]    = useState("");
+  const [clinicServices,  setClinicServices]  = useState<string[]>([]);
+  const [clinicBiayaMin,  setClinicBiayaMin]  = useState("");
+  const [clinicBiayaMax,  setClinicBiayaMax]  = useState("");
 
   // ── Cafe extras ──────────────────────────────────────────────────────────────
   const [cafeBudget, setCafeBudget] = useState("");
 
-  // ── Swimming pool / mini-zoo extras ─────────────────────────────────────────
-  const [poolTicket,    setPoolTicket]    = useState("");
-  const [miniZooTicket, setMiniZooTicket] = useState("");
+  // ── Swimming pool extras ─────────────────────────────────────────────────────
+  const [poolPriceMin, setPoolPriceMin] = useState("");
+  const [poolPriceMax, setPoolPriceMax] = useState("");
+
+  // ── Mini-zoo extras ──────────────────────────────────────────────────────────
+  const [miniZooPriceMin, setMiniZooPriceMin] = useState("");
+  const [miniZooPriceMax, setMiniZooPriceMax] = useState("");
 
   // ── Hours & social ───────────────────────────────────────────────────────────
   const [hours,     setHours]     = useState("");
@@ -378,7 +387,36 @@ export default function ListYourPlacePage() {
           {errors.name && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrName}</p>}
         </div>
 
-        {/* ── 2. Area ─────────────────────────────────────────────────────────── */}
+        {/* ── 2. Category ─────────────────────────────────────────────────────── */}
+        <div style={FIELD}>
+          <label style={LABEL}>{t.listLabelCategory} <span style={{ color: "#ef4444" }}>*</span></label>
+          <div style={{ position: "relative" }}>
+            <select
+              value={category}
+              onChange={e => { setCategory(e.target.value); setErrors(prev => ({ ...prev, category: false })); }}
+              style={{
+                ...INPUT,
+                padding: "12px 40px 12px 14px",
+                color: category ? "#1f6b43" : "#94a3b8",
+                border: `1.5px solid ${errors.category ? "#ef4444" : category ? "#2e8a5a" : "#e2e8f0"}`,
+                background: category ? "#e6f4ed" : errors.category ? "#fff5f5" : "#fff",
+                appearance: "none", WebkitAppearance: "none", cursor: "pointer",
+              } as React.CSSProperties}
+            >
+              <option value="">{t.listCategoryPlaceholder}</option>
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke={category ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
+          </div>
+          {errors.category && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrCategory}</p>}
+        </div>
+
+        {/* ── 3. Area ─────────────────────────────────────────────────────────── */}
         <div style={FIELD}>
           <label style={LABEL}>{t.listLabelArea} <span style={{ color: "#ef4444" }}>*</span></label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -418,35 +456,6 @@ export default function ListYourPlacePage() {
           {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
         </div>
 
-        {/* ── 5. Category ─────────────────────────────────────────────────────── */}
-        <div style={FIELD}>
-          <label style={LABEL}>{t.listLabelCategory} <span style={{ color: "#ef4444" }}>*</span></label>
-          <div style={{ position: "relative" }}>
-            <select
-              value={category}
-              onChange={e => { setCategory(e.target.value); setErrors(prev => ({ ...prev, category: false })); }}
-              style={{
-                ...INPUT,
-                padding: "12px 40px 12px 14px",
-                color: category ? "#1f6b43" : "#94a3b8",
-                border: `1.5px solid ${errors.category ? "#ef4444" : category ? "#2e8a5a" : "#e2e8f0"}`,
-                background: category ? "#e6f4ed" : errors.category ? "#fff5f5" : "#fff",
-                appearance: "none", WebkitAppearance: "none", cursor: "pointer",
-              } as React.CSSProperties}
-            >
-              <option value="">{t.listCategoryPlaceholder}</option>
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <div style={{ position: "absolute", right: 12, top: 0, bottom: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke={category ? "#2e8a5a" : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </div>
-          </div>
-          {errors.category && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrCategory}</p>}
-        </div>
-
         {/* ── 6. Category-specific fields ─────────────────────────────────────── */}
 
         {/* SCHOOL */}
@@ -459,7 +468,11 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelBahasa}</label>
-              <FieldSelect value={bahasa} onChange={setBahasa} options={BAHASA} placeholder="—" />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                {BAHASA.map(b => (
+                  <CheckChip key={b} label={b} checked={bahasa.includes(b)} onChange={() => toggleMulti(bahasa, setBahasa, b)} />
+                ))}
+              </div>
             </div>
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelGrades}</label>
@@ -471,11 +484,17 @@ export default function ListYourPlacePage() {
             </div>
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelUangPangkal}</label>
-              <PriceInput value={uangPangkal} onChange={setUangPangkal} placeholder="mis. 15000000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={uangPangkalMin} onChange={setUangPangkalMin} placeholder="Min" />
+                <PriceInput value={uangPangkalMax} onChange={setUangPangkalMax} placeholder="Max" />
+              </div>
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelSpp}</label>
-              <PriceInput value={spp} onChange={setSpp} placeholder="mis. 3000000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={sppMin} onChange={setSppMin} placeholder="Min" />
+                <PriceInput value={sppMax} onChange={setSppMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -486,19 +505,18 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.exploreLCs}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelCourseType}</label>
-              <FieldSelect value={courseType} onChange={setCourseType} options={COURSE_TYPES} placeholder="—" />
-            </div>
-            <div style={FIELD}>
-              <label style={LABEL}>{t.listLabelAgeGroup}</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
-                {AGE_GROUPS.map(g => (
-                  <CheckChip key={g} label={g} checked={lcAgeGroups.includes(g)} onChange={() => toggleMulti(lcAgeGroups, setLcAgeGroups, g)} />
+                {COURSE_TYPES.map(c => (
+                  <CheckChip key={c} label={c} checked={courseTypes.includes(c)} onChange={() => toggleMulti(courseTypes, setCourseTypes, c)} />
                 ))}
               </div>
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelPriceSession}</label>
-              <PriceInput value={lcPriceSession} onChange={setLcPriceSession} placeholder="mis. 150000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={lcPriceMin} onChange={setLcPriceMin} placeholder="Min" />
+                <PriceInput value={lcPriceMax} onChange={setLcPriceMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -517,7 +535,10 @@ export default function ListYourPlacePage() {
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMonthlyPrice}</label>
-              <PriceInput value={daycarePrice} onChange={setDaycarePrice} placeholder="mis. 3500000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={daycarePriceMin} onChange={setDaycarePriceMin} placeholder="Min" />
+                <PriceInput value={daycarePriceMax} onChange={setDaycarePriceMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -528,20 +549,18 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.explorePlaygrounds}`} />
             <div style={FIELD}>
               <label style={LABEL}>{t.listLabelPgType}</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                {([
-                  { value: "indoor",  label: t.listPgIndoor  },
-                  { value: "outdoor", label: t.listPgOutdoor },
-                  { value: "both",    label: t.listPgBoth    },
-                ] as const).map(o => (
-                  <RadioChip key={o.value} name="pg-type" value={o.value} label={o.label}
-                    checked={pgType === o.value} onChange={() => setPgType(o.value)} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                {PLAYGROUND_TYPES.map(p => (
+                  <CheckChip key={p} label={p} checked={pgTypes.includes(p)} onChange={() => toggleMulti(pgTypes, setPgTypes, p)} />
                 ))}
               </div>
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelTicket}</label>
-              <PriceInput value={pgTicket} onChange={setPgTicket} placeholder="mis. 75000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={pgPriceMin} onChange={setPgPriceMin} placeholder="Min" />
+                <PriceInput value={pgPriceMax} onChange={setPgPriceMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -560,7 +579,10 @@ export default function ListYourPlacePage() {
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelBiaya}</label>
-              <PriceInput value={clinicBiaya} onChange={setClinicBiaya} placeholder="mis. 350000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={clinicBiayaMin} onChange={setClinicBiayaMin} placeholder="Min" />
+                <PriceInput value={clinicBiayaMax} onChange={setClinicBiayaMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -586,7 +608,10 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.exploreMiniZoo}`} />
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMiniZooTicket}</label>
-              <PriceInput value={miniZooTicket} onChange={setMiniZooTicket} placeholder="mis. 50000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={miniZooPriceMin} onChange={setMiniZooPriceMin} placeholder="Min" />
+                <PriceInput value={miniZooPriceMax} onChange={setMiniZooPriceMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
@@ -597,7 +622,10 @@ export default function ListYourPlacePage() {
             <SectionDivider label={`+ ${t.exploreSwimmingPools}`} />
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelPoolPrice}</label>
-              <PriceInput value={poolTicket} onChange={setPoolTicket} placeholder="mis. 40000" />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={poolPriceMin} onChange={setPoolPriceMin} placeholder="Min" />
+                <PriceInput value={poolPriceMax} onChange={setPoolPriceMax} placeholder="Max" />
+              </div>
             </div>
           </div>
         )}
