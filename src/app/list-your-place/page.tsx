@@ -217,48 +217,72 @@ export default function ListYourPlacePage() {
   const [area,        setArea]        = useState("");
   const [address,     setAddress]     = useState("");
   const [phone,       setPhone]       = useState("");
+  const [whatsapp,    setWhatsapp]    = useState("");
   const [category,    setCategory]    = useState("");
   const [description, setDescription] = useState("");
 
   // ── School extras ────────────────────────────────────────────────────────────
-  const [curriculum,      setCurriculum]      = useState("");
-  const [bahasa,          setBahasa]          = useState<string[]>([]);
-  const [grades,          setGrades]          = useState<string[]>([]);
-  const [uangPangkalMin,  setUangPangkalMin]  = useState("");
-  const [uangPangkalMax,  setUangPangkalMax]  = useState("");
-  const [sppMin,          setSppMin]          = useState("");
-  const [sppMax,          setSppMax]          = useState("");
+  const [curriculum,       setCurriculum]       = useState("");
+  const [bahasa,           setBahasa]           = useState<string[]>([]);
+  const [grades,           setGrades]           = useState<string[]>([]);
+  const [studentsPerClass, setStudentsPerClass] = useState("");
+  const [uangPangkalMin,   setUangPangkalMin]   = useState("");
+  const [uangPangkalMax,   setUangPangkalMax]   = useState("");
+  const [annualFeeMin,     setAnnualFeeMin]     = useState("");
+  const [annualFeeMax,     setAnnualFeeMax]     = useState("");
+  const [sppMin,           setSppMin]           = useState("");
+  const [sppMax,           setSppMax]           = useState("");
+  const [schoolFacilities, setSchoolFacilities] = useState("");
+  const [extracurriculars, setExtracurriculars] = useState("");
 
   // ── Learning center extras ───────────────────────────────────────────────────
-  const [courseTypes,   setCourseTypes]   = useState<string[]>([]);
-  const [lcPriceMin,    setLcPriceMin]    = useState("");
-  const [lcPriceMax,    setLcPriceMax]    = useState("");
+  const [courseTypes,        setCourseTypes]        = useState<string[]>([]);
+  const [lcAgeMin,           setLcAgeMin]           = useState("");
+  const [lcAgeMax,           setLcAgeMax]           = useState("");
+  const [lcTeacherRatio,     setLcTeacherRatio]     = useState("");
+  const [lcFreeTrial,        setLcFreeTrial]        = useState("");
+  const [lcRegFeeMin,        setLcRegFeeMin]        = useState("");
+  const [lcRegFeeMax,        setLcRegFeeMax]        = useState("");
+  const [lcPriceMin,         setLcPriceMin]         = useState("");
+  const [lcPriceMax,         setLcPriceMax]         = useState("");
 
   // ── Daycare extras ───────────────────────────────────────────────────────────
-  const [daycareAges,    setDaycareAges]    = useState<string[]>([]);
-  const [daycarePriceMin,setDaycarePriceMin] = useState("");
-  const [daycarePriceMax,setDaycarePriceMax] = useState("");
+  const [daycareAges,       setDaycareAges]       = useState<string[]>([]);
+  const [daycareMethod,     setDaycareMethod]     = useState("");
+  const [daycareCarerRatio, setDaycareCarerRatio] = useState("");
+  const [daycareCctv,       setDaycareCctv]       = useState("");
+  const [daycareAccred,     setDaycareAccred]     = useState("");
+  const [daycareFacilities, setDaycareFacilities] = useState("");
+  const [daycarePriceMin,   setDaycarePriceMin]   = useState("");
+  const [daycarePriceMax,   setDaycarePriceMax]   = useState("");
 
   // ── Playground extras ────────────────────────────────────────────────────────
-  const [pgTypes,    setPgTypes]    = useState<string[]>([]);
-  const [pgPriceMin, setPgPriceMin] = useState("");
-  const [pgPriceMax, setPgPriceMax] = useState("");
+  const [pgTypes,       setPgTypes]       = useState<string[]>([]);
+  const [pgFacilities,  setPgFacilities]  = useState("");
+  const [pgPriceMin,    setPgPriceMin]    = useState("");
+  const [pgPriceMax,    setPgPriceMax]    = useState("");
 
   // ── Clinic extras ────────────────────────────────────────────────────────────
-  const [clinicServices,  setClinicServices]  = useState<string[]>([]);
-  const [clinicBiayaMin,  setClinicBiayaMin]  = useState("");
-  const [clinicBiayaMax,  setClinicBiayaMax]  = useState("");
+  const [clinicServices,   setClinicServices]   = useState<string[]>([]);
+  const [clinicFacilities, setClinicFacilities] = useState("");
+  const [clinicBiayaMin,   setClinicBiayaMin]   = useState("");
+  const [clinicBiayaMax,   setClinicBiayaMax]   = useState("");
 
   // ── Cafe extras ──────────────────────────────────────────────────────────────
-  const [cafeBudget, setCafeBudget] = useState("");
+  const [cafeBudget,     setCafeBudget]     = useState("");
+  const [cafeFacilities, setCafeFacilities] = useState("");
+  const [cafePriceMin,   setCafePriceMin]   = useState("");
+  const [cafePriceMax,   setCafePriceMax]   = useState("");
 
   // ── Swimming pool extras ─────────────────────────────────────────────────────
-  const [poolPriceMin, setPoolPriceMin] = useState("");
-  const [poolPriceMax, setPoolPriceMax] = useState("");
+  const [poolFacilities, setPoolFacilities] = useState("");
+  const [poolPriceMin,   setPoolPriceMin]   = useState("");
+  const [poolPriceMax,   setPoolPriceMax]   = useState("");
 
   // ── Mini-zoo extras ──────────────────────────────────────────────────────────
-  const [miniZooPriceMin, setMiniZooPriceMin] = useState("");
-  const [miniZooPriceMax, setMiniZooPriceMax] = useState("");
+  const [miniZooFacilities, setMiniZooFacilities] = useState("");
+  const [miniZooPriceMin,   setMiniZooPriceMin]   = useState("");
+  const [miniZooPriceMax,   setMiniZooPriceMax]   = useState("");
 
   // ── Hours & social ───────────────────────────────────────────────────────────
   const [hours,     setHours]     = useState("");
@@ -416,7 +440,7 @@ export default function ListYourPlacePage() {
           {errors.category && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrCategory}</p>}
         </div>
 
-        {/* ── 3. Area ─────────────────────────────────────────────────────────── */}
+        {/* ── 3. Area & Contact ───────────────────────────────────────────────── */}
         <div style={FIELD}>
           <label style={LABEL}>{t.listLabelArea} <span style={{ color: "#ef4444" }}>*</span></label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -443,17 +467,29 @@ export default function ListYourPlacePage() {
           {errors.address && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrAddress}</p>}
         </div>
 
-        {/* ── 4. Phone ────────────────────────────────────────────────────────── */}
-        <div style={FIELD}>
-          <label style={LABEL}>{t.listLabelPhone} <span style={{ color: "#ef4444" }}>*</span></label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
-            placeholder="0812-3456-7890"
-            style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#fff" }}
-          />
-          {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
+        {/* ── 4. Phone & WhatsApp ─────────────────────────────────────────────── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
+          <div>
+            <label style={LABEL}>{t.listLabelPhone} <span style={{ color: "#ef4444" }}>*</span></label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => { setPhone(e.target.value); setErrors(prev => ({ ...prev, phone: false })); }}
+              placeholder="021-7654321"
+              style={{ ...INPUT, border: `1.5px solid ${errors.phone ? "#ef4444" : "#e2e8f0"}`, background: errors.phone ? "#fff5f5" : "#fff" }}
+            />
+            {errors.phone && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4, fontFamily: "var(--font-jakarta), sans-serif" }}>{t.listErrPhone}</p>}
+          </div>
+          <div>
+            <label style={LABEL}>WhatsApp <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+            <input
+              type="tel"
+              value={whatsapp}
+              onChange={e => setWhatsapp(e.target.value)}
+              placeholder="0812-3456-7890"
+              style={INPUT}
+            />
+          </div>
         </div>
 
         {/* ── 6. Category-specific fields ─────────────────────────────────────── */}
@@ -483,18 +519,55 @@ export default function ListYourPlacePage() {
               </div>
             </div>
             <div style={FIELD}>
+              <label style={LABEL}>Siswa per Kelas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <input
+                type="number"
+                value={studentsPerClass}
+                onChange={e => setStudentsPerClass(e.target.value)}
+                placeholder="mis. 25"
+                style={INPUT}
+              />
+            </div>
+            <div style={FIELD}>
               <label style={LABEL}>{t.listLabelUangPangkal}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <PriceInput value={uangPangkalMin} onChange={setUangPangkalMin} placeholder="Min" />
                 <PriceInput value={uangPangkalMax} onChange={setUangPangkalMax} placeholder="Max" />
               </div>
             </div>
-            <div style={{ ...FIELD, marginBottom: 0 }}>
+            <div style={FIELD}>
+              <label style={LABEL}>Annual Fee</label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={annualFeeMin} onChange={setAnnualFeeMin} placeholder="Min" />
+                <PriceInput value={annualFeeMax} onChange={setAnnualFeeMax} placeholder="Max" />
+              </div>
+            </div>
+            <div style={FIELD}>
               <label style={LABEL}>{t.listLabelSpp}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <PriceInput value={sppMin} onChange={setSppMin} placeholder="Min" />
                 <PriceInput value={sppMax} onChange={setSppMax} placeholder="Max" />
               </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={schoolFacilities}
+                onChange={e => setSchoolFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Lab Komputer, Kolam Renang, Lapangan Olahraga..."
+                style={{ ...INPUT, resize: "none" }}
+              />
+            </div>
+            <div style={{ ...FIELD, marginBottom: 0 }}>
+              <label style={LABEL}>Ekstrakurikuler <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={extracurriculars}
+                onChange={e => setExtracurriculars(e.target.value)}
+                rows={3}
+                placeholder="mis. Basket, Pramuka, Paduan Suara, Robotik..."
+                style={{ ...INPUT, resize: "none" }}
+              />
             </div>
           </div>
         )}
@@ -509,6 +582,40 @@ export default function ListYourPlacePage() {
                 {COURSE_TYPES.map(c => (
                   <CheckChip key={c} label={c} checked={courseTypes.includes(c)} onChange={() => toggleMulti(courseTypes, setCourseTypes, c)} />
                 ))}
+              </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Rentang Usia <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="number" value={lcAgeMin} onChange={e => setLcAgeMin(e.target.value)} placeholder="Min" style={{ ...INPUT, flex: 1 }} />
+                <span style={{ color: "#94a3b8", fontSize: 13, flexShrink: 0 }}>–</span>
+                <input type="number" value={lcAgeMax} onChange={e => setLcAgeMax(e.target.value)} placeholder="Max" style={{ ...INPUT, flex: 1 }} />
+                <span style={{ color: "#64748b", fontSize: 13, flexShrink: 0 }}>thn</span>
+              </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Rasio Guru:Murid <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <input
+                type="text"
+                value={lcTeacherRatio}
+                onChange={e => setLcTeacherRatio(e.target.value)}
+                placeholder="mis. 1:6"
+                style={INPUT}
+              />
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Free Trial <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["Ada", "Tidak Ada"] as const).map(v => (
+                  <RadioChip key={v} name="lc-free-trial" value={v} label={v} checked={lcFreeTrial === v} onChange={() => setLcFreeTrial(v)} />
+                ))}
+              </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Biaya Pendaftaran <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={lcRegFeeMin} onChange={setLcRegFeeMin} placeholder="Min" />
+                <PriceInput value={lcRegFeeMax} onChange={setLcRegFeeMax} placeholder="Max" />
               </div>
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
@@ -533,6 +640,47 @@ export default function ListYourPlacePage() {
                 ))}
               </div>
             </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Metode / Kurikulum <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <FieldSelect value={daycareMethod} onChange={setDaycareMethod}
+                options={["Montessori","Play-based","Structured","Waldorf","Reggio Emilia"]} placeholder="—" />
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Rasio Pengasuh:Anak <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <input
+                type="text"
+                value={daycareCarerRatio}
+                onChange={e => setDaycareCarerRatio(e.target.value)}
+                placeholder="mis. 1:4"
+                style={INPUT}
+              />
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>CCTV <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["Ada", "Tidak Ada"] as const).map(v => (
+                  <RadioChip key={v} name="dc-cctv" value={v} label={v} checked={daycareCctv === v} onChange={() => setDaycareCctv(v)} />
+                ))}
+              </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Akreditasi <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["Ada", "Tidak Ada"] as const).map(v => (
+                  <RadioChip key={v} name="dc-accred" value={v} label={v} checked={daycareAccred === v} onChange={() => setDaycareAccred(v)} />
+                ))}
+              </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={daycareFacilities}
+                onChange={e => setDaycareFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Ruang bermain, CCTV, Makan siang, Antar jemput..."
+                style={{ ...INPUT, resize: "none" }}
+              />
+            </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMonthlyPrice}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -554,6 +702,16 @@ export default function ListYourPlacePage() {
                   <CheckChip key={p} label={p} checked={pgTypes.includes(p)} onChange={() => toggleMulti(pgTypes, setPgTypes, p)} />
                 ))}
               </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={pgFacilities}
+                onChange={e => setPgFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Trampolin, Climbing wall, Kolam bola, Kafetaria..."
+                style={{ ...INPUT, resize: "none" }}
+              />
             </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelTicket}</label>
@@ -577,6 +735,16 @@ export default function ListYourPlacePage() {
                 ))}
               </div>
             </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={clinicFacilities}
+                onChange={e => setClinicFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Ruang terapi individual, Area tunggu anak, Parkir..."
+                style={{ ...INPUT, resize: "none" }}
+              />
+            </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelBiaya}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -591,13 +759,30 @@ export default function ListYourPlacePage() {
         {category === "cafe" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreCafes}`} />
-            <div style={{ ...FIELD, marginBottom: 0 }}>
+            <div style={FIELD}>
               <label style={LABEL}>{t.listLabelBudget}</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
                 {BUDGET_LEVELS.map(b => (
                   <RadioChip key={b} name="cafe-budget" value={b} label={b} checked={cafeBudget === b} onChange={() => setCafeBudget(b)} />
                 ))}
               </div>
+            </div>
+            <div style={FIELD}>
+              <label style={LABEL}>Kisaran Harga <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <PriceInput value={cafePriceMin} onChange={setCafePriceMin} placeholder="Min" />
+                <PriceInput value={cafePriceMax} onChange={setCafePriceMax} placeholder="Max" />
+              </div>
+            </div>
+            <div style={{ ...FIELD, marginBottom: 0 }}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={cafeFacilities}
+                onChange={e => setCafeFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Play area, Nursing room, Stroller-friendly, Parkir..."
+                style={{ ...INPUT, resize: "none" }}
+              />
             </div>
           </div>
         )}
@@ -606,6 +791,16 @@ export default function ListYourPlacePage() {
         {category === "mini-zoo" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreMiniZoo}`} />
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={miniZooFacilities}
+                onChange={e => setMiniZooFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Feeding session, Kandang interaktif, Area bermain, Kafetaria..."
+                style={{ ...INPUT, resize: "none" }}
+              />
+            </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelMiniZooTicket}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -620,6 +815,16 @@ export default function ListYourPlacePage() {
         {category === "swimming-pool" && (
           <div style={{ background: "#fff", borderRadius: 16, padding: "16px", border: "1.5px solid #a7d4bc", marginBottom: 18 }}>
             <SectionDivider label={`+ ${t.exploreSwimmingPools}`} />
+            <div style={FIELD}>
+              <label style={LABEL}>Fasilitas <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(opsional)</span></label>
+              <textarea
+                value={poolFacilities}
+                onChange={e => setPoolFacilities(e.target.value)}
+                rows={3}
+                placeholder="mis. Kolam anak, Kolam dewasa, Loker, Kantin..."
+                style={{ ...INPUT, resize: "none" }}
+              />
+            </div>
             <div style={{ ...FIELD, marginBottom: 0 }}>
               <label style={LABEL}>{t.listLabelPoolPrice}</label>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
