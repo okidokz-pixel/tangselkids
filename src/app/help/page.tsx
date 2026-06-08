@@ -3,9 +3,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, HelpCircle, ChevronDown } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
-import { ActionButton } from "@/components/ActionButton";
-import { useAuth } from "@/context/AuthContext";
-import { FilterGateSheet } from "@/components/FilterGateSheet";
 
 const faqs = [
   {
@@ -48,9 +45,7 @@ const faqs = [
 
 export default function HelpPage() {
   const router = useRouter();
-  const { tier } = useAuth();
   const [open, setOpen] = useState<number | null>(null);
-  const [showUpgradeSheet, setShowUpgradeSheet] = useState(false);
 
   function toggle(i: number) {
     setOpen((prev) => (prev === i ? null : i));
@@ -140,54 +135,9 @@ export default function HelpPage() {
           </div>
         ))}
 
-        {/* Still need help */}
-        <div style={{
-          marginTop: 8, padding: "20px", borderRadius: 20,
-          background: tier === "premium" ? "linear-gradient(135deg, #e6f4ed, #e6f4ed)" : "#f1f5f9",
-          border: tier === "premium" ? "1.5px solid #a7d4bc" : "1.5px dashed #cbd5e1",
-          textAlign: "center",
-        }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#0e1d4f", margin: "0 0 4px", fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-            Masih ada pertanyaan?
-          </p>
-          <p style={{ fontSize: 12.5, color: "#475569", margin: "0 0 14px", lineHeight: 1.5, fontFamily: "var(--font-jakarta), sans-serif" }}>
-            {tier === "premium" ? "Kami siap membantu kamu langsung." : "Fitur ini tersedia untuk pengguna Premium."}
-          </p>
-          {tier === "premium" ? (
-            <a
-              href="/feedback"
-              style={{
-                display: "inline-block", padding: "10px 24px", borderRadius: 999,
-                background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
-                fontSize: 13, fontWeight: 700, textDecoration: "none",
-                fontFamily: "var(--font-jakarta), sans-serif",
-              }}
-            >
-              Kirim Pertanyaan →
-            </a>
-          ) : (
-            <ActionButton
-              onClick={() => setShowUpgradeSheet(true)}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
-                padding: "10px 24px", borderRadius: 999,
-                background: "linear-gradient(135deg, #f59e0b, #d97706)", color: "#fff",
-                fontSize: 13, fontWeight: 700,
-                fontFamily: "var(--font-jakarta), sans-serif",
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Upgrade ke Premium
-            </ActionButton>
-          )}
-        </div>
       </div>
 
       <BottomNav active="profile" />
-      <FilterGateSheet isOpen={showUpgradeSheet} onClose={() => setShowUpgradeSheet(false)} />
     </div>
   );
 }

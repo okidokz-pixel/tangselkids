@@ -398,8 +398,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     const next = adding ? [...ids, placeId] : ids.filter((x) => x !== placeId);
     localStorage.setItem("savedIds", JSON.stringify(next));
     setIsSaved(next.includes(placeId));
-    if (adding) addSaved(placeId, user?.phone);
-    else removeSaved(placeId, user?.phone);
+    if (adding) addSaved(placeId, user?.id);
+    else removeSaved(placeId, user?.id);
     if (favTooltipTimer.current) clearTimeout(favTooltipTimer.current);
     setFavTooltip(adding ? "add" : "remove");
     favTooltipTimer.current = setTimeout(() => setFavTooltip(null), 2200);
@@ -1617,7 +1617,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 <ActionButton
                   onClick={() => {
                     if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
-                    deleteNote(place?.id ?? slug);
+                    deleteNote(place?.id ?? slug, user?.id);
                     setNoteText(""); setNoteUpdatedAt(null); setNoteEditing(false);
                   }}
                   style={{
@@ -1653,7 +1653,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                     onClick={() => {
                       if (saveTimerRef.current) { clearTimeout(saveTimerRef.current); saveTimerRef.current = null; }
                       const now = new Date().toISOString();
-                      saveNote({ placeId: place?.id ?? slug, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now });
+                      saveNote({ placeId: place?.id ?? slug, placeName: place.name, placeCategory: place.category, placeIcon: place.icon, noteText, updatedAt: now }, user?.id);
                       setNoteUpdatedAt(now);
                       setNoteEditing(false);
                     }}

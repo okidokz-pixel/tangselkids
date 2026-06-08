@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   User, Globe, Bell, Info, MessageSquare, HelpCircle,
-  ChevronRight, Heart, Pencil, LogOut, MapPin,
-  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera, Crown,
+  ChevronRight, Heart, Pencil, LogOut,
+  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera, Crown, ShieldCheck,
 } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -16,7 +16,6 @@ import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLoginSheet } from "@/context/LoginSheetContext";
 import { getReviews } from "@/lib/reviewsStorage";
 import { getAllNotes, type FacilityNote } from "@/lib/notesStorage";
-import { MapPicker } from "@/components/MapPicker";
 import { ImageCropper } from "@/components/ImageCropper";
 import { PremiumBadge } from "@/components/PremiumBadge";
 
@@ -48,16 +47,9 @@ export default function ProfilePage() {
   // Edit mode state
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editAddress, setEditAddress] = useState("");
-  const [editAddressLat, setEditAddressLat] = useState<number | undefined>(undefined);
-  const [editAddressLng, setEditAddressLng] = useState<number | undefined>(undefined);
   const [editDob, setEditDob] = useState("");
   const [editKids, setEditKids] = useState<Kid[]>([]);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [geoError, setGeoError] = useState("");
-  const [showMapPicker, setShowMapPicker] = useState(false);
   const [nameError, setNameError] = useState(false);
-  const [addressError, setAddressError] = useState(false);
 
   useEffect(() => {
     const ids: string[] = JSON.parse(localStorage.getItem("savedIds") || "[]");
@@ -78,48 +70,14 @@ export default function ProfilePage() {
   function openEdit() {
     if (!user) return;
     setEditName(user.name);
-    setEditAddress(user.address);
-    setEditAddressLat(user.addressLat);
-    setEditAddressLng(user.addressLng);
     setEditDob(user.dob || "");
     setEditKids((user.kids ?? []).map((k) => ({ ...k })));
     setNameError(false);
-    setAddressError(false);
     setEditing(true);
   }
 
   function cancelEdit() {
     setEditing(false);
-  }
-
-  async function useMyLocation() {
-    setGeoError("");
-    if (!navigator.geolocation) {
-      setGeoError("Location unavailable. Please type your address manually.");
-      return;
-    }
-    setGeoLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setEditAddressLat(lat);
-        setEditAddressLng(lng);
-        try {
-          const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
-          const data = await res.json();
-          const addr = data.results?.[0]?.formatted_address;
-          setEditAddress(addr || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        } catch {
-          setEditAddress(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        }
-        setGeoLoading(false);
-      },
-      () => {
-        setGeoLoading(false);
-        setGeoError("Location unavailable. Please type your address manually.");
-      },
-      { timeout: 10000, enableHighAccuracy: false }
-    );
   }
 
   function addKid() {
@@ -135,33 +93,10 @@ export default function ProfilePage() {
   }
 
   async function saveEdit() {
-    let valid = true;
-    if (!editName.trim()) { setNameError(true); valid = false; }
-    if (!editAddress.trim()) { setAddressError(true); valid = false; }
-    if (!valid) return;
-
-    // If no pin coordinates, silently geocode the typed address via Nominatim
-    let lat = editAddressLat;
-    let lng = editAddressLng;
-    if (!lat || !lng) {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(editAddress.trim())}&limit=1&countrycodes=id`
-        );
-        const results = await res.json();
-        if (results?.[0]) {
-          lat = parseFloat(results[0].lat);
-          lng = parseFloat(results[0].lon);
-        }
-      } catch {}
-    }
-
-    register({
+    if (!editName.trim()) { setNameError(true); return; }
+    await register({
       phone: user!.phone,
       name: editName.trim(),
-      address: editAddress.trim(),
-      addressLat: lat,
-      addressLng: lng,
       dob: editDob || undefined,
       kids: editKids.filter((k) => k.name.trim()),
     });
@@ -185,16 +120,12 @@ export default function ProfilePage() {
     e.target.value = "";
   }
 
-  const mapSrc = (lat?: number, lng?: number) => {
-    if (!lat || !lng) return null;
-    const d = 0.005;
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d}%2C${lat - d}%2C${lng + d}%2C${lat + d}&layer=mapnik&marker=${lat}%2C${lng}`;
-  };
-
   const appRows: { Icon: React.ElementType; label: string; value: string; href?: string }[] = [
     { Icon: Info,          label: t.profileAbout,    value: "", href: "/about" },
     { Icon: MessageSquare, label: t.profileFeedback, value: "", href: "/feedback" },
     { Icon: HelpCircle,    label: t.profileHelp,     value: "", href: "/help" },
+    { Icon: FileText,      label: t.profileTerms,    value: "", href: "/terms" },
+    { Icon: ShieldCheck,   label: t.profilePrivacy,  value: "", href: "/privacy" },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -476,71 +407,6 @@ export default function ProfilePage() {
                 {nameError && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>Name is required</p>}
               </div>
 
-              {/* Address */}
-              <div>
-                <label className="block font-jakarta text-xs font-semibold mb-1.5" style={{ color: "var(--tk-muted)" }}>
-                  Home Address <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <textarea
-                  value={editAddress}
-                  onChange={(e) => { setEditAddress(e.target.value); setAddressError(false);
-                    setEditAddressLat(undefined); setEditAddressLng(undefined); }}
-                  rows={3}
-                  placeholder="Jl. Contoh No. 1, Bintaro Sektor 7..."
-                  style={{
-                    width: "100%", padding: "11px 14px", borderRadius: 12, fontSize: 13,
-                    fontFamily: "var(--font-jakarta), sans-serif", fontWeight: 500, outline: "none", resize: "none",
-                    border: `1.5px solid ${addressError ? "#ef4444" : "#e2e8f0"}`,
-                    color: "var(--tk-ink)", background: addressError ? "#fff5f5" : "#f6f1e8",
-                    boxSizing: "border-box",
-                  }}
-                />
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <ActionButton
-                    onClick={useMyLocation}
-                    style={{
-                      flex: 1,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                      padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                      background: "#e6f4ed", color: "#2e8a5a", touchAction: "manipulation",
-                      border: "1.5px solid #a7d4bc",
-                    }}
-                  >
-                    <MapPin size={14} />
-                    {geoLoading ? t.obLocating : t.obUseLocation}
-                  </ActionButton>
-                  <ActionButton
-                    onClick={() => setShowMapPicker(true)}
-                    style={{
-                      flex: 1,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                      padding: "8px 10px", borderRadius: 10, fontSize: 12, fontWeight: 700,
-                      background: "#f0fdf4", color: "#16a34a", touchAction: "manipulation",
-                      border: "1.5px solid #bbf7d0",
-                    }}
-                  >
-                    <MapPin size={14} /> {t.obSearchOnMap}
-                  </ActionButton>
-                </div>
-                {geoError && (
-                  <p style={{ fontSize: 12, color: "#f59e0b", marginTop: 6, lineHeight: 1.4, fontWeight: 500 }}>
-                    ⚠ {geoError}
-                  </p>
-                )}
-                {addressError && <p style={{ fontSize: 11, color: "#ef4444", marginTop: 4 }}>Address is required</p>}
-
-                {/* Map preview */}
-                {editAddressLat && editAddressLng && (
-                  <div style={{ marginTop: 10, borderRadius: 12, overflow: "clip", height: 160 }}>
-                    <iframe
-                      src={mapSrc(editAddressLat, editAddressLng)!}
-                      style={{ width: "100%", height: "100%", border: "none" }}
-                      title="Selected location"
-                    />
-                  </div>
-                )}
-              </div>
-
               {/* DOB */}
               <div>
                 <label className="block font-jakarta text-xs font-semibold mb-1.5" style={{ color: "var(--tk-muted)" }}>
@@ -783,19 +649,6 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* ── Map picker sheet ───────────────────────────────────────────────── */}
-      {showMapPicker && (
-        <MapPicker
-          initialAddress={editAddress}
-          onConfirm={(addr, lat, lng) => {
-            setEditAddress(addr);
-            setEditAddressLat(lat);
-            setEditAddressLng(lng);
-            setShowMapPicker(false);
-          }}
-          onClose={() => setShowMapPicker(false)}
-        />
-      )}
     </div>
   );
 }

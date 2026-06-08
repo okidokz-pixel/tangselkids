@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getDashboardStats } from "./actions";
+import { getDashboardStats, getPendingSubmissionsCount } from "./actions";
 import { getGaStats } from "@/lib/ga-data";
 
 export const metadata = { title: "Dashboard" };
@@ -23,9 +23,10 @@ function fmt(n: number) {
 }
 
 export default async function AdminDashboard() {
-  const [stats, ga] = await Promise.all([
+  const [stats, ga, pendingSubmissions] = await Promise.all([
     getDashboardStats(),
     getGaStats().catch(() => null),
+    getPendingSubmissionsCount(),
   ]);
 
   const totalEntries = stats.categories.reduce((s, c) => s + c.total, 0);
@@ -105,6 +106,31 @@ export default async function AdminDashboard() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Submissions card */}
+      <div style={{ background: "#fff", borderRadius: 12, border: pendingSubmissions > 0 ? "1.5px solid #f59e0b" : "1px solid #e5e7eb", marginBottom: 28, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: pendingSubmissions > 0 ? "#fef3c7" : "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+            📬
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0e1d4f" }}>
+              Place Submissions
+              {pendingSubmissions > 0 && (
+                <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: "#f59e0b", color: "#fff" }}>
+                  {pendingSubmissions} pending
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
+              {pendingSubmissions > 0 ? `${pendingSubmissions} submission${pendingSubmissions > 1 ? "s" : ""} awaiting review` : "No pending submissions"}
+            </div>
+          </div>
+        </div>
+        <Link href="/admin/submissions" style={{ padding: "8px 16px", borderRadius: 8, background: "#0e1d4f", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none", flexShrink: 0 }}>
+          Review →
+        </Link>
       </div>
 
       {/* Quick actions */}

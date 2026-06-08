@@ -1,12 +1,11 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { X, ChevronLeft, Navigation, Loader, Plus, Camera, User, MapPin } from "lucide-react";
+import { X, ChevronLeft, Plus, Camera, User } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 import { ImageCropper } from "./ImageCropper";
-import { MapPicker } from "./MapPicker";
 import { legalContent } from "@/lib/legalContent";
 
 type Step = "phone" | "otp" | "profile" | "done";
@@ -58,7 +57,7 @@ const bigConfetti = [
 ];
 
 export function RegisterSheet() {
-  const { register } = useAuth();
+  const { register, sendOtp, verifyOtp } = useAuth();
   const { isOpen, options, closeRegisterSheet } = useRegisterSheet();
   const { t, lang } = useLang();
 
@@ -73,20 +72,16 @@ export function RegisterSheet() {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
+  const [sendingOtp, setSendingOtp]     = useState(false);
+  const [sendOtpError, setSendOtpError] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Profile
   const [name, setName]             = useState("");
   const [nameError, setNameError]   = useState("");
-  const [address, setAddress]       = useState("");
-  const [addressError, setAddressError] = useState("");
-  const [addressLat, setAddressLat] = useState<number | undefined>();
-  const [addressLng, setAddressLng] = useState<number | undefined>();
-  const [locLoading, setLocLoading] = useState(false);
-  const [geoError, setGeoError]     = useState("");
   const [dob, setDob]               = useState("");
   const [kids, setKids]             = useState<Kid[]>([]);
   const [showReveal, setShowReveal] = useState(false);
-  const [showMapPicker, setShowMapPicker] = useState(false);
 
   // Photo
   const [profilePhoto, setProfilePhoto] = useState("");
@@ -115,14 +110,10 @@ export function RegisterSheet() {
       setStep("phone");
       setPhone("");
       setOtp(["", "", "", "", "", ""]);
-      setOtpError("");
+      setOtpError(""); setSendingOtp(false); setSendOtpError(""); setVerifyingOtp(false);
       setName(""); setNameError("");
-      setAddress(""); setAddressError("");
-      setAddressLat(undefined); setAddressLng(undefined);
-      setLocLoading(false); setGeoError("");
       setDob(""); setKids([]);
       setShowReveal(false);
-      setShowMapPicker(false);
       setProfilePhoto(""); setCropperSrc(""); setShowCropper(false);
       setShowExitWarning(false);
       pendingData.current = null;
@@ -151,21 +142,8 @@ export function RegisterSheet() {
     if (step === "done") {
       const revealTimer = setTimeout(() => setShowReveal(true), 350);
       const doneTimer = setTimeout(async () => {
-        let data = pendingData.current;
-        // Silently geocode typed address if no pin coordinates were set
-        if (data && !data.addressLat && !data.addressLng && data.address) {
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(data.address)}&limit=1&countrycodes=id`
-            );
-            const results = await res.json();
-            if (results?.[0]) {
-              data = { ...data, addressLat: parseFloat(results[0].lat), addressLng: parseFloat(results[0].lon) };
-            }
-          } catch {}
-        }
-        if (data) register(data);
-        if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
+        const data = pendingData.current;
+        if (data) await register(data); // saves to Supabase + local photo
         closeRegisterSheet();
         onRegisteredRef.current?.();
       }, 2800);
@@ -182,11 +160,31 @@ export function RegisterSheet() {
     closeRegisterSheet();
   }
 
-  function handleSendOtp() {
+  async function handleSendOtp() {
     if (phone.replace(/\D/g, "").length < 7 || !agreed) return;
+    setSendingOtp(true);
+    setSendOtpError("");
+    const { error } = await sendOtp(`+62${phone.replace(/^0/, "")}`);
+    setSendingOtp(false);
+    if (error) {
+      setSendOtpError("Gagal mengirim kode. Coba lagi.");
+      return;
+    }
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
     setStep("otp");
+  }
+
+  async function doVerify(code: string) {
+    setVerifyingOtp(true);
+    setOtpError("");
+    const { error } = await verifyOtp(`+62${phone.replace(/^0/, "")}`, code);
+    setVerifyingOtp(false);
+    if (error) {
+      setOtpError("Kode salah atau sudah kedaluwarsa. Coba lagi.");
+    } else {
+      setStep("profile");
+    }
   }
 
   function handleOtpChange(i: number, val: string) {
@@ -197,9 +195,8 @@ export function RegisterSheet() {
     if (val && i < 5) requestAnimationFrame(() => otpRefs.current[i + 1]?.focus());
     if (i === 5 && val) {
       const full = [...next];
-      if (full.every(d => d !== "")) {
-        setOtpError("");
-        setStep("profile");
+      if (full.every(d => d !== "") && !verifyingOtp) {
+        doVerify(full.join(""));
       }
     }
   }
@@ -210,29 +207,7 @@ export function RegisterSheet() {
 
   function handleVerifyOtp() {
     if (otp.join("").length !== 6) { setOtpError("Masukkan 6 digit kode"); return; }
-    setOtpError("");
-    setStep("profile");
-  }
-
-  async function handleGetLocation() {
-    setGeoError("");
-    if (!navigator.geolocation) { setGeoError(t.obGeoError); return; }
-    setLocLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
-        setAddressLat(lat); setAddressLng(lng);
-        try {
-          const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`);
-          const data = await res.json();
-          const addr = data.results?.[0]?.formatted_address;
-          if (addr) setAddress(addr);
-        } catch {}
-        setLocLoading(false);
-      },
-      () => { setLocLoading(false); setGeoError(t.obGeoError); },
-      { timeout: 10000, enableHighAccuracy: false }
-    );
+    doVerify(otp.join(""));
   }
 
   function addKid() { setKids([...kids, { name: "", dob: "" }]); }
@@ -255,42 +230,18 @@ export function RegisterSheet() {
     e.target.value = "";
   }
 
-  async function handleSubmit() {
-    let valid = true;
-    if (!name.trim()) { setNameError("Nama wajib diisi"); valid = false; } else setNameError("");
-    if (!address.trim()) { setAddressError("Alamat wajib diisi"); valid = false; } else setAddressError("");
-    if (!valid) return;
-
-    let lat = addressLat;
-    let lng = addressLng;
-
-    // For minimal-profile path, geocode now (no done-animation to hide the wait).
-    // For standard path the geocoding happens during the 2.8s done animation instead.
-    if (options.minimalProfile && !lat && !lng && address.trim()) {
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address.trim())}&limit=1&countrycodes=id`
-        );
-        const results = await res.json();
-        if (results?.[0]) {
-          lat = parseFloat(results[0].lat);
-          lng = parseFloat(results[0].lon);
-        }
-      } catch {}
-    }
+  function handleSubmit() {
+    if (!name.trim()) { setNameError("Nama wajib diisi"); return; } else setNameError("");
 
     const data = {
       phone: `+62${phone.replace(/^0/, "")}`,
       name: name.trim(),
-      address: address.trim(),
-      addressLat: lat,
-      addressLng: lng,
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
+      avatar: profilePhoto || undefined,
     };
     if (options.minimalProfile) {
-      register(data);
-      if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
+      void register(data);
       closeRegisterSheet();
       onRegisteredRef.current?.();
     } else {
@@ -298,10 +249,6 @@ export function RegisterSheet() {
       setStep("done");
     }
   }
-
-  const mapSrc = addressLat && addressLng
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${addressLng - 0.005},${addressLat - 0.005},${addressLng + 0.005},${addressLat + 0.005}&layer=mapnik&marker=${addressLat},${addressLng}`
-    : null;
 
   if (!isOpen) return null;
 
@@ -449,21 +396,6 @@ export function RegisterSheet() {
           zIndex={1100}
           onConfirm={(dataUrl) => { setProfilePhoto(dataUrl); setShowCropper(false); }}
           onCancel={() => setShowCropper(false)}
-        />
-      )}
-
-      {/* Map picker — rendered above the sheet (zIndex 1100) */}
-      {showMapPicker && (
-        <MapPicker
-          initialAddress={address}
-          zIndex={1100}
-          onConfirm={(addr, lat, lng) => {
-            setAddress(addr);
-            setAddressLat(lat);
-            setAddressLng(lng);
-            setShowMapPicker(false);
-          }}
-          onClose={() => setShowMapPicker(false)}
         />
       )}
 
@@ -789,18 +721,24 @@ export function RegisterSheet() {
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "16px 20px", borderRadius: 18,
-                    background: phone.replace(/\D/g, "").length >= 7 && agreed
+                    background: phone.replace(/\D/g, "").length >= 7 && agreed && !sendingOtp
                       ? "linear-gradient(135deg, #128c7e, #25d366)"
                       : "#e2e8f0",
-                    color: phone.replace(/\D/g, "").length >= 7 && agreed ? "#fff" : "#94a3b8",
+                    color: phone.replace(/\D/g, "").length >= 7 && agreed && !sendingOtp ? "#fff" : "#94a3b8",
                     fontWeight: 700, fontSize: 15,
-                    boxShadow: phone.replace(/\D/g, "").length >= 7 && agreed ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
+                    boxShadow: phone.replace(/\D/g, "").length >= 7 && agreed && !sendingOtp ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
+                    opacity: sendingOtp ? 0.75 : 1,
                   }}
                 >
-                  {t.obPhoneBtn}
+                  {sendingOtp ? "Mengirim kode..." : t.obPhoneBtn}
                 </ActionButton>
 
-                <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 16, fontFamily: "var(--font-jakarta), sans-serif" }}>
+                {sendOtpError && (
+                  <p style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginTop: 8, fontFamily: "var(--font-jakarta), sans-serif" }}>
+                    {sendOtpError}
+                  </p>
+                )}
+                <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 12, fontFamily: "var(--font-jakarta), sans-serif" }}>
                   Gratis selamanya · Tanpa kartu kredit
                 </p>
               </div>
@@ -821,8 +759,8 @@ export function RegisterSheet() {
                 <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 4px", lineHeight: 1.5 }}>
                   {t.obOtpDesc(phone)}
                 </p>
-                <p style={{ fontSize: 11.5, color: "#f59e0b", margin: "0 0 24px", fontWeight: 600 }}>
-                  {t.obOtpDemo}
+                <p style={{ fontSize: 11.5, color: "#25d366", margin: "0 0 24px", fontWeight: 600 }}>
+                  💬 Kode dikirim via WhatsApp
                 </p>
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 8 }}>
@@ -856,12 +794,13 @@ export function RegisterSheet() {
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "16px 20px", borderRadius: 18,
-                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                    background: verifyingOtp ? "#a0aec0" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                     color: "#fff", fontWeight: 700, fontSize: 15,
-                    boxShadow: "0 8px 24px rgba(30,63,176,0.30)",
+                    boxShadow: verifyingOtp ? "none" : "0 8px 24px rgba(30,107,67,0.30)",
+                    opacity: verifyingOtp ? 0.8 : 1,
                   }}
                 >
-                  {t.obOtpBtn}
+                  {verifyingOtp ? "Memverifikasi..." : t.obOtpBtn}
                 </ActionButton>
               </div>
             )}
@@ -896,100 +835,6 @@ export function RegisterSheet() {
                     }}
                   />
                   {nameError && <p style={errorStyle}>{t.obNameError}</p>}
-                </div>
-
-                {/* Address */}
-                <div style={{ marginBottom: 18 }}>
-                  <label style={labelStyle}>
-                    {t.obAddressLabel} <span style={{ color: "#ef4444" }}>*</span>
-                  </label>
-                  <div style={{
-                    display: "flex", alignItems: "flex-start", gap: 8,
-                    background: "#fffbeb", border: "1.5px solid #f59e0b",
-                    borderRadius: 12, padding: "10px 12px", marginBottom: 12,
-                  }}>
-                    <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔔</span>
-                    <p style={{ margin: 0, fontSize: 12.5, fontWeight: 700, color: "#92400e", lineHeight: 1.45, fontFamily: "var(--font-jakarta, sans-serif)" }}>
-                      <span style={{ color: "#d97706" }}>PENTING!</span>{" "}
-                      Agar kami dapat menemukan tempat terdekat dari rumahmu.
-                    </p>
-                  </div>
-                  {/* Location buttons */}
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <ActionButton
-                      onClick={handleGetLocation}
-                      style={{
-                        flex: 1, minWidth: 0,
-                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        padding: "12px 10px", borderRadius: 14,
-                        background: address.trim() ? "#f1f5f9" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
-                        color: address.trim() ? "#94a3b8" : "#fff",
-                        fontSize: 13.5, fontWeight: 700,
-                        boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
-                      }}
-                    >
-                      {locLoading
-                        ? <><Loader size={14} style={{ animation: "rs-spin 1s linear infinite" }} /> {t.obLocating}</>
-                        : <><Navigation size={14} /> {t.obUseLocation}</>
-                      }
-                    </ActionButton>
-                    <ActionButton
-                      onClick={() => setShowMapPicker(true)}
-                      style={{
-                        flex: 1, minWidth: 0,
-                        display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        padding: "12px 10px", borderRadius: 14,
-                        background: address.trim() ? "#f1f5f9" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
-                        color: address.trim() ? "#94a3b8" : "#fff",
-                        fontSize: 13.5, fontWeight: 700,
-                        boxShadow: address.trim() ? "none" : "0 6px 20px rgba(46,138,90,0.30)",
-                      }}
-                    >
-                      <MapPin size={14} /> {t.obSearchOnMap}
-                    </ActionButton>
-                  </div>
-
-                  {/* Detected status chip + editable address — only after location is set */}
-                  {address && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        background: "#dcfce7", borderRadius: 999, padding: "3px 10px",
-                        marginBottom: 8,
-                      }}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#15803d", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-                          Lokasi terdeteksi
-                        </span>
-                      </div>
-                      <textarea
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        rows={2}
-                        style={{ ...inputStyle, resize: "none", fontSize: 13 }}
-                      />
-                    </div>
-                  )}
-
-                  {addressError && <p style={{ ...errorStyle, marginTop: 6 }}>{t.obAddressError}</p>}
-                  {geoError && (
-                    <p style={{ fontSize: 11.5, color: "#f59e0b", marginTop: 6, lineHeight: 1.4, fontWeight: 500 }}>
-                      ⚠ {geoError}
-                    </p>
-                  )}
-                  {mapSrc && (
-                    <div style={{ marginTop: 12, borderRadius: 14, overflow: "clip", border: "1.5px solid #e2e8f0", height: 150 }}>
-                      <iframe
-                        src={mapSrc}
-                        width="100%"
-                        height="150"
-                        style={{ border: "none", display: "block", pointerEvents: "none" }}
-                        title={t.obAddressLabel}
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Profile Photo — hidden in minimalProfile (upgrade) flow */}
@@ -1160,19 +1005,16 @@ export function RegisterSheet() {
 
                 {/* Submit */}
                 <ActionButton
-                  onClick={address.trim() ? handleSubmit : () => {}}
+                  onClick={handleSubmit}
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "17px 20px", borderRadius: 18,
-                    background: address.trim()
-                      ? "linear-gradient(135deg, #1f6b43, #2e8a5a)"
-                      : "#e2e8f0",
-                    color: address.trim() ? "#fff" : "#94a3b8",
+                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                    color: "#fff",
                     fontWeight: 700, fontSize: 16,
-                    boxShadow: address.trim() ? "0 8px 24px rgba(46,138,90,0.35)" : "none",
+                    boxShadow: "0 8px 24px rgba(46,138,90,0.35)",
                     fontFamily: "var(--font-fraunces), Georgia, serif",
                     letterSpacing: -0.3,
-                    cursor: address.trim() ? "pointer" : "default",
                   }}
                 >
                   {t.obSubmitBtn}

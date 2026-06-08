@@ -645,3 +645,65 @@ export async function getDashboardStats() {
     })),
   };
 }
+
+// ── Place Submissions ─────────────────────────────────────────────────────────
+
+export async function getSubmissions(status?: string) {
+  await assertAdmin();
+  let query = supabaseAdmin
+    .from("place_submissions")
+    .select("id,name,category,area,status,created_at,submitter_name,submitter_phone")
+    .order("created_at", { ascending: false });
+  if (status && status !== "all") {
+    query = query.eq("status", status);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getSubmission(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("place_submissions")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSubmissionStatus(
+  id: string,
+  status: "pending" | "approved" | "rejected",
+  admin_notes?: string,
+) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("place_submissions")
+    .update({ status, admin_notes: admin_notes ?? null, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/submissions");
+  revalidatePath(`/admin/submissions/${id}`);
+}
+
+export async function deleteSubmission(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("place_submissions").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/submissions");
+}
+
+export async function getPendingSubmissionsCount(): Promise<number> {
+  try {
+    await assertAdmin();
+    const { count } = await supabaseAdmin
+      .from("place_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}

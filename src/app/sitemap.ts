@@ -21,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === "/" ? 1.0 : 0.8,
   }));
 
+  const legal_entries: MetadataRoute.Sitemap = ["/terms", "/privacy"].map((path) => ({
+    url: `${SITE_URL}${path}`,
+    changeFrequency: "yearly",
+    priority: 0.3,
+  }));
+
   const [slugResults, articlesData] = await Promise.all([
     Promise.all(
       TABLES.map(async (table) => {
@@ -50,5 +56,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...static_entries, ...place_entries, ...article_entries];
+  return [...static_entries, ...legal_entries, ...place_entries, ...article_entries];
 }

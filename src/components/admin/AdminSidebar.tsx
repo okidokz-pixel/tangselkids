@@ -6,9 +6,10 @@ import { useState } from "react";
 import { createAdminClient } from "@/lib/supabase-browser";
 
 const NAV_MAIN = [
-  { label: "Dashboard", href: "/admin" },
-  { label: "Articles", href: "/admin/articles" },
-  { label: "Analytics", href: "/admin/analytics" },
+  { label: "Dashboard",   href: "/admin" },
+  { label: "Submissions", href: "/admin/submissions" },
+  { label: "Articles",    href: "/admin/articles" },
+  { label: "Analytics",   href: "/admin/analytics" },
 ];
 
 const NAV_CATEGORIES = [

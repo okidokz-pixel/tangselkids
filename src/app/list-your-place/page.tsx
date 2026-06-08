@@ -5,6 +5,9 @@ import { ChevronLeft, X } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { BottomNav } from "@/components/BottomNav";
+import { useAuth } from "@/context/AuthContext";
+import { useLoginSheet } from "@/context/LoginSheetContext";
+import { useRegisterSheet } from "@/context/RegisterSheetContext";
 
 
 // ── Category-specific options ─────────────────────────────────────────────────
@@ -213,6 +216,9 @@ function SocialRow({
 export default function ListYourPlacePage() {
   const { t } = useLang();
   const router = useRouter();
+  const { user, loaded } = useAuth();
+  const { openLoginSheet } = useLoginSheet();
+  const { openRegisterSheet } = useRegisterSheet();
 
   // Build category list from translations (matches home page labels)
   const CATEGORIES = [
@@ -312,29 +318,46 @@ export default function ListYourPlacePage() {
   const [logo, setLogo] = useState("");
   const logoInputRef = useRef<HTMLInputElement>(null);
 
-  function handleLogoAdd(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleLogoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setLogo(ev.target?.result as string);
-    reader.readAsDataURL(file);
     e.target.value = "";
+    setLogoUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/upload-place-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      setLogo(json.url);
+    } catch {
+      alert("Gagal upload logo. Coba lagi.");
+    } finally {
+      setLogoUploading(false);
+    }
   }
 
   // ── Photos (up to 10) ────────────────────────────────────────────────────────
   const [photos, setPhotos] = useState<string[]>([]);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handlePhotoAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || photos.length >= 10) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setPhotos(prev => [...prev, result]);
-    };
-    reader.readAsDataURL(file);
     e.target.value = "";
+    setUploadingCount(n => n + 1);
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/upload-place-photo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Upload failed");
+      setPhotos(prev => [...prev, json.url]);
+    } catch {
+      alert("Gagal upload foto. Coba lagi.");
+    } finally {
+      setUploadingCount(n => n - 1);
+    }
   }
 
   // ── Related YouTube videos ────────────────────────────────────────────────────
@@ -342,6 +365,11 @@ export default function ListYourPlacePage() {
 
   // ── Google Maps location ──────────────────────────────────────────────────────
   const [gmapsUrl, setGmapsUrl] = useState("");
+
+  // ── Upload / submit state ─────────────────────────────────────────────────────
+  const [logoUploading,  setLogoUploading]  = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const [submitting,     setSubmitting]     = useState(false);
 
   // ── Errors ───────────────────────────────────────────────────────────────────
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -362,13 +390,116 @@ export default function ListYourPlacePage() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit() {
+  function buildCategoryData(): Record<string, unknown> | null {
+    switch (category) {
+      case "school": return {
+        curriculum: curriculum || null,
+        bahasa: bahasa.length ? bahasa : null,
+        grades: grades.length ? grades : null,
+        students_per_class: studentsPerClass ? Number(studentsPerClass) : null,
+        uang_pangkal_min: uangPangkalMin ? Number(uangPangkalMin) : null,
+        uang_pangkal_max: uangPangkalMax ? Number(uangPangkalMax) : null,
+        annual_fee_min: annualFeeMin ? Number(annualFeeMin) : null,
+        annual_fee_max: annualFeeMax ? Number(annualFeeMax) : null,
+        spp_min: sppMin ? Number(sppMin) : null,
+        spp_max: sppMax ? Number(sppMax) : null,
+        facilities: schoolFacilities || null,
+        extracurriculars: extracurriculars || null,
+      };
+      case "learning-center": return {
+        course_types: courseTypes.length ? courseTypes : null,
+        age_min: lcAgeMin ? Number(lcAgeMin) : null,
+        age_max: lcAgeMax ? Number(lcAgeMax) : null,
+        teacher_ratio: lcTeacherRatio || null,
+        free_trial: lcFreeTrial || null,
+        reg_fee_min: lcRegFeeMin ? Number(lcRegFeeMin) : null,
+        reg_fee_max: lcRegFeeMax ? Number(lcRegFeeMax) : null,
+        price_min: lcPriceMin ? Number(lcPriceMin) : null,
+        price_max: lcPriceMax ? Number(lcPriceMax) : null,
+      };
+      case "daycare": return {
+        ages: daycareAges.length ? daycareAges : null,
+        method: daycareMethod || null,
+        carer_ratio: daycareCarerRatio || null,
+        cctv: daycareCctv || null,
+        accreditation: daycareAccred || null,
+        facilities: daycareFacilities || null,
+        price_min: daycarePriceMin ? Number(daycarePriceMin) : null,
+        price_max: daycarePriceMax ? Number(daycarePriceMax) : null,
+      };
+      case "playground": return {
+        types: pgTypes.length ? pgTypes : null,
+        facilities: pgFacilities || null,
+        price_min: pgPriceMin ? Number(pgPriceMin) : null,
+        price_max: pgPriceMax ? Number(pgPriceMax) : null,
+      };
+      case "clinic": return {
+        services: clinicServices.length ? clinicServices : null,
+        facilities: clinicFacilities || null,
+        biaya_min: clinicBiayaMin ? Number(clinicBiayaMin) : null,
+        biaya_max: clinicBiayaMax ? Number(clinicBiayaMax) : null,
+      };
+      case "cafe": return {
+        budget: cafeBudget || null,
+        facilities: cafeFacilities || null,
+        price_min: cafePriceMin ? Number(cafePriceMin) : null,
+        price_max: cafePriceMax ? Number(cafePriceMax) : null,
+      };
+      case "mini-zoo": return {
+        facilities: miniZooFacilities || null,
+        price_min: miniZooPriceMin ? Number(miniZooPriceMin) : null,
+        price_max: miniZooPriceMax ? Number(miniZooPriceMax) : null,
+      };
+      case "swimming-pool": return {
+        facilities: poolFacilities || null,
+        price_min: poolPriceMin ? Number(poolPriceMin) : null,
+        price_max: poolPriceMax ? Number(poolPriceMax) : null,
+      };
+      default: return null;
+    }
+  }
+
+  async function handleSubmit() {
     if (!validate()) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    const encoded = encodeURIComponent(name.trim());
-    router.push(`/list-your-place/upsell?name=${encoded}`);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/submit-place", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:          name.trim(),
+          category,
+          area,
+          address:       address.trim()       || null,
+          phone:         phone.trim()         || null,
+          whatsapp:      whatsapp.trim()      || null,
+          description:   description.trim()   || null,
+          gmaps_url:     gmapsUrl.trim()      || null,
+          hours:         hours.trim()         || null,
+          year_founded:  yearFounded          ? Number(yearFounded)  : null,
+          instagram:     instagram.trim()     || null,
+          facebook:      facebook.trim()      || null,
+          tiktok:        tiktok.trim()        || null,
+          youtube:       youtube.trim()       || null,
+          website:       website.trim()       || null,
+          logo_url:        logo               || null,
+          photos:          photos.filter(Boolean),
+          yt_videos:       ytVideos.filter(Boolean),
+          category_data:   buildCategoryData(),
+          submitter_name:  user?.name         || null,
+          submitter_phone: user?.phone        || null,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Submission failed");
+      router.push(`/list-your-place/submitted?name=${encodeURIComponent(name.trim())}`);
+    } catch {
+      alert("Gagal mengirim formulir. Silakan coba lagi.");
+      setSubmitting(false);
+    }
   }
 
   // ── Shared section divider ───────────────────────────────────────────────────
@@ -386,6 +517,75 @@ export default function ListYourPlacePage() {
       <div style={{ flex: 1, height: 1, background: "#e2e8f0" }} />
     </div>
   );
+
+  // ── Auth gate ─────────────────────────────────────────────────────────────────
+  if (!loaded) {
+    return (
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #e2e8f0", borderTopColor: "#2e8a5a", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ padding: "52px 20px 28px", background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)", borderRadius: "0 0 32px 32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <ActionButton onClick={() => router.back()} style={{ width: 36, height: 36, borderRadius: 999, flexShrink: 0, background: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+              <ChevronLeft size={20} color="white" />
+            </ActionButton>
+            <h1 style={{ margin: 0, fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 24, fontWeight: 700, color: "#fff" }}>
+              {t.listTitle}
+            </h1>
+          </div>
+        </div>
+
+        {/* Gate body */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px", textAlign: "center" }}>
+          <div style={{ fontSize: 56, marginBottom: 20 }}>🏠</div>
+          <h2 style={{ margin: "0 0 12px", fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f" }}>
+            Buat akun dulu, yuk!
+          </h2>
+          <p style={{ margin: "0 0 32px", fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#64748b", lineHeight: 1.65 }}>
+            Untuk mendaftarkan tempatmu, kamu perlu buat akun terlebih dahulu.
+            Kami akan menghubungi kamu melalui <strong>nomor HP yang terdaftar</strong> setelah listing kamu diverifikasi.
+          </p>
+
+          <ActionButton
+            onClick={() => openRegisterSheet({ onRegistered: () => {} })}
+            style={{
+              width: "100%", padding: "15px 0", borderRadius: 16, border: "none",
+              background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+              color: "#fff", fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 15, fontWeight: 800, cursor: "pointer",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              marginBottom: 12,
+            } as React.CSSProperties}
+          >
+            Daftar Sekarang
+          </ActionButton>
+
+          <ActionButton
+            onClick={() => openLoginSheet()}
+            style={{
+              width: "100%", padding: "15px 0", borderRadius: 16,
+              border: "1.5px solid #e2e8f0", background: "#fff",
+              color: "#374151", fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 15, fontWeight: 700, cursor: "pointer",
+              touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+            } as React.CSSProperties}
+          >
+            Sudah punya akun? Masuk
+          </ActionButton>
+        </div>
+
+        <BottomNav active="profile" />
+      </div>
+    );
+  }
 
   // ── Form ─────────────────────────────────────────────────────────────────────
   return (
@@ -942,6 +1142,14 @@ export default function ListYourPlacePage() {
                 <X size={11} color="#fff" strokeWidth={3} />
               </ActionButton>
             </div>
+          ) : logoUploading ? (
+            <div style={{
+              width: 96, height: 96, borderRadius: 16,
+              border: "2px dashed #cbd5e1", background: "#f8fafc",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 12, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>Uploading…</span>
+            </div>
           ) : (
             <ActionButton
               onClick={() => logoInputRef.current?.click()}
@@ -991,8 +1199,19 @@ export default function ListYourPlacePage() {
               </div>
             ))}
 
+            {/* Uploading tiles */}
+            {Array.from({ length: uploadingCount }).map((_, i) => (
+              <div key={`uploading-${i}`} style={{
+                aspectRatio: "1 / 1", borderRadius: 12,
+                background: "#f1f5f9", border: "2px dashed #cbd5e1",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <span style={{ fontSize: 11, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>Uploading…</span>
+              </div>
+            ))}
+
             {/* Add photo tile — shown while count < 10 */}
-            {photos.length < 10 && (
+            {photos.length + uploadingCount < 10 && (
               <ActionButton
                 onClick={() => photoInputRef.current?.click()}
                 style={{
@@ -1069,10 +1288,12 @@ export default function ListYourPlacePage() {
             fontSize: 15, fontWeight: 800, border: "none", cursor: "pointer",
             touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
             boxShadow: "0 4px 16px rgba(37,99,235,0.35)",
+            opacity: (submitting || logoUploading || uploadingCount > 0) ? 0.65 : 1,
+            pointerEvents: (submitting || logoUploading || uploadingCount > 0) ? "none" : "auto",
           } as React.CSSProperties}
         >
-          {t.listSubmit}
-          <span style={{ display: "inline-block", fontSize: 18, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>
+          {submitting ? "Mengirim…" : t.listSubmit}
+          {!submitting && <span style={{ display: "inline-block", fontSize: 18, animation: "arrow-slide 1s ease-in-out infinite" }}>→</span>}
         </ActionButton>
 
         <p style={{

@@ -34,7 +34,7 @@ const subtitleStyle: React.CSSProperties = {
 };
 
 export function LoginSheet() {
-  const { login } = useAuth();
+  const { sendOtp, verifyOtp } = useAuth();
   const { isOpen, closeLoginSheet } = useLoginSheet();
   const { openRegisterSheet } = useRegisterSheet();
   const { t } = useLang();
@@ -44,7 +44,10 @@ export function LoginSheet() {
 
   const phoneRef = useRef<HTMLInputElement>(null);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [sendingOtp, setSendingOtp]     = useState(false);
+  const [sendOtpError, setSendOtpError] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
 
   // Lock body scroll while sheet is open (prevents iOS from scrolling the page
@@ -63,8 +66,8 @@ export function LoginSheet() {
       const timer = setTimeout(() => {
         setStep("phone");
         setPhone("");
-        setOtp(["", "", "", ""]);
-        setOtpError("");
+        setOtp(["", "", "", "", "", ""]);
+        setOtpError(""); setSendingOtp(false); setSendOtpError(""); setVerifyingOtp(false);
       }, 350);
       return () => clearTimeout(timer);
     }
@@ -89,11 +92,37 @@ export function LoginSheet() {
   const phoneDigits = phone.replace(/\D/g, "");
   const phoneReady  = phoneDigits.length >= 7;
 
-  function handleSendOtp() {
+  async function handleSendOtp() {
     if (!phoneReady) return;
+    setSendingOtp(true);
+    setSendOtpError("");
+    const { error } = await sendOtp(`+62${phone.replace(/^0/, "")}`);
+    setSendingOtp(false);
+    if (error) {
+      setSendOtpError("Gagal mengirim kode. Coba lagi.");
+      return;
+    }
     setStep("otp");
-    setOtp(["", "", "", ""]);
+    setOtp(["", "", "", "", "", ""]);
     setOtpError("");
+  }
+
+  async function doVerifyLogin(code: string) {
+    setVerifyingOtp(true);
+    setOtpError("");
+    const { error, isNewUser } = await verifyOtp(`+62${phone.replace(/^0/, "")}`, code);
+    setVerifyingOtp(false);
+    if (error) {
+      setOtpError(t.loginOtpError || "Kode salah. Coba lagi.");
+      return;
+    }
+    if (isNewUser) {
+      // Phone is new — redirect to full registration flow
+      setStep("notfound");
+    } else {
+      setStep("done");
+      setTimeout(() => closeLoginSheet(), 2000);
+    }
   }
 
   function handleOtpChange(idx: number, val: string) {
@@ -102,12 +131,11 @@ export function LoginSheet() {
     next[idx] = val.slice(-1);
     setOtp(next);
     setOtpError("");
-    if (val && idx < 3) requestAnimationFrame(() => otpRefs.current[idx + 1]?.focus());
-    if (idx === 3 && val) {
+    if (val && idx < 5) requestAnimationFrame(() => otpRefs.current[idx + 1]?.focus());
+    if (idx === 5 && val) {
       const full = [...next];
-      if (full.every(d => d !== "")) {
-        setOtpError("");
-        verifyLogin(full);
+      if (full.every(d => d !== "") && !verifyingOtp) {
+        doVerifyLogin(full.join(""));
       }
     }
   }
@@ -118,22 +146,10 @@ export function LoginSheet() {
     }
   }
 
-  function verifyLogin(digits = otp) {
-    if (digits.join("").length < 4) {
-      setOtpError(t.loginOtpError);
-      return;
-    }
-    const found = login(phone);
-    if (found) {
-      setStep("done");
-      setTimeout(() => closeLoginSheet(), 2000);
-    } else {
-      setStep("notfound");
-    }
-  }
-
   function handleVerifyOtp() {
-    verifyLogin();
+    const code = otp.join("");
+    if (code.length < 6) { setOtpError(t.loginOtpError); return; }
+    doVerifyLogin(code);
   }
 
   function handleSwitchToRegister() {
@@ -262,16 +278,23 @@ export function LoginSheet() {
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "16px 20px", borderRadius: 18, marginTop: 20,
-                    background: phoneReady
+                    background: phoneReady && !sendingOtp
                       ? "linear-gradient(135deg, #128c7e, #25d366)"
                       : "#e2e8f0",
-                    color: phoneReady ? "#fff" : "#94a3b8",
+                    color: phoneReady && !sendingOtp ? "#fff" : "#94a3b8",
                     fontWeight: 700, fontSize: 15,
-                    boxShadow: phoneReady ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
+                    boxShadow: phoneReady && !sendingOtp ? "0 8px 24px rgba(37,211,102,0.35)" : "none",
+                    opacity: sendingOtp ? 0.75 : 1,
                   }}
                 >
-                  {t.loginSendOtp}
+                  {sendingOtp ? "Mengirim kode..." : t.loginSendOtp}
                 </ActionButton>
+
+                {sendOtpError && (
+                  <p style={{ fontSize: 12, color: "#ef4444", textAlign: "center", marginTop: 8 }}>
+                    {sendOtpError}
+                  </p>
+                )}
 
                 <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 16 }}>
                   {t.loginNoAccount}{" "}
@@ -299,12 +322,12 @@ export function LoginSheet() {
                   {t.loginOtpSubtitle}{" "}
                   <span style={{ fontWeight: 700, color: "#0f172a" }}>+62{phone}</span>
                 </p>
-                <p style={{ fontSize: 11.5, color: "#f59e0b", margin: "0 0 24px", fontWeight: 600 }}>
-                  Demo: masukkan kode apapun (4 digit)
+                <p style={{ fontSize: 11.5, color: "#25d366", margin: "0 0 24px", fontWeight: 600 }}>
+                  💬 Kode dikirim via WhatsApp
                 </p>
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 8 }}>
-                  {[0, 1, 2, 3].map((i) => (
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
                     <input
                       key={i}
                       ref={el => { otpRefs.current[i] = el; }}
@@ -315,8 +338,8 @@ export function LoginSheet() {
                       onChange={e => handleOtpChange(i, e.target.value)}
                       onKeyDown={e => handleOtpKeyDown(i, e)}
                       style={{
-                        width: 54, height: 60, textAlign: "center", fontSize: 26, fontWeight: 700,
-                        borderRadius: 14, outline: "none", boxSizing: "border-box",
+                        width: 44, height: 54, textAlign: "center", fontSize: 22, fontWeight: 700,
+                        borderRadius: 12, outline: "none", boxSizing: "border-box",
                         border: otp[i] ? "2px solid var(--tk-accent, #2e8a5a)" : "2px solid #e2e8f0",
                         background: otp[i] ? "var(--tk-accent-pale, #e6f4ed)" : "#f8fafc",
                         color: "#0e1d4f",
@@ -336,12 +359,13 @@ export function LoginSheet() {
                   style={{
                     display: "block", width: "100%", textAlign: "center",
                     padding: "16px 20px", borderRadius: 18,
-                    background: "linear-gradient(135deg, #1f6b43, #2e8a5a)",
+                    background: verifyingOtp ? "#a0aec0" : "linear-gradient(135deg, #1f6b43, #2e8a5a)",
                     color: "#fff", fontWeight: 700, fontSize: 15,
-                    boxShadow: "0 8px 24px rgba(30,107,67,0.35)",
+                    boxShadow: verifyingOtp ? "none" : "0 8px 24px rgba(30,107,67,0.35)",
+                    opacity: verifyingOtp ? 0.8 : 1,
                   }}
                 >
-                  {t.loginOtpBtn}
+                  {verifyingOtp ? "Memverifikasi..." : t.loginOtpBtn}
                 </ActionButton>
               </div>
             )}
@@ -349,12 +373,12 @@ export function LoginSheet() {
             {/* ── NOT FOUND STEP ─────────────────────────────────────── */}
             {step === "notfound" && (
               <div style={{ padding: "28px 24px 48px", textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 14 }}>🔍</div>
+                <div style={{ fontSize: 48, marginBottom: 14 }}>👋</div>
                 <h2 style={{ ...titleStyle, textAlign: "center", marginBottom: 8 }}>
-                  {t.loginNotFoundTitle}
+                  Nomor baru!
                 </h2>
                 <p style={{ fontSize: 13, color: "#64748b", marginBottom: 28, lineHeight: 1.6 }}>
-                  {t.loginNotFoundSubtitle}
+                  Nomor +62{phone} belum punya akun. Daftar dulu untuk mulai menyimpan tempat & menulis ulasan.
                 </p>
                 <ActionButton
                   onClick={handleSwitchToRegister}

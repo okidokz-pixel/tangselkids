@@ -139,7 +139,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
       comment:   comment.trim(),
       date:      formatDate(),
     };
-    saveReview(review);
+    saveReview(review, user?.id);
     setExistingReview(review);
     setShowLowRatingPopup(false);
     setShowConfetti(true);

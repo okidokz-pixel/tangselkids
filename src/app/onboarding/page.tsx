@@ -67,7 +67,7 @@ const bigConfetti = [
 
 export default function OnboardingPage() {
   const { t } = useLang();
-  const { register } = useAuth();
+  const { register, sendOtp, verifyOtp } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("splash");
@@ -81,7 +81,10 @@ export default function OnboardingPage() {
   // OTP step
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [otpError, setOtpError] = useState("");
+  const [otpError, setOtpError]         = useState("");
+  const [sendingOtp, setSendingOtp]     = useState(false);
+  const [sendOtpError, setSendOtpError] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   // Profile step
   const [name, setName]               = useState("");
@@ -129,22 +132,42 @@ export default function OnboardingPage() {
     }
     if (step === "done") {
       const revealTimer = setTimeout(() => setShowReveal(true), 350);
-      const navTimer = setTimeout(() => {
-        if (pendingData.current) register(pendingData.current);
+      const navTimer = setTimeout(async () => {
+        if (pendingData.current) await register(pendingData.current);
         sessionStorage.setItem("justRegistered", "1");
         router.replace("/");
       }, 2800);
       return () => { clearTimeout(revealTimer); clearTimeout(navTimer); };
     }
-  }, [step, router]);
+  }, [step, router, register]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function handleSendOtp() {
+  async function handleSendOtp() {
     if (phone.replace(/\D/g, "").length < 7) return;
+    setSendingOtp(true);
+    setSendOtpError("");
+    const { error } = await sendOtp(`+62${phone.replace(/^0/, "")}`);
+    setSendingOtp(false);
+    if (error) {
+      setSendOtpError("Gagal mengirim kode. Coba lagi.");
+      return;
+    }
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
     setStep("otp");
+  }
+
+  async function doVerify(code: string) {
+    setVerifyingOtp(true);
+    setOtpError("");
+    const { error } = await verifyOtp(`+62${phone.replace(/^0/, "")}`, code);
+    setVerifyingOtp(false);
+    if (error) {
+      setOtpError("Kode salah atau sudah kedaluwarsa. Coba lagi.");
+    } else {
+      setStep("verified");
+    }
   }
 
   function handleOtpChange(i: number, val: string) {
@@ -153,12 +176,10 @@ export default function OnboardingPage() {
     next[i] = val.slice(-1);
     setOtp(next);
     if (val && i < 5) otpRefs.current[i + 1]?.focus();
-    // Auto-verify when last digit is entered
     if (i === 5 && val) {
       const full = [...next];
-      if (full.every(d => d !== "")) {
-        setOtpError("");
-        setStep("verified");
+      if (full.every(d => d !== "") && !verifyingOtp) {
+        doVerify(full.join(""));
       }
     }
   }
@@ -169,8 +190,7 @@ export default function OnboardingPage() {
 
   function handleVerifyOtp() {
     if (otp.join("").length !== 6) { setOtpError("Masukkan 6 digit kode"); return; }
-    setOtpError("");
-    setStep("verified");
+    doVerify(otp.join(""));
   }
 
   async function handleGetLocation() {
@@ -236,8 +256,8 @@ export default function OnboardingPage() {
       addressLng,
       dob: dob || undefined,
       kids: kids.filter(k => k.name.trim()),
+      avatar: profilePhoto || undefined,
     };
-    if (profilePhoto) localStorage.setItem("profilePhoto", profilePhoto);
     setStep("done");
   }
 
