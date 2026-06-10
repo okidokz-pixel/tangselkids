@@ -761,6 +761,25 @@ export async function deleteAppUser(id: string) {
   redirect("/admin/users");
 }
 
+// ── Feedback ──────────────────────────────────────────────────────────────────
+
+export async function getAdminFeedback() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("feedback")
+    .select("id,user_id,topic,message,created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function deleteFeedback(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("feedback").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/feedback");
+}
+
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
 export async function getAdminReviews() {

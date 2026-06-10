@@ -10,6 +10,7 @@ const NAV_MAIN = [
   { label: "Users",       href: "/admin/users" },
   { label: "Submissions", href: "/admin/submissions" },
   { label: "Reviews",     href: "/admin/reviews" },
+  { label: "Feedback",    href: "/admin/feedback" },
   { label: "Articles",    href: "/admin/articles" },
   { label: "Analytics",   href: "/admin/analytics" },
 ];
