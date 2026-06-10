@@ -15,6 +15,7 @@ import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLear
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
 import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
@@ -167,7 +168,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [videoOpen,      setVideoOpen]      = useState<string | null>(null);
   const [feeImageOpen,   setFeeImageOpen]   = useState(false);
   const [mapOpen,        setMapOpen]        = useState(false);
-  const [userReview,     setUserReview]     = useState<UserReview | null>(null);
+  const [userReview,        setUserReview]        = useState<UserReview | null>(null);
+  const [publishedReviews,  setPublishedReviews]  = useState<UserReview[]>([]);
   const [showSuggestSheet,  setShowSuggestSheet]  = useState(false);
   const [similarSchools,    setSimilarSchools]    = useState<Place[]>([]);
   const [similarCenters,   setSimilarCenters]    = useState<Place[]>([]);
@@ -241,6 +243,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     }
     loadUserReview();
     window.addEventListener("focus", loadUserReview);
+
+    // Fetch approved reviews from Supabase
+    getSupabaseBrowserClient()
+      .from("reviews")
+      .select("place_id,place_name,place_icon,reviewer_name,rating,comment,created_at")
+      .eq("place_id", placeId)
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!data) return;
+        setPublishedReviews(data.map(r => ({
+          placeId:   r.place_id,
+          placeName: r.place_name  ?? "",
+          placeIcon: r.place_icon  ?? "📍",
+          name:      r.reviewer_name ?? "",
+          rating:    r.rating,
+          comment:   r.comment    ?? "",
+          date:      new Date(r.created_at).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
+        })));
+      });
 
     // Load existing note
     const existing = getNote(placeId);
@@ -1815,8 +1837,8 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* Reviews */}
         {(() => {
-          const baseList = place.reviewsList ?? [];
-          const totalCount = baseList.length + (userReview ? 1 : 0);
+          const totalCount = publishedReviews.length + (userReview ? 1 : 0);
+          const isPending = userReview && userReview.isPublished === false;
           return (
             <div>
               <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
@@ -1830,12 +1852,12 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 <div className="space-y-3">
                   {/* User's own review — shown first */}
                   {userReview && (
-                    <div className="rounded-2xl p-4" style={{ background: "#F0F9FF", border: "1.5px solid #BAE6FD" }}>
+                    <div className="rounded-2xl p-4" style={{ background: isPending ? "#FFFBEB" : "#F0F9FF", border: `1.5px solid ${isPending ? "#FDE68A" : "#BAE6FD"}` }}>
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.name}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, background: "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
-                            Ulasanmu
+                          <span style={{ fontSize: 10, fontWeight: 700, background: isPending ? "#F59E0B" : "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                            {isPending ? "Menunggu persetujuan" : "Ulasanmu"}
                           </span>
                         </div>
                         <span className="font-jakarta text-xs text-gray-400">{userReview.date}</span>
@@ -1846,10 +1868,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                         ))}
                       </div>
                       <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{userReview.comment}</p>
+                      {isPending && (
+                        <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#92400e", marginTop: 8 }}>
+                          Ulasanmu sedang ditinjau dan akan ditampilkan setelah disetujui.
+                        </p>
+                      )}
                     </div>
                   )}
-                  {/* Existing reviews */}
-                  {baseList.map((review, i) => (
+                  {/* Published reviews from other users */}
+                  {publishedReviews.map((review, i) => (
                     <div key={i} className="bg-gray-50 rounded-2xl p-4">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-jakarta font-semibold text-sm text-gray-800">{review.name}</span>

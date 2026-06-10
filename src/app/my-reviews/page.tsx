@@ -1,8 +1,8 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Pencil, Star, ChevronRight } from "lucide-react";
-import { getReviews, type UserReview } from "@/lib/reviewsStorage";
+import { ChevronLeft, Pencil, Star, ChevronRight, Clock } from "lucide-react";
+import { getReviews, syncReviewsFromRemote, type UserReview } from "@/lib/reviewsStorage";
 import { ActionButton } from "@/components/ActionButton";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
@@ -12,12 +12,16 @@ import Link from "next/link";
 export default function MyReviewsPage() {
   const router = useRouter();
   const { t } = useLang();
-  useAuth(); // needed for PremiumBadge
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<UserReview[]>([]);
 
   useEffect(() => {
-    setReviews(getReviews());
-  }, []);
+    async function load() {
+      if (user?.id) await syncReviewsFromRemote(user.id);
+      setReviews(getReviews());
+    }
+    load();
+  }, [user?.id]);
 
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>
@@ -99,13 +103,26 @@ export default function MyReviewsPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <span style={{ fontSize: 22, flexShrink: 0 }}>{review.placeIcon}</span>
-                    <span style={{
-                      fontFamily: "var(--font-jakarta),sans-serif",
-                      fontWeight: 700, fontSize: 14, color: "#0e1d4f",
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}>
-                      {review.placeName}
-                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{
+                        fontFamily: "var(--font-jakarta),sans-serif",
+                        fontWeight: 700, fontSize: 14, color: "#0e1d4f",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        display: "block",
+                      }}>
+                        {review.placeName}
+                      </span>
+                      {review.isPublished === false && (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 3,
+                          fontSize: 10, fontWeight: 700, color: "#92400e",
+                          background: "#FEF3C7", borderRadius: 999, padding: "1px 7px",
+                          fontFamily: "var(--font-jakarta),sans-serif", marginTop: 2,
+                        }}>
+                          <Clock size={9} /> Menunggu persetujuan
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span style={{
                     fontFamily: "var(--font-jakarta),sans-serif",

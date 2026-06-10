@@ -9,6 +9,7 @@ export type UserReview = {
   rating:        number;
   comment:       string;
   date:          string;   // e.g. "Apr 2026"
+  isPublished?:  boolean;  // set by admin — undefined = unknown (legacy local-only)
 };
 
 const LS_KEY = "userReviews";
@@ -60,7 +61,7 @@ export async function saveReview(review: UserReview, userId?: string): Promise<v
           reviewer_name:  review.name,
           rating:         review.rating,
           comment:        review.comment,
-          is_published:   true,
+          is_published:   false,
         },
         { onConflict: "user_id,place_id" }
       );
@@ -92,6 +93,7 @@ export async function syncReviewsFromRemote(userId: string): Promise<void> {
       rating:        r.rating,
       comment:       r.comment        ?? "",
       date:          new Date(r.created_at as string).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
+      isPublished:   r.is_published as boolean ?? false,
     }));
 
     // Merge: remote wins for places where both exist

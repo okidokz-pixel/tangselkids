@@ -7,7 +7,9 @@ import { createAdminClient } from "@/lib/supabase-browser";
 
 const NAV_MAIN = [
   { label: "Dashboard",   href: "/admin" },
+  { label: "Users",       href: "/admin/users" },
   { label: "Submissions", href: "/admin/submissions" },
+  { label: "Reviews",     href: "/admin/reviews" },
   { label: "Articles",    href: "/admin/articles" },
   { label: "Analytics",   href: "/admin/analytics" },
 ];

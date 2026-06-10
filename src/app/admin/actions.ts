@@ -707,3 +707,103 @@ export async function getPendingSubmissionsCount(): Promise<number> {
     return 0;
   }
 }
+
+// ── App Users (profiles) ──────────────────────────────────────────────────────
+
+export async function getAppUsers() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id,phone,name,tier,lifetime,premium_expires_at,dob,address,kids,avatar_url,created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getAppUser(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateAppUser(
+  id: string,
+  payload: {
+    name?: string;
+    address?: string | null;
+    dob?: string | null;
+    tier?: "free" | "premium";
+    lifetime?: boolean;
+    premium_expires_at?: string | null;
+  },
+) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("profiles")
+    .update(payload)
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${id}`);
+}
+
+export async function deleteAppUser(id: string) {
+  await assertAdmin();
+  // Deleting from auth.users cascades to profiles via FK
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
+  if (error) throw error;
+  revalidatePath("/admin/users");
+  redirect("/admin/users");
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+export async function getAdminReviews() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("reviews")
+    .select("user_id,place_id,place_name,place_icon,place_category,reviewer_name,rating,comment,is_published,created_at")
+    .order("is_published", { ascending: true })   // pending (false) first
+    .order("created_at",   { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function approveReview(userId: string, placeId: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("reviews")
+    .update({ is_published: true })
+    .eq("user_id", userId)
+    .eq("place_id", placeId);
+  if (error) throw error;
+  revalidatePath("/admin/reviews");
+}
+
+export async function deleteReview(userId: string, placeId: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("reviews")
+    .delete()
+    .eq("user_id", userId)
+    .eq("place_id", placeId);
+  if (error) throw error;
+  revalidatePath("/admin/reviews");
+}
+
+export async function getAppUsersCount(): Promise<number> {
+  try {
+    await assertAdmin();
+    const { count } = await supabaseAdmin
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}

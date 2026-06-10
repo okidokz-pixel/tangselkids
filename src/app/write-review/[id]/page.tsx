@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
-import { ChevronLeft, Pencil, Check, Star } from "lucide-react";
+import { ChevronLeft, Pencil, Check, Clock, Star } from "lucide-react";
 import { type Place } from "@/lib/mockData";
 import { fetchPlaceById } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
@@ -263,12 +263,21 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               <p className="font-jakarta text-sm text-gray-600 leading-relaxed">{existingReview.comment}</p>
             </div>
 
-            <div style={{ background: "#ECFDF5", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-              <Check size={18} style={{ color: "#10B981", flexShrink: 0 }} strokeWidth={2.5} />
-              <p className="font-jakarta text-sm font-semibold" style={{ color: "#065F46" }}>
-                Ulasanmu sudah ditampilkan di halaman tempat ini.
-              </p>
-            </div>
+            {existingReview.isPublished === false ? (
+              <div style={{ background: "#FFFBEB", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                <Clock size={18} style={{ color: "#F59E0B", flexShrink: 0 }} strokeWidth={2.5} />
+                <p className="font-jakarta text-sm font-semibold" style={{ color: "#92400e" }}>
+                  Ulasanmu sedang ditinjau dan akan ditampilkan setelah disetujui.
+                </p>
+              </div>
+            ) : (
+              <div style={{ background: "#ECFDF5", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                <Check size={18} style={{ color: "#10B981", flexShrink: 0 }} strokeWidth={2.5} />
+                <p className="font-jakarta text-sm font-semibold" style={{ color: "#065F46" }}>
+                  Ulasanmu sudah ditampilkan di halaman tempat ini.
+                </p>
+              </div>
+            )}
 
             <ActionButton
               onClick={startEdit}
