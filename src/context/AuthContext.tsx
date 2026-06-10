@@ -34,7 +34,7 @@ type AuthContextType = {
   loaded: boolean;
   /** Send OTP to phone (local +62 format, e.g. "8123456789"); normalised internally */
   sendOtp: (phone: string) => Promise<{ error?: string }>;
-  /** Verify the 6-digit OTP. Returns isNewUser=true when the profile has no name yet */
+  /** Verify the OTP code. Returns isNewUser=true when the profile has no name yet */
   verifyOtp: (phone: string, code: string) => Promise<{ error?: string; isNewUser?: boolean }>;
   /** Save / update profile data (called after OTP verify or on profile edit) */
   register: (data: Omit<UserData, "id" | "tier" | "lifetime" | "premiumExpiresAt">) => Promise<{ error?: string }>;
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const localPhoto =
       typeof window !== "undefined"
-        ? (localStorage.getItem("profilePhoto") ?? undefined)
+        ? (localStorage.getItem(`profilePhoto_${session.user.id}`) ?? undefined)
         : undefined;
 
     if (data) {
@@ -188,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) return { error: error.message };
 
-    // Keep local photo in localStorage until Phase 2 Storage migration
-    if (data.avatar) localStorage.setItem("profilePhoto", data.avatar);
+    // Keep local photo in localStorage keyed by user ID until Phase 2 Storage migration
+    if (data.avatar) localStorage.setItem(`profilePhoto_${session.user.id}`, data.avatar);
 
     await loadProfile(session);
     return {};
@@ -213,16 +213,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (Object.keys(patch).length) {
       await supabase.from("profiles").update(patch).eq("id", session.user.id);
     }
-    if (data.avatar) localStorage.setItem("profilePhoto", data.avatar);
+    if (data.avatar) localStorage.setItem(`profilePhoto_${session.user.id}`, data.avatar);
     await loadProfile(session);
   }
 
   // ── logout ────────────────────────────────────────────────────────────────
   async function logout(): Promise<void> {
-    await supabase.auth.signOut();
-    ["savedIds", "compareIds", "userReviews", "profilePhoto", "facilityNotes"]
-      .forEach(k => localStorage.removeItem(k));
+    // Clear local UI state first so the app reflects logout even if the network
+    // signOut is slow or fails.
     setUser(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("[logout] signOut failed:", e);
+    }
+    ["savedIds", "compareIds", "userReviews", "facilityNotes"]
+      .forEach(k => localStorage.removeItem(k));
+    // profilePhoto_<userId> is intentionally kept — survives logout so the same user
+    // doesn't have to re-upload their photo on every login.
   }
 
   // ── upgradeToPremium (no-op for soft launch) ──────────────────────────────
