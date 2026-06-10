@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, MessageSquare, Check } from "lucide-react";
 import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export default function FeedbackPage() {
   const router    = useRouter();
@@ -12,11 +13,23 @@ export default function FeedbackPage() {
   const [topic,   setTopic]   = useState("");
   const [message, setMessage] = useState("");
   const [sent,    setSent]    = useState(false);
+  const [error,   setError]   = useState("");
+  const [saving,  setSaving]  = useState(false);
 
   const canSubmit = topic && message.trim().length >= 10;
 
-  function handleSubmit() {
-    if (!canSubmit) return;
+  async function handleSubmit() {
+    if (!canSubmit || saving) return;
+    setSaving(true);
+    setError("");
+    const supabase = getSupabaseBrowserClient();
+    const { error: err } = await supabase.from("feedback").insert({
+      user_id: user?.id ?? null,
+      topic,
+      message: message.trim(),
+    });
+    setSaving(false);
+    if (err) { setError("Gagal mengirim. Coba lagi."); return; }
     setSent(true);
   }
 
@@ -142,20 +155,27 @@ export default function FeedbackPage() {
               </p>
             </div>
 
+            {/* Error */}
+            {error && (
+              <p style={{ fontSize: 13, color: "#ef4444", fontFamily: "var(--font-jakarta), sans-serif", margin: 0 }}>
+                {error}
+              </p>
+            )}
+
             {/* Submit */}
             <button
               type="button"
               onClick={handleSubmit}
               onTouchEnd={(e) => { e.preventDefault(); handleSubmit(); }}
-              disabled={!canSubmit}
+              disabled={!canSubmit || saving}
               style={{
                 width: "100%", padding: "15px 0", borderRadius: 16, border: "none", cursor: canSubmit ? "pointer" : "default",
                 background: "linear-gradient(135deg, #1f6b43, #2e8a5a)", color: "#fff",
-                fontSize: 15, fontWeight: 700, opacity: canSubmit ? 1 : 0.4,
+                fontSize: 15, fontWeight: 700, opacity: canSubmit && !saving ? 1 : 0.4,
                 touchAction: "manipulation", fontFamily: "var(--font-jakarta), sans-serif",
               } as React.CSSProperties}
             >
-              Kirim Masukan 📨
+              {saving ? "Mengirim…" : "Kirim Masukan 📨"}
             </button>
           </div>
         )}
