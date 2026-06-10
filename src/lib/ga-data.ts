@@ -21,11 +21,13 @@ export type GaStats = {
   prevWeek: { users: number; sessions: number; pageviews: number };
   month: { users: number; sessions: number; pageviews: number };
   prevMonth: { users: number; sessions: number; pageviews: number };
+  allTime: { users: number; sessions: number; pageviews: number };
   topPages: { path: string; views: number }[];
   topSources: { source: string; sessions: number }[];
   deviceBreakdown: { device: string; sessions: number }[];
   countryBreakdown: { country: string; sessions: number }[];
   dailyData: DailyPoint[];
+  dailyDataAll: DailyPoint[];
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,8 +50,8 @@ async function fetchGaStats(): Promise<GaStats> {
 
   const [
     realtimeRes, todayRes, weekRes, prevWeekRes,
-    monthRes, prevMonthRes, pagesRes, sourcesRes,
-    devicesRes, countriesRes, dailyRes,
+    monthRes, prevMonthRes, allTimeRes, pagesRes, sourcesRes,
+    devicesRes, countriesRes, dailyRes, dailyAllRes,
   ] = await Promise.all([
     client.runRealtimeReport({
       property: PROPERTY,
@@ -78,6 +80,11 @@ async function fetchGaStats(): Promise<GaStats> {
     client.runReport({
       property: PROPERTY,
       dateRanges: [{ startDate: "60daysAgo", endDate: "31daysAgo" }],
+      metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }],
+    }),
+    client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate: "2024-01-01", endDate: "today" }],
       metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }],
     }),
     client.runReport({
@@ -118,6 +125,13 @@ async function fetchGaStats(): Promise<GaStats> {
       metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
       orderBys: [{ dimension: { dimensionName: "date" } }],
     }),
+    client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate: "2024-01-01", endDate: "today" }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
   ]);
 
   const activeUsers = Number(realtimeRes[0].rows?.[0]?.metricValues?.[0]?.value ?? 0);
@@ -149,6 +163,13 @@ async function fetchGaStats(): Promise<GaStats> {
     return { date, pageviews: rowVal(r, 0), users: rowVal(r, 1) };
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dailyDataAll: DailyPoint[] = ((dailyAllRes[0].rows ?? []) as any[]).map((r) => {
+    const raw = r.dimensionValues?.[0]?.value ?? "20000101";
+    const date = `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+    return { date, pageviews: rowVal(r, 0), users: rowVal(r, 1) };
+  });
+
   return {
     activeUsers,
     today: parseSingle(todayRes),
@@ -156,11 +177,13 @@ async function fetchGaStats(): Promise<GaStats> {
     prevWeek: parseSingle(prevWeekRes),
     month: parseSingle(monthRes),
     prevMonth: parseSingle(prevMonthRes),
+    allTime: parseSingle(allTimeRes),
     topPages,
     topSources,
     deviceBreakdown,
     countryBreakdown,
     dailyData,
+    dailyDataAll,
   };
 }
 

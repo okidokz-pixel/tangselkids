@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar,
 } from "recharts";
 import type { GaStats } from "@/lib/ga-data";
+
+type Range = "today" | "7d" | "30d" | "all";
 
 function pct(current: number, prev: number) {
   if (prev === 0) return null;
@@ -34,17 +37,19 @@ function Trend({ current, prev }: { current: number; prev: number }) {
   );
 }
 
-function KpiCard({ label, value, current, prev, sub }: {
-  label: string; value: string; current: number; prev: number; sub: string;
+function KpiCard({ label, value, current, prev, sub, showTrend = true }: {
+  label: string; value: string; current: number; prev: number; sub: string; showTrend?: boolean;
 }) {
   return (
     <div style={{ background: "#fff", borderRadius: 14, padding: "20px 24px", border: "1px solid #e5e7eb", flex: 1, minWidth: 140 }}>
       <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 12 }}>{label}</div>
       <div style={{ fontSize: 32, fontWeight: 800, color: "#0e1d4f", letterSpacing: "-0.02em", marginBottom: 8 }}>{value}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Trend current={current} prev={prev} />
-        <span style={{ fontSize: 11, color: "#9ca3af" }}>vs {sub}</span>
-      </div>
+      {showTrend && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Trend current={current} prev={prev} />
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>vs {sub}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -57,15 +62,42 @@ const COUNTRY_FLAGS: Record<string, string> = {
 };
 
 export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
+  const [range, setRange] = useState<Range>("7d");
+
   const totalDeviceSessions = stats.deviceBreakdown.reduce((s, d) => s + d.sessions, 0);
   const totalCountrySessions = stats.countryBreakdown.reduce((s, d) => s + d.sessions, 0);
   const totalPageViews = stats.topPages.reduce((s, p) => s + p.views, 0);
 
-  const chartData = stats.dailyData.map((d) => ({
+  // Pick the right KPI data for the selected range
+  const kpi = range === "today" ? stats.today
+            : range === "7d"   ? stats.week
+            : range === "30d"  ? stats.month
+            :                    stats.allTime;
+
+  const prevKpi = range === "7d"  ? stats.prevWeek
+                : range === "30d" ? stats.prevMonth
+                : null;
+
+  const prevLabel = range === "7d" ? "7 hari lalu" : range === "30d" ? "30 hari lalu" : null;
+
+  // Chart data: slice dailyData for 7d, full for 30d, all-time for "all", empty for today
+  const rawChart = range === "today" ? []
+                 : range === "7d"    ? stats.dailyData.slice(-7)
+                 : range === "30d"   ? stats.dailyData
+                 :                     stats.dailyDataAll;
+
+  const chartData = rawChart.map((d) => ({
     date: d.date.slice(5),
     pageviews: d.pageviews,
     users: d.users,
   }));
+
+  const RANGES: { key: Range; label: string }[] = [
+    { key: "today", label: "Hari Ini" },
+    { key: "7d",    label: "7 Hari" },
+    { key: "30d",   label: "30 Hari" },
+    { key: "all",   label: "Semua" },
+  ];
 
   const DEVICE_COLORS: Record<string, string> = {
     mobile: "#6366f1", desktop: "#0e1d4f", tablet: "#22c55e",
@@ -74,7 +106,7 @@ export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
   return (
     <div style={{ maxWidth: 1100 }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: "#0e1d4f", margin: 0 }}>Analytics</h1>
           <p style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
@@ -85,6 +117,24 @@ export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
           style={{ padding: "9px 18px", borderRadius: 10, background: "#0e1d4f", color: "#fff", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
           Buka GA4 ↗
         </a>
+      </div>
+
+      {/* Range filter tabs */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {RANGES.map(r => (
+          <button
+            key={r.key}
+            onClick={() => setRange(r.key)}
+            style={{
+              padding: "7px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600,
+              border: "none", cursor: "pointer",
+              background: range === r.key ? "#0e1d4f" : "#f1f5f9",
+              color:      range === r.key ? "#fff"    : "#475569",
+            }}
+          >
+            {r.label}
+          </button>
+        ))}
       </div>
 
       {/* Active users banner */}
@@ -105,7 +155,7 @@ export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 28 }}>
           {[
-            { label: "Users hari ini", value: fmt(stats.today.users) },
+            { label: "Unique User Hari Ini", value: fmt(stats.today.users) },
             { label: "Sessions hari ini", value: fmt(stats.today.sessions) },
             { label: "Pageviews hari ini", value: fmt(stats.today.pageviews) },
           ].map((item) => (
@@ -119,11 +169,30 @@ export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
 
       {/* KPI cards */}
       <div style={{ display: "flex", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
-        <KpiCard label="Users" value={fmt(stats.week.users)} current={stats.week.users} prev={stats.prevWeek.users} sub="7 hari lalu" />
-        <KpiCard label="Sessions" value={fmt(stats.week.sessions)} current={stats.week.sessions} prev={stats.prevWeek.sessions} sub="7 hari lalu" />
-        <KpiCard label="Pageviews" value={fmt(stats.week.pageviews)} current={stats.week.pageviews} prev={stats.prevWeek.pageviews} sub="7 hari lalu" />
-        <KpiCard label="Users (30h)" value={fmt(stats.month.users)} current={stats.month.users} prev={stats.prevMonth.users} sub="30 hari lalu" />
-        <KpiCard label="Pageviews (30h)" value={fmt(stats.month.pageviews)} current={stats.month.pageviews} prev={stats.prevMonth.pageviews} sub="30 hari lalu" />
+        <KpiCard
+          label="Unique Users"
+          value={fmt(kpi.users)}
+          current={kpi.users}
+          prev={prevKpi?.users ?? 0}
+          sub={prevLabel ?? "—"}
+          showTrend={!!prevKpi}
+        />
+        <KpiCard
+          label="Sessions"
+          value={fmt(kpi.sessions)}
+          current={kpi.sessions}
+          prev={prevKpi?.sessions ?? 0}
+          sub={prevLabel ?? "—"}
+          showTrend={!!prevKpi}
+        />
+        <KpiCard
+          label="Pageviews"
+          value={fmt(kpi.pageviews)}
+          current={kpi.pageviews}
+          prev={prevKpi?.pageviews ?? 0}
+          sub={prevLabel ?? "—"}
+          showTrend={!!prevKpi}
+        />
       </div>
 
       {/* Chart + Countries */}
@@ -133,7 +202,10 @@ export function AnalyticsDashboard({ stats }: { stats: GaStats }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "#0e1d4f" }}>Tren Traffic</div>
-              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>Pageviews & Users · 30 hari terakhir</div>
+              <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
+                Pageviews & Unique Users ·{" "}
+                {range === "today" ? "hari ini" : range === "7d" ? "7 hari" : range === "30d" ? "30 hari" : "semua waktu"}
+              </div>
             </div>
             <div style={{ display: "flex", gap: 16, fontSize: 12 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#6b7280" }}>
