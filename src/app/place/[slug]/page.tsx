@@ -251,7 +251,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
       .eq("place_id", placeId)
       .eq("is_published", true)
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: any[] | null }) => {
         if (!data) return;
         setPublishedReviews(data.map(r => ({
           placeId:   r.place_id,
