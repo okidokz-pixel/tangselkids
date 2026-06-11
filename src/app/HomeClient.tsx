@@ -535,7 +535,7 @@ function StickyHeader({ visible }: { visible: boolean }) {
 // ─── Masthead ─────────────────────────────────────────────────────────────────
 function Masthead({ userInitial }: { userInitial: string }) {
   const { lang, t } = useLang();
-  const { user } = useAuth();
+  const { user, isRegistered, loaded } = useAuth();
   const { openLoginSheet } = useLoginSheet();
   const { openRegisterSheet } = useRegisterSheet();
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -570,32 +570,35 @@ function Masthead({ userInitial }: { userInitial: string }) {
 
           {/* Right: lang toggle on top, Masuk below (or badge for premium) */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-            {!user ? (
+            {!loaded || !user || !isRegistered ? (
               <>
                 <LangToggle variant="dark" />
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <ActionButton
-                    onClick={() => openLoginSheet()}
-                    style={{
-                      fontFamily: "var(--font-jakarta), sans-serif",
-                      fontSize: 12, fontWeight: 700, color: "#0e1d4f",
-                    }}
-                  >
-                    {t.loginSignIn}
-                  </ActionButton>
-                  <ActionButton
-                    onClick={() => openRegisterSheet()}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 5,
-                      fontFamily: "var(--font-jakarta), sans-serif",
-                      fontSize: 12, fontWeight: 700, color: "#fff",
-                      background: "#0e1d4f",
-                      padding: "6px 12px", borderRadius: 999,
-                    }}
-                  >
-                    {t.profileGuestRegister}
-                  </ActionButton>
-                </div>
+                {/* Only show buttons once auth state is known */}
+                {loaded && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <ActionButton
+                      onClick={() => openLoginSheet()}
+                      style={{
+                        fontFamily: "var(--font-jakarta), sans-serif",
+                        fontSize: 12, fontWeight: 700, color: "#0e1d4f",
+                      }}
+                    >
+                      {t.loginSignIn}
+                    </ActionButton>
+                    <ActionButton
+                      onClick={() => openRegisterSheet()}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        fontFamily: "var(--font-jakarta), sans-serif",
+                        fontSize: 12, fontWeight: 700, color: "#fff",
+                        background: "#0e1d4f",
+                        padding: "6px 12px", borderRadius: 999,
+                      }}
+                    >
+                      {t.profileGuestRegister}
+                    </ActionButton>
+                  </div>
+                )}
               </>
             ) : (
               /* Logged in — lang toggle on top, avatar below */
@@ -2053,10 +2056,10 @@ function FooterMark() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function HomeClient() {
-  const { user } = useAuth();
+  const { user, isRegistered } = useAuth();
   const [scrollY, setScrollY] = useState(0);
 
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : "?";
+  const userInitial = (isRegistered && user?.name) ? user.name.charAt(0).toUpperCase() : "?";
   const showSticky  = scrollY > 140;
 
   useEffect(() => {

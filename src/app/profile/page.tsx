@@ -103,9 +103,10 @@ export default function ProfilePage() {
     setEditing(false);
   }
 
-  function doLogout() {
-    logout();
-    window.location.href = "/";
+  async function doLogout() {
+    await logout();
+    // replace() so the back button can't return to the authenticated profile page
+    window.location.replace("/");
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {

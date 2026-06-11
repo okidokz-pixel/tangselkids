@@ -5,6 +5,7 @@ import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
+import { OtpResend } from "./OtpResend";
 import { ImageCropper } from "./ImageCropper";
 import { legalContent } from "@/lib/legalContent";
 
@@ -132,7 +133,7 @@ export function RegisterSheet() {
   // Auto-focus first OTP field
   useEffect(() => {
     if (step === "otp") {
-      const timer = setTimeout(() => otpRefs.current[0]?.focus(), 80);
+      const timer = setTimeout(() => otpRefs.current[0]?.focus({ preventScroll: true }), 80);
       return () => clearTimeout(timer);
     }
   }, [step]);
@@ -188,21 +189,33 @@ export function RegisterSheet() {
   }
 
   function handleOtpChange(i: number, val: string) {
-    if (!/^\d*$/.test(val)) return;
+    const digits = val.replace(/\D/g, "");
+    if (val && !digits) return; // ignore non-numeric input
+
+    // Autofill / paste: many digits arrive at once → spread across the boxes
+    if (digits.length > 1) {
+      const next = [...otp];
+      for (let k = 0; k + i < 6 && k < digits.length; k++) next[i + k] = digits[k];
+      setOtp(next);
+      setOtpError("");
+      const lastFilled = Math.min(i + digits.length, 6) - 1;
+      otpRefs.current[Math.min(lastFilled + 1, 5)]?.focus({ preventScroll: true });
+      if (next.every(d => d !== "") && !verifyingOtp) doVerify(next.join(""));
+      return;
+    }
+
     const next = [...otp];
-    next[i] = val.slice(-1);
+    next[i] = digits;
     setOtp(next);
-    if (val && i < 5) requestAnimationFrame(() => otpRefs.current[i + 1]?.focus());
-    if (i === 5 && val) {
-      const full = [...next];
-      if (full.every(d => d !== "") && !verifyingOtp) {
-        doVerify(full.join(""));
-      }
+    setOtpError("");
+    if (digits && i < 5) requestAnimationFrame(() => otpRefs.current[i + 1]?.focus({ preventScroll: true }));
+    if (i === 5 && digits && next.every(d => d !== "") && !verifyingOtp) {
+      doVerify(next.join(""));
     }
   }
 
   function handleOtpKeyDown(i: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus();
+    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus({ preventScroll: true });
   }
 
   function handleVerifyOtp() {
@@ -770,7 +783,8 @@ export function RegisterSheet() {
                       ref={(el) => { otpRefs.current[i] = el; }}
                       type="tel"
                       inputMode="numeric"
-                      maxLength={1}
+                      autoComplete="one-time-code"
+                      maxLength={6}
                       value={otp[i]}
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
@@ -802,6 +816,14 @@ export function RegisterSheet() {
                 >
                   {verifyingOtp ? "Memverifikasi..." : t.obOtpBtn}
                 </ActionButton>
+
+                <OtpResend
+                  onResend={async () => {
+                    setOtp(["", "", "", "", "", ""]);
+                    setOtpError("");
+                    await sendOtp(`+62${phone.replace(/^0/, "")}`);
+                  }}
+                />
               </div>
             )}
 

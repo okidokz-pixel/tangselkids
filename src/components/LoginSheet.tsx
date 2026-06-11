@@ -6,6 +6,7 @@ import { useLoginSheet } from "@/context/LoginSheetContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
+import { OtpResend } from "./OtpResend";
 
 type Step = "phone" | "otp" | "notfound" | "done";
 
@@ -84,7 +85,7 @@ export function LoginSheet() {
 
   useEffect(() => {
     if (step === "otp") {
-      const timer = setTimeout(() => otpRefs.current[0]?.focus(), 80);
+      const timer = setTimeout(() => otpRefs.current[0]?.focus({ preventScroll: true }), 80);
       return () => clearTimeout(timer);
     }
   }, [step]);
@@ -126,23 +127,34 @@ export function LoginSheet() {
   }
 
   function handleOtpChange(idx: number, val: string) {
-    if (!/^\d*$/.test(val)) return;
+    const digits = val.replace(/\D/g, "");
+    if (val && !digits) return; // ignore non-numeric input
+
+    // Autofill / paste: many digits arrive at once → spread across the boxes
+    if (digits.length > 1) {
+      const next = [...otp];
+      for (let k = 0; k + idx < 6 && k < digits.length; k++) next[idx + k] = digits[k];
+      setOtp(next);
+      setOtpError("");
+      const lastFilled = Math.min(idx + digits.length, 6) - 1;
+      otpRefs.current[Math.min(lastFilled + 1, 5)]?.focus({ preventScroll: true });
+      if (next.every(d => d !== "") && !verifyingOtp) doVerifyLogin(next.join(""));
+      return;
+    }
+
     const next = [...otp];
-    next[idx] = val.slice(-1);
+    next[idx] = digits; // "" when cleared, single digit otherwise
     setOtp(next);
     setOtpError("");
-    if (val && idx < 5) requestAnimationFrame(() => otpRefs.current[idx + 1]?.focus());
-    if (idx === 5 && val) {
-      const full = [...next];
-      if (full.every(d => d !== "") && !verifyingOtp) {
-        doVerifyLogin(full.join(""));
-      }
+    if (digits && idx < 5) requestAnimationFrame(() => otpRefs.current[idx + 1]?.focus({ preventScroll: true }));
+    if (idx === 5 && digits && next.every(d => d !== "") && !verifyingOtp) {
+      doVerifyLogin(next.join(""));
     }
   }
 
   function handleOtpKeyDown(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-      otpRefs.current[idx - 1]?.focus();
+      otpRefs.current[idx - 1]?.focus({ preventScroll: true });
     }
   }
 
@@ -333,7 +345,8 @@ export function LoginSheet() {
                       ref={el => { otpRefs.current[i] = el; }}
                       type="tel"
                       inputMode="numeric"
-                      maxLength={1}
+                      autoComplete="one-time-code"
+                      maxLength={6}
                       value={otp[i]}
                       onChange={e => handleOtpChange(i, e.target.value)}
                       onKeyDown={e => handleOtpKeyDown(i, e)}
@@ -367,6 +380,14 @@ export function LoginSheet() {
                 >
                   {verifyingOtp ? "Memverifikasi..." : t.loginOtpBtn}
                 </ActionButton>
+
+                <OtpResend
+                  onResend={async () => {
+                    setOtp(["", "", "", "", "", ""]);
+                    setOtpError("");
+                    await sendOtp(`+62${phone.replace(/^0/, "")}`);
+                  }}
+                />
               </div>
             )}
 
