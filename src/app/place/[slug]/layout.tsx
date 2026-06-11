@@ -93,6 +93,8 @@ function priceRange(min: number | null | undefined, max: number | null | undefin
   return suffix ? `${range} ${suffix}` : range;
 }
 
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
   const results = await Promise.all(
     TABLES.map(async ({ table }) => {
