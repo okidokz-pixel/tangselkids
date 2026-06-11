@@ -2,13 +2,16 @@
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createAdminServerClient } from "@/lib/supabase-server";
+import { isAdminEmail } from "@/lib/adminEmails";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 async function assertAdmin() {
   const supabase = await createAdminServerClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  // Being logged-in is NOT enough — public users share this auth pool.
+  // The email must be on the ADMIN_EMAILS allowlist.
+  if (!user || !isAdminEmail(user.email)) throw new Error("Unauthorized");
   return user;
 }
 

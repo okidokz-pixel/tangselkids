@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminEmail } from "@/lib/adminEmails";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -28,14 +29,17 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
   const isLoginPage = pathname === "/admin/login";
+  const isAdmin = isAdminEmail(user?.email);
 
-  if (isAdminRoute && !isLoginPage && !user) {
+  // Gate /admin on being an allowlisted admin — a logged-in public user
+  // (WhatsApp OTP, no email) must NOT reach the dashboard.
+  if (isAdminRoute && !isLoginPage && !isAdmin) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/admin/login";
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isLoginPage && user) {
+  if (isLoginPage && isAdmin) {
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = "/admin";
     return NextResponse.redirect(dashboardUrl);
