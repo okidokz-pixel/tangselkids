@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rateLimit";
 
 const KEY = process.env.GOOGLE_MAPS_API_KEY!;
 
@@ -7,6 +8,11 @@ const KEY = process.env.GOOGLE_MAPS_API_KEY!;
  * GET /api/places?place_id=...   → Google Place Details (returns lat/lng + address)
  */
 export async function GET(req: NextRequest) {
+  // Fires on every keystroke for real users, so allow a generous 100/min per IP —
+  // enough for normal typing, but caps a script draining the paid Places API.
+  const limited = rateLimit(req, { limit: 100, windowMs: 60_000, key: "places" });
+  if (limited) return limited;
+
   const { searchParams } = new URL(req.url);
   const q       = searchParams.get("q");
   const placeId = searchParams.get("place_id");

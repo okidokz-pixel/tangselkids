@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { isAdminEmail } from "@/lib/adminEmails";
 
 export async function POST(request: NextRequest) {
   // Verify admin session
@@ -15,7 +16,10 @@ export async function POST(request: NextRequest) {
     },
   );
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Must be an allowlisted admin — a logged-in public (phone) user is NOT enough.
+  if (!user || !isAdminEmail(user.email)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -57,7 +61,10 @@ export async function DELETE(request: NextRequest) {
     },
   );
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Must be an allowlisted admin — a logged-in public (phone) user is NOT enough.
+  if (!user || !isAdminEmail(user.email)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { bucket, path } = await request.json();
   if (!bucket || !path) {
