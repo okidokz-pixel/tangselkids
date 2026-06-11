@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { rateLimit } from "@/lib/rateLimit";
 import { randomUUID } from "crypto";
 
 const BUCKET = "place-submissions";
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB per file
 
 export async function POST(request: NextRequest) {
+  // Max 20 uploads per minute per IP — enough for one multi-photo submission,
+  // but blocks scripts dumping files into Storage and inflating the bill.
+  const limited = rateLimit(request, { limit: 20, windowMs: 60_000, key: "upload-photo" });
+  if (limited) return limited;
+
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
 

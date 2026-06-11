@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
+  // Max 6 submissions per minute per IP — stops spam flooding the admin inbox.
+  const limited = rateLimit(request, { limit: 6, windowMs: 60_000, key: "submit-place" });
+  if (limited) return limited;
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
