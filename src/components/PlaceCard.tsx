@@ -1,6 +1,6 @@
 "use client";
 import { MapPin, Star } from "lucide-react";
-import { type Place, formatPriceRange } from "@/lib/mockData";
+import { type Place, formatPriceRange, formatTicketPrice } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 
 export function PlaceCard({
@@ -19,8 +19,9 @@ export function PlaceCard({
     if (place.category === "school") return place.curriculum ?? place.curriculumCategory ?? null;
     if (place.category === "learning-center") return place.centerType ?? (place.courseTypes?.[0] ?? null);
     if (place.category === "bookstore") return null;
+    if (place.category === "cafe") return null;
     if (place.category === "daycare") return place.priceMin > 0 ? formatPriceRange(place.priceMin, place.priceMax) : "–";
-    return place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax);
+    return place.priceMin === 0 ? "Gratis" : formatTicketPrice(place.priceMin, place.priceMax);
   })();
 
   return (

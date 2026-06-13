@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Pencil, Star, ChevronRight, Clock } from "lucide-react";
 import { getReviews, syncReviewsFromRemote, type UserReview } from "@/lib/reviewsStorage";
 import { ActionButton } from "@/components/ActionButton";
+import { GuestGate } from "@/components/GuestGate";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
@@ -12,7 +13,7 @@ import Link from "next/link";
 export default function MyReviewsPage() {
   const router = useRouter();
   const { t } = useLang();
-  const { user } = useAuth();
+  const { user, loaded } = useAuth();
   const [reviews, setReviews] = useState<UserReview[]>([]);
 
   useEffect(() => {
@@ -22,6 +23,28 @@ export default function MyReviewsPage() {
     }
     load();
   }, [user?.id]);
+
+  // ── Auth gate ─────────────────────────────────────────────────────────────────
+  if (!loaded) {
+    return (
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #e2e8f0", borderTopColor: "#2e8a5a", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <GuestGate
+        title="Ulasan Saya"
+        emoji="✍️"
+        heading="Masuk dulu, yuk!"
+        body="Ulasan yang kamu tulis tersimpan di akunmu. Masuk untuk melihat dan mengelolanya."
+        active="profile"
+      />
+    );
+  }
 
   return (
     <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#f6f1e8" }}>

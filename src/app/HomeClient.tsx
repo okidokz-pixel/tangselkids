@@ -605,7 +605,7 @@ function Masthead({ userInitial }: { userInitial: string }) {
               <>
                 <LangToggle variant="dark" />
                 <Link href="/profile" style={{
-                  width: 26, height: 26, borderRadius: 999,
+                  width: 34, height: 34, borderRadius: 999,
                   background: profilePhoto ? "transparent" : "#0e1d4f",
                   color: "#fff", display: "flex", alignItems: "center",
                   justifyContent: "center", fontSize: 11, fontWeight: 700,
@@ -776,7 +776,7 @@ function AreaPills({
               onClick={() => onPick(a.key)}
               style={{
                 flex: 1,
-                padding: "7px 12px",
+                padding: "10px 14px",
                 borderRadius: 999,
                 border: active
                   ? "1px solid #0e1d4f"
@@ -789,7 +789,7 @@ function AreaPills({
             >
               <span style={{
                 fontFamily: "var(--font-fraunces), Georgia, serif",
-                fontSize: 14, fontWeight: 700, letterSpacing: -0.2,
+                fontSize: 15.5, fontWeight: 700, letterSpacing: -0.2,
                 color: active ? "#fff" : "#0e1d4f",
                 whiteSpace: "nowrap",
               }}>
@@ -958,7 +958,7 @@ function CourseTypePills({
 
   const pillStyle: React.CSSProperties = {
     flexShrink: 0,
-    padding: "7px 12px",
+    padding: "10px 14px",
     borderRadius: 999,
     border: "1px solid rgba(15,23,42,0.14)",
     background: "#fff",
@@ -966,7 +966,7 @@ function CourseTypePills({
   };
   const labelStyle: React.CSSProperties = {
     fontFamily: "var(--font-fraunces), Georgia, serif",
-    fontSize: 13, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
     whiteSpace: "nowrap",
   };
 
@@ -1159,7 +1159,7 @@ function LangPills({
 
   const pillStyle: React.CSSProperties = {
     flexShrink: 0,
-    padding: "7px 12px",
+    padding: "10px 14px",
     borderRadius: 999,
     border: "1px solid rgba(15,23,42,0.14)",
     background: "#fff",
@@ -1167,7 +1167,7 @@ function LangPills({
   };
   const labelStyle: React.CSSProperties = {
     fontFamily: "var(--font-fraunces), Georgia, serif",
-    fontSize: 13, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
+    fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: "#0e1d4f",
     whiteSpace: "nowrap",
   };
 
@@ -1378,7 +1378,7 @@ function AgeBands({
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 14, fontWeight: 700,
+                        fontSize: 15.5, fontWeight: 700,
                         color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
@@ -1393,7 +1393,7 @@ function AgeBands({
                 );
                 const cardStyle: React.CSSProperties = {
                   flexShrink: 0, display: "flex", flexDirection: "column", gap: 3,
-                  padding: "7px 12px", borderRadius: 10, minWidth: 80,
+                  padding: "10px 14px", borderRadius: 10, minWidth: 80,
                   border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
                   background: active ? "#0e1d4f" : "#fff",
                   transition: "background .2s ease, border-color .2s ease",
@@ -1433,7 +1433,7 @@ function AgeBands({
                       }} />
                       <span style={{
                         fontFamily: "var(--font-fraunces), Georgia, serif",
-                        fontSize: 14, fontWeight: 700,
+                        fontSize: 15.5, fontWeight: 700,
                         color: active ? "#fff" : "#0e1d4f",
                         letterSpacing: -0.2, whiteSpace: "nowrap",
                       }}>
@@ -1448,7 +1448,7 @@ function AgeBands({
                 );
                 const cardStyle: React.CSSProperties = {
                   flexShrink: 0, display: "flex", flexDirection: "column", gap: 3,
-                  padding: "7px 12px", borderRadius: 10, minWidth: 80,
+                  padding: "10px 14px", borderRadius: 10, minWidth: 80,
                   border: active ? "1px solid #0e1d4f" : "1px solid rgba(15,23,42,0.14)",
                   background: active ? "#0e1d4f" : "#fff",
                   transition: "background .2s ease, border-color .2s ease",

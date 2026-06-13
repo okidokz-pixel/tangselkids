@@ -45,6 +45,7 @@ export type Place = {
   email?: string;
   tag?: string;
   isFeatured?: boolean;
+  isVerified?: boolean;
   icon: string;
   photo: string;
   photos?: string[];
@@ -145,6 +146,12 @@ export function formatPrice(price: number): string {
 export function formatPriceRange(min: number, max: number): string {
   if (min === 0 && max === 0) return "Gratis";
   return `Rp ${formatPrice(min)} – ${formatPrice(max)} / bln`;
+}
+
+export function formatTicketPrice(min: number, max: number): string {
+  if (min === 0 && max === 0) return "Gratis";
+  if (!max || max === min) return `Rp ${formatPrice(min)}`;
+  return `Rp ${formatPrice(min)} – ${formatPrice(max)}`;
 }
 
 const PH = (seed: string) => `https://picsum.photos/seed/${seed}/800/500`;

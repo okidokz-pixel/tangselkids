@@ -829,3 +829,245 @@ export async function getAppUsersCount(): Promise<number> {
     return 0;
   }
 }
+
+// ── Dashboard: approval queue counts ──────────────────────────────────────────
+
+/** Reviews awaiting moderation (is_published = false). */
+export async function getPendingReviewsCount(): Promise<number> {
+  try {
+    await assertAdmin();
+    const { count } = await supabaseAdmin
+      .from("reviews")
+      .select("user_id", { count: "exact", head: true })
+      .eq("is_published", false);
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Visitor feedback in the inbox. Feedback has no status column, so every row
+ *  counts as something to read. */
+export async function getFeedbackCount(): Promise<number> {
+  try {
+    await assertAdmin();
+    const { count } = await supabaseAdmin
+      .from("feedback")
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ── Dashboard: recent activity feed ───────────────────────────────────────────
+
+export type ActivityEvent = {
+  type: "submission" | "review" | "feedback" | "user" | "article";
+  who: string;
+  act: string;
+  tag: string;
+  tone: "primary" | "gold" | "berry" | "teal" | "sky";
+  at: string; // ISO timestamp
+};
+
+const SUBMISSION_CATEGORY_LABELS: Record<string, string> = {
+  schools: "Sekolah",
+  learning_centers: "Tempat Kursus",
+  daycares: "Daycares",
+  playgrounds: "Playgrounds",
+  clinics: "Klinik",
+  cafes: "Kafe",
+  mini_zoo: "Mini Zoo",
+  swimming_pools: "Kolam Renang",
+  bookstores: "Toko Buku",
+};
+
+function stars(rating: number | null): string {
+  const n = Math.max(0, Math.min(5, Math.round(rating ?? 0)));
+  return "★".repeat(n) + "☆".repeat(5 - n);
+}
+
+/**
+ * Builds a unified "last 24h" activity feed by unioning the newest rows from
+ * the tables that carry their own timestamps. There is no dedicated audit log,
+ * so this reconstructs activity from the source records themselves.
+ */
+export async function getRecentActivity(limit = 8): Promise<ActivityEvent[]> {
+  try {
+    await assertAdmin();
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const [subs, revs, fbk, users, arts] = await Promise.all([
+      supabaseAdmin
+        .from("place_submissions")
+        .select("name,category,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabaseAdmin
+        .from("reviews")
+        .select("reviewer_name,place_name,rating,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabaseAdmin
+        .from("feedback")
+        .select("topic,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabaseAdmin
+        .from("profiles")
+        .select("name,created_at")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabaseAdmin
+        .from("articles")
+        .select("title,published_at")
+        .eq("is_published", true)
+        .gte("published_at", since)
+        .order("published_at", { ascending: false })
+        .limit(limit),
+    ]);
+
+    const events: ActivityEvent[] = [];
+
+    for (const s of subs.data ?? []) {
+      events.push({
+        type: "submission",
+        who: s.name ?? "Tempat baru",
+        act: "mengirim listing baru",
+        tag: SUBMISSION_CATEGORY_LABELS[s.category] ?? "Submission",
+        tone: "primary",
+        at: s.created_at,
+      });
+    }
+    for (const r of revs.data ?? []) {
+      events.push({
+        type: "review",
+        who: r.reviewer_name ?? "Pengunjung",
+        act: `menulis review ${stars(r.rating)} untuk ${r.place_name ?? "sebuah tempat"}`,
+        tag: "Review",
+        tone: "gold",
+        at: r.created_at,
+      });
+    }
+    for (const f of fbk.data ?? []) {
+      events.push({
+        type: "feedback",
+        who: "Pengunjung",
+        act: `mengirim feedback${f.topic ? ` · ${f.topic}` : ""}`,
+        tag: "Feedback",
+        tone: "berry",
+        at: f.created_at,
+      });
+    }
+    for (const u of users.data ?? []) {
+      events.push({
+        type: "user",
+        who: u.name ?? "Pengguna baru",
+        act: "mendaftar sebagai pengguna",
+        tag: "User",
+        tone: "teal",
+        at: u.created_at,
+      });
+    }
+    for (const a of arts.data ?? []) {
+      events.push({
+        type: "article",
+        who: "Admin",
+        act: `menerbitkan artikel “${a.title ?? "tanpa judul"}”`,
+        tag: "Artikel",
+        tone: "sky",
+        at: a.published_at,
+      });
+    }
+
+    return events
+      .filter((e) => e.at)
+      .sort((a, b) => +new Date(b.at) - +new Date(a.at))
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+// ── Claims ────────────────────────────────────────────────────────────────────
+
+const CLAIM_TABLE: Record<string, string> = {
+  school:            "schools",
+  "learning-center": "learning_centers",
+  daycare:           "daycares",
+  playground:        "playgrounds",
+  clinic:            "clinics",
+  cafe:              "cafes",
+  "mini-zoo":        "mini_zoo",
+  "swimming-pool":   "swimming_pools",
+  bookstore:         "bookstores",
+  other:             "others",
+};
+
+export async function getClaims(status?: string) {
+  await assertAdmin();
+  let q = supabaseAdmin
+    .from("place_claims")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (status && status !== "all") q = q.eq("status", status);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getPendingClaimsCount() {
+  await assertAdmin();
+  const { count } = await supabaseAdmin
+    .from("place_claims")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
+  return count ?? 0;
+}
+
+export async function approveClaim(id: string) {
+  await assertAdmin();
+  const { data: claim, error: claimErr } = await supabaseAdmin
+    .from("place_claims").select("*").eq("id", id).single();
+  if (claimErr || !claim) throw new Error("Claim not found");
+
+  const table = CLAIM_TABLE[claim.category];
+  if (!table) throw new Error(`Unknown category: ${claim.category}`);
+
+  const { error: placeErr } = await supabaseAdmin
+    .from(table).update({ is_verified: true }).eq("slug", claim.place_slug);
+  if (placeErr) throw placeErr;
+
+  const { error: updateErr } = await supabaseAdmin
+    .from("place_claims")
+    .update({ status: "approved", reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (updateErr) throw updateErr;
+
+  revalidatePath(`/place/${claim.place_slug}`);
+  revalidatePath("/admin/claims");
+}
+
+export async function rejectClaim(id: string, notes?: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin
+    .from("place_claims")
+    .update({ status: "rejected", admin_notes: notes ?? null, reviewed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/claims");
+}
+
+export async function getClaimDocumentUrl(path: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin.storage
+    .from("claim-documents")
+    .createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+}

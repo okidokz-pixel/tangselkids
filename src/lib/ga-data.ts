@@ -17,6 +17,7 @@ export type DailyPoint = { date: string; pageviews: number; users: number };
 export type GaStats = {
   activeUsers: number;
   today: { users: number; sessions: number; pageviews: number };
+  yesterday: { users: number; sessions: number; pageviews: number };
   week: { users: number; sessions: number; pageviews: number };
   prevWeek: { users: number; sessions: number; pageviews: number };
   month: { users: number; sessions: number; pageviews: number };
@@ -49,7 +50,7 @@ async function fetchGaStats(): Promise<GaStats> {
   const client = getClient();
 
   const [
-    realtimeRes, todayRes, weekRes, prevWeekRes,
+    realtimeRes, todayRes, yesterdayRes, weekRes, prevWeekRes,
     monthRes, prevMonthRes, allTimeRes, pagesRes, sourcesRes,
     devicesRes, countriesRes, dailyRes, dailyAllRes,
   ] = await Promise.all([
@@ -60,6 +61,11 @@ async function fetchGaStats(): Promise<GaStats> {
     client.runReport({
       property: PROPERTY,
       dateRanges: [{ startDate: "today", endDate: "today" }],
+      metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }],
+    }),
+    client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate: "yesterday", endDate: "yesterday" }],
       metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }],
     }),
     client.runReport({
@@ -173,6 +179,7 @@ async function fetchGaStats(): Promise<GaStats> {
   return {
     activeUsers,
     today: parseSingle(todayRes),
+    yesterday: parseSingle(yesterdayRes),
     week: parseSingle(weekRes),
     prevWeek: parseSingle(prevWeekRes),
     month: parseSingle(monthRes),

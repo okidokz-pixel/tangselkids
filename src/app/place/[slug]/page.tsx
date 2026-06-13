@@ -942,6 +942,12 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               <div style={{ height: 1, background: "rgba(15,23,42,0.08)", margin: "4px 0 6px" }} />
 
               <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif", letterSpacing: "-0.5px" }}>{place.name}</h1>
+              {place.isVerified && (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 5, marginBottom: 2, padding: "3px 10px", borderRadius: 999, background: "#dcfce7", border: "1px solid #bbf7d0" }}>
+                  <Check size={12} color="#16a34a" strokeWidth={3} />
+                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 700, color: "#16a34a" }}>Terverifikasi</span>
+                </div>
+              )}
               {place.address && (
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 4, marginTop: 6 }}>
                   <MapPin size={12} style={{ color: "#2e8a5a", marginTop: 1, flexShrink: 0 }} />
@@ -1136,7 +1142,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
           const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
             ? t.free
-            : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
+            : (!place.priceMax || place.priceMax === place.priceMin)
+              ? `Rp ${formatPrice(place.priceMin)}`
+              : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`;
           const fmtBulanan = place.priceMax && place.priceMax !== place.priceMin
             ? `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)} ${t.perMonth}`
             : `Rp ${formatPrice(place.priceMin)} ${t.perMonth}`;
@@ -2512,10 +2520,34 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           </div>
         )}
 
+        {/* ── Claim this listing ───────────────────────────────────────────── */}
+        {!place.isVerified && (
+          <div style={{ marginTop: 8, paddingTop: 18, borderTop: "1px solid #f1f5f9", textAlign: "center" }}>
+            <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>
+              {lang === "id" ? "Apakah ini tempat Anda?" : "Is this your facility?"}
+            </p>
+            <Link
+              href={`/claim/${place.slug ?? place.id}`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700,
+                color: "#2e8a5a", textDecoration: "none",
+                padding: "8px 16px", borderRadius: 10,
+                border: "1.5px solid #bbf7d0", background: "#f0faf4",
+              }}
+            >
+              Klaim listing ini →
+            </Link>
+          </div>
+        )}
+
         {/* ── Suggest Edits trigger ──────────────────────────────────────── */}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
           <ActionButton
-            onClick={() => { setSuggestSubmitted(false); setShowSuggestSheet(true); }}
+            onClick={() => {
+              if (!user) { openLoginSheet(); return; }
+              setSuggestSubmitted(false); setShowSuggestSheet(true);
+            }}
             style={{
               display: "inline-flex", alignItems: "center", gap: 5,
               padding: "7px 14px", borderRadius: 999,

@@ -12,9 +12,9 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://maps.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://lh3.googleusercontent.com https://images.unsplash.com https://flagcdn.com",
+      "img-src 'self' data: blob: https://*.supabase.co https://maps.googleapis.com https://maps.gstatic.com https://lh3.googleusercontent.com https://images.unsplash.com https://flagcdn.com https://img.youtube.com",
       "connect-src 'self' https://*.supabase.co https://maps.googleapis.com https://www.google-analytics.com https://region1.google-analytics.com",
-      "frame-src https://www.google.com",
+      "frame-src https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com",
     ].join("; "),
   },
 ];

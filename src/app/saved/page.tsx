@@ -6,13 +6,14 @@ import { type Place } from "@/lib/mockData";
 import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
+import { GuestGate } from "@/components/GuestGate";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { PlaceCard } from "@/components/PlaceCard";
 import { useAuth } from "@/context/AuthContext";
 
 export default function SavedPage() {
   const { t } = useLang();
-  const { loaded } = useAuth();
+  const { user, loaded } = useAuth();
   const [savedIds,    setSavedIds]    = useState<string[]>([]);
   const [savedPlaces, setSavedPlaces] = useState<Place[]>([]);
   const [mounted,     setMounted]     = useState(false);
@@ -29,6 +30,28 @@ export default function SavedPage() {
     setSavedIds(next);
     setSavedPlaces(prev => prev.filter(p => p.id !== id));
     localStorage.setItem("savedIds", JSON.stringify(next));
+  }
+
+  // ── Auth gate ─────────────────────────────────────────────────────────────────
+  if (!loaded) {
+    return (
+      <div style={{ maxWidth: 448, margin: "0 auto", minHeight: "100vh", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid #e2e8f0", borderTopColor: "#2e8a5a", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <GuestGate
+        title={t.savedTitle}
+        emoji="❤️"
+        heading="Masuk dulu, yuk!"
+        body="Simpan tempat favoritmu dan akses dari mana saja setelah kamu masuk ke akunmu."
+        active="saved"
+      />
+    );
   }
 
   return (
