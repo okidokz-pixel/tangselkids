@@ -1,5 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+
+function track(event: string, params?: Record<string, unknown>) {
+  if (typeof window !== "undefined") (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.("event", event, params);
+}
 import { X, ChevronLeft, Plus, Camera, User } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
@@ -174,6 +178,7 @@ export function RegisterSheet() {
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
     setStep("otp");
+    track("begin_registration");
   }
 
   async function doVerify(code: string) {
@@ -185,6 +190,7 @@ export function RegisterSheet() {
       setOtpError("Kode salah atau sudah kedaluwarsa. Coba lagi.");
     } else {
       setStep("profile");
+      track("registration_otp_verified");
     }
   }
 
@@ -254,12 +260,14 @@ export function RegisterSheet() {
       avatar: profilePhoto || undefined,
     };
     if (options.minimalProfile) {
+      track("sign_up", { method: "whatsapp_otp" });
       void register(data);
       closeRegisterSheet();
       onRegisteredRef.current?.();
     } else {
       pendingData.current = data;
       setStep("done");
+      track("sign_up", { method: "whatsapp_otp" });
     }
   }
 

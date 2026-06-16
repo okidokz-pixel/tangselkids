@@ -1,5 +1,9 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+
+function track(event: string, params?: Record<string, unknown>) {
+  if (typeof window !== "undefined") (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.("event", event, params);
+}
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -263,7 +267,11 @@ function HeroSearch() {
     if (!q) { setResults([]); setSearching(false); return; }
     setSearching(true);
     const timer = setTimeout(() => {
-      searchAllPlaces(q, 8).then((res) => { setResults(res); setSearching(false); });
+      searchAllPlaces(q, 8).then((res) => {
+        setResults(res);
+        setSearching(false);
+        if (res.length === 0) track("search_no_results", { search_term: q });
+      });
     }, 350);
     return () => clearTimeout(timer);
   }, [query]);
@@ -274,6 +282,7 @@ function HeroSearch() {
     e.preventDefault();
     const q = query.trim();
     if (!q) return;
+    track("search", { search_term: q });
     router.push(`/explore?q=${encodeURIComponent(q)}`);
   }
 

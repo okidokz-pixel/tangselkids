@@ -1,5 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+
+function track(event: string, params?: Record<string, unknown>) {
+  if (typeof window !== "undefined") (window as unknown as { gtag?: (...a: unknown[]) => void }).gtag?.("event", event, params);
+}
 import { X, ChevronLeft } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLoginSheet } from "@/context/LoginSheetContext";
@@ -104,6 +108,7 @@ export function LoginSheet() {
       return;
     }
     setStep("otp");
+    track("login_start");
     setOtp(["", "", "", "", "", ""]);
     setOtpError("");
   }
@@ -122,6 +127,7 @@ export function LoginSheet() {
       setStep("notfound");
     } else {
       setStep("done");
+      track("login", { method: "whatsapp_otp" });
       setTimeout(() => closeLoginSheet(), 2000);
     }
   }
