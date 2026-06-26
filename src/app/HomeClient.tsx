@@ -18,6 +18,7 @@ import { getAreaGroup } from "@/lib/mockData";
 import { fetchCategoryCounts, fetchPlacesByCategory, fetchAllPlaces, fetchPrimaryCountsFast, getCachedCategory, getCachedCounts, searchAllPlaces } from "@/lib/db";
 import type { Place } from "@/lib/mockData";
 import { articles, localizeArticle } from "@/lib/articles";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { fetchPublishedArticles, type DbArticle } from "@/lib/articles-db";
 
 // ─── Photo URLs (replace before launch — see README) ─────────────────────────
@@ -382,11 +383,12 @@ function HeroSearch() {
                       touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                     }}
                   >
-                    <img
-                      src={place.photo?.includes("supabase") ? `${place.photo}?width=80&height=80&resize=cover` : place.photo}
+                    <OptimizedImage
+                      src={place.photo}
                       alt=""
                       width={36}
                       height={36}
+                      sizes="36px"
                       style={{
                         width: 36, height: 36, borderRadius: 8,
                         objectFit: "cover", flexShrink: 0,
@@ -685,8 +687,7 @@ function FeatureSquare({
       width: "100%",
     }}>
       {/* photo */}
-      <img src={photo} alt={title} style={{
-        position: "absolute", inset: 0, width: "100%", height: "100%",
+      <OptimizedImage src={photo} alt={title} fill sizes="(max-width: 480px) 45vw, 200px" style={{
         objectFit: "cover",
         transition: "transform .6s cubic-bezier(.2,.7,.3,1)",
         transform: expanded ? "scale(1.08)" : "scale(1)",
@@ -1816,8 +1817,8 @@ function CoverStoryCard({
       {/* full-bleed photo — no white body below */}
       <div style={{ aspectRatio: "4/3", position: "relative", overflow: "clip" }}>
         <Link href={`/place/${place.slug ?? place.id}`} style={{ display: "block", height: "100%", textDecoration: "none" }}>
-          <img src={place.photo} alt={place.name} style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+          <OptimizedImage src={place.photo} alt={place.name} fill sizes="(max-width: 480px) 100vw, 440px" style={{
+            objectFit: "cover",
           }} />
           <div style={{
             position: "absolute", inset: 0,
@@ -1954,7 +1955,7 @@ function ArticleList() {
                 </div>
               </div>
               {a.cover_image_url && (
-                <img src={a.cover_image_url} alt="" style={{
+                <OptimizedImage src={a.cover_image_url} alt="" width={72} height={72} sizes="72px" style={{
                   width: 72, height: 72, objectFit: "cover", borderRadius: 4,
                   border: "1px solid rgba(15,23,42,0.08)", flexShrink: 0,
                 }} />
@@ -1986,7 +1987,7 @@ function ArticleList() {
                   {article.date} · {article.readTime}
                 </div>
               </div>
-              <img src={article.photo} alt="" style={{
+              <OptimizedImage src={article.photo} alt="" width={72} height={72} sizes="72px" style={{
                 width: 72, height: 72, objectFit: "cover", borderRadius: 4,
                 border: "1px solid rgba(15,23,42,0.08)", flexShrink: 0,
               }} />

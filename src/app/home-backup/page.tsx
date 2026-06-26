@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
@@ -454,11 +455,13 @@ export default function HomePage() {
                   boxShadow: "0 8px 20px rgba(15,23,42,0.14)",
                 }}>
                   {/* photo */}
-                  <img
+                  <OptimizedImage
                     src={place.photo}
                     alt={place.name}
+                    fill
+                    sizes="(max-width: 480px) 100vw, 440px"
                     className="photo-img"
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    style={{ objectFit: "cover" }}
                   />
                   {/* gradient overlay */}
                   <div style={{

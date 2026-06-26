@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { updateSubmissionStatus, deleteSubmission } from "../../actions";
 
 type Submission = {
@@ -323,7 +324,7 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
           {s.logo_url && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>Logo</div>
-              <img src={s.logo_url} alt="Logo" style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 10, border: "1px solid #e5e7eb", background: "#f9fafb", padding: 4 }} />
+              <OptimizedImage src={s.logo_url} alt="Logo" width={80} height={80} sizes="80px" style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 10, border: "1px solid #e5e7eb", background: "#f9fafb", padding: 4 }} />
             </div>
           )}
 
@@ -335,8 +336,8 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
                 {s.photos.map((url, i) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                    <img src={url} alt={`Photo ${i + 1}`} style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: 8, border: "1px solid #e5e7eb", display: "block" }} />
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block", position: "relative", aspectRatio: "1/1" }}>
+                    <OptimizedImage src={url} alt={`Photo ${i + 1}`} fill sizes="(max-width: 480px) 33vw, 160px" style={{ objectFit: "cover", borderRadius: 8, border: "1px solid #e5e7eb", display: "block" }} />
                   </a>
                 ))}
               </div>

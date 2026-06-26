@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getSwimmingPools, toggleSwimmingPoolFeatured } from "../actions";
 
 type Pool = Awaited<ReturnType<typeof getSwimmingPools>>[number];
@@ -80,7 +81,7 @@ export default function SwimmingPoolsPage() {
                 <td style={{ ...tdStyle, maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {sp.photo_1 || sp.logo_url ? (
-                      <img src={(sp.logo_url || sp.photo_1) as string} alt=""
+                      <OptimizedImage src={(sp.logo_url || sp.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#dbeafe", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🏊</div>

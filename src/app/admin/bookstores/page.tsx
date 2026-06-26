@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getBookstores, toggleBookstoreFeatured } from "../actions";
 
 type Bookstore = Awaited<ReturnType<typeof getBookstores>>[number];
@@ -80,7 +81,7 @@ export default function BookstoresPage() {
                 <td style={{ ...tdStyle, maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {bs.photo_1 || bs.logo_url ? (
-                      <img src={(bs.logo_url || bs.photo_1) as string} alt=""
+                      <OptimizedImage src={(bs.logo_url || bs.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#fce7f3", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>📖</div>

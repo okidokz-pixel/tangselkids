@@ -8,6 +8,7 @@ import { fetchPlacesByIds } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLocation } from "@/context/LocationContext";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 // ── Shared fee formatter ──────────────────────────────────────────────────────
 function fmtFee(min: number | undefined, max: number | undefined): string {
@@ -211,8 +212,8 @@ function CompareContent() {
               {places.map(p => (
                 <div key={p.id} className="flex flex-col items-center text-center gap-2">
                   <Link href={`/place/${p.slug ?? p.id}`} style={{ display: "block", width: "100%" }}>
-                    <div style={{ width: "100%", aspectRatio: "4/3", borderRadius: 12, overflow: "hidden" }}>
-                      <img src={p.photo} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }} />
+                    <div style={{ position: "relative", width: "100%", aspectRatio: "4/3", borderRadius: 12, overflow: "hidden" }}>
+                      <OptimizedImage src={p.photo} alt={p.name} fill sizes="(max-width: 480px) 40vw, 180px" style={{ objectFit: "cover", objectPosition: "center top", display: "block" }} />
                     </div>
                   </Link>
                   <Link href={`/place/${p.slug ?? p.id}`} className="font-jakarta font-semibold text-gray-800 text-xs leading-tight hover:underline">

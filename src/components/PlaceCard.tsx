@@ -2,6 +2,7 @@
 import { MapPin, Star } from "lucide-react";
 import { type Place, formatPriceRange, formatTicketPrice } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export function PlaceCard({
   place,
@@ -38,10 +39,12 @@ export function PlaceCard({
     }}>
       {/* Photo thumbnail */}
       <div style={{ width: 96, flexShrink: 0, alignSelf: "stretch", position: "relative", overflow: "hidden" }}>
-        <img
+        <OptimizedImage
           src={place.photo}
           alt={place.name}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top", display: "block" }}
+          fill
+          sizes="96px"
+          style={{ objectFit: "cover", objectPosition: "center top", display: "block" }}
         />
         {place.isFeatured && (
           <div style={{

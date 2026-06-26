@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getCafes, toggleCafeFeatured } from "../actions";
 
 type Cafe = Awaited<ReturnType<typeof getCafes>>[number];
@@ -82,7 +83,7 @@ export default function CafesPage() {
                 <td style={{ ...tdStyle, maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {cf.photo_1 || cf.logo_url ? (
-                      <img src={(cf.logo_url || cf.photo_1) as string} alt=""
+                      <OptimizedImage src={(cf.logo_url || cf.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#fef3c7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>☕</div>

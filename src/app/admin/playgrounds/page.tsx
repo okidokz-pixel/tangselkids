@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getPlaygrounds, togglePlaygroundFeatured } from "../actions";
 
 type PG = Awaited<ReturnType<typeof getPlaygrounds>>[number];
@@ -83,7 +84,7 @@ export default function AdminPlaygroundsPage() {
                 <td style={{ ...tdStyle, maxWidth: 280 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {pg.photo_1 || pg.logo_url ? (
-                      <img src={(pg.logo_url || pg.photo_1) as string} alt=""
+                      <OptimizedImage src={(pg.logo_url || pg.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#e6f4ed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🎠</div>

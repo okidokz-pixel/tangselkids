@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getMiniZoos, toggleMiniZooFeatured } from "../actions";
 
 type MiniZoo = Awaited<ReturnType<typeof getMiniZoos>>[number];
@@ -82,7 +83,7 @@ export default function MiniZooPage() {
                 <td style={{ ...tdStyle, maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {mz.photo_1 || mz.logo_url ? (
-                      <img src={(mz.logo_url || mz.photo_1) as string} alt=""
+                      <OptimizedImage src={(mz.logo_url || mz.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#dcfce7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🦁</div>

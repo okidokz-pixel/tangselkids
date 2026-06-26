@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Home, Search, Bookmark, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { LangToggle } from "@/components/LangToggle";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { places } from "@/lib/mockData";
 
 // ─── Photo URLs (replace before launch — see README) ─────────────────────────
@@ -446,8 +447,7 @@ function FeatureSquare({
       width: "100%",
     }}>
       {/* photo */}
-      <img src={photo} alt={title} style={{
-        position: "absolute", inset: 0, width: "100%", height: "100%",
+      <OptimizedImage src={photo} alt={title} fill sizes="(max-width: 480px) 45vw, 200px" style={{
         objectFit: "cover",
         transition: "transform .6s cubic-bezier(.2,.7,.3,1)",
         transform: expanded ? "scale(1.08)" : "scale(1)",
@@ -888,8 +888,8 @@ function CoverStoryCard({
       {/* full-bleed photo — no white body below */}
       <div style={{ aspectRatio: "4/3", position: "relative", overflow: "clip" }}>
         <Link href={`/place/${place.id}`} style={{ display: "block", textDecoration: "none" }}>
-          <img src={place.photo} alt={place.name} style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover",
+          <OptimizedImage src={place.photo} alt={place.name} fill sizes="(max-width: 480px) 100vw, 440px" style={{
+            objectFit: "cover",
           }} />
           <div style={{
             position: "absolute", inset: 0,
@@ -1009,7 +1009,7 @@ function ArticleList() {
               </div>
               <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 4 }}>{meta}</div>
             </div>
-            <img src={photo} alt="" style={{
+            <OptimizedImage src={photo} alt="" width={72} height={72} sizes="72px" style={{
               width: 72, height: 72, objectFit: "cover", borderRadius: 4,
               border: "1px solid rgba(15,23,42,0.08)", flexShrink: 0,
             }} />

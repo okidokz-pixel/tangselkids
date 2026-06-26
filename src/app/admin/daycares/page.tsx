@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getDaycares, toggleDaycareFeatured } from "../actions";
 
 type DC = Awaited<ReturnType<typeof getDaycares>>[number];
@@ -82,7 +83,7 @@ export default function DaycaresPage() {
                 <td style={{ ...tdStyle, maxWidth: 300 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {dc.photo_1 || dc.logo_url ? (
-                      <img src={(dc.logo_url || dc.photo_1) as string} alt=""
+                      <OptimizedImage src={(dc.logo_url || dc.photo_1) as string} alt="" width={36} height={36} sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 36, height: 36, borderRadius: 8, background: "#e6f4ed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🍼</div>

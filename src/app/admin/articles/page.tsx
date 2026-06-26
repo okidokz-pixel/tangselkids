@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getArticles } from "../actions";
 
 type Article = Awaited<ReturnType<typeof getArticles>>[number];
@@ -70,7 +71,7 @@ export default function ArticlesPage() {
                 <td style={{ ...tdStyle, maxWidth: 400 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {article.cover_image_url ? (
-                      <img src={article.cover_image_url} alt="" style={{ width: 48, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
+                      <OptimizedImage src={article.cover_image_url} alt="" width={48} height={36} sizes="48px" style={{ width: 48, height: 36, borderRadius: 6, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }} />
                     ) : (
                       <div style={{ width: 48, height: 36, borderRadius: 6, background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📝</div>
                     )}

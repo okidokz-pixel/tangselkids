@@ -38,8 +38,13 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Serve AVIF first, then WebP, then fall back to the original format.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
+        // Covers this project's Supabase host (szyujzbnfkkqwoeuyjwg.supabase.co)
+        // and any other *.supabase.co bucket. Only public Storage objects are
+        // routed through optimization — that's the egress we're cutting.
         protocol: "https",
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",

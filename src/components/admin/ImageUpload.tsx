@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 interface ImageUploadProps {
   value: string;
@@ -76,10 +77,12 @@ export function ImageUpload({
           </div>
         ) : value ? (
           <>
-            <img
+            <OptimizedImage
               src={value}
               alt=""
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              fill
+              sizes="200px"
+              style={{ objectFit: "cover" }}
             />
             <div style={{
               position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex",
@@ -266,7 +269,7 @@ export function PhotoGrid({ photos, onChange, bucket, entityId, maxPhotos = 10 }
               transition: "border-color 0.15s, opacity 0.15s",
             }}
           >
-            <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+            <OptimizedImage src={url} alt="" fill sizes="120px" style={{ objectFit: "cover", pointerEvents: "none" }} />
 
             {/* Delete button — always visible top-right */}
             <button

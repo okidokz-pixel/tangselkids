@@ -18,6 +18,7 @@ import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { useLocation } from "@/context/LocationContext";
 import { useLoginSheet } from "@/context/LoginSheetContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
@@ -540,10 +541,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             }
           }}
         >
-          <img
+          <OptimizedImage
             src={allPhotos[heroIndex]}
             alt=""
-            style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            width={1200}
+            height={900}
+            sizes="100vw"
+            style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", height: "auto", objectFit: "contain" }}
             onClick={(e) => e.stopPropagation()}
           />
           <button
@@ -780,11 +784,14 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             </svg>
           </button>
           {/* Image */}
-          <img
+          <OptimizedImage
             src={place.feeImageUrl}
             alt="Detail biaya"
+            width={1000}
+            height={1300}
+            sizes="100vw"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "100%", maxHeight: "85vh", borderRadius: 12, objectFit: "contain", display: "block" }}
+            style={{ maxWidth: "100%", maxHeight: "85vh", width: "auto", height: "auto", borderRadius: 12, objectFit: "contain", display: "block" }}
           />
         </div>
       )}
@@ -811,17 +818,19 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           willChange: "transform",
         }}>
           {allPhotos.map((src, i) => (
-            <img
+            <div
               key={i}
-              src={src}
-              alt={i === 0 ? place.name : ""}
-              style={{
-                width: `${100 / allPhotos.length}%`,
-                flexShrink: 0,
-                height: "100%", objectFit: "cover",
-                cursor: "pointer",
-              }}
-            />
+              style={{ position: "relative", width: `${100 / allPhotos.length}%`, flexShrink: 0, height: "100%" }}
+            >
+              <OptimizedImage
+                src={src}
+                alt={i === 0 ? place.name : ""}
+                fill
+                priority={i === 0}
+                sizes="(max-width: 480px) 100vw, 440px"
+                style={{ objectFit: "cover", cursor: "pointer" }}
+              />
+            </div>
           ))}
         </div>
 
@@ -914,7 +923,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
               {place.logo
-                ? <img src={place.logo} alt={`${place.name} logo`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ? <OptimizedImage src={place.logo} alt={`${place.name} logo`} fill sizes="70px" style={{ objectFit: "cover" }} />
                 : <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 17, fontWeight: 800, color: "#f0b429", letterSpacing: -0.5 }}>{initials}</span>
               }
             </div>
@@ -1430,19 +1439,25 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                               style={{ position: "relative", borderRadius: 12, overflow: "clip" }}
                               onClick={() => setFeeImageOpen(true)}
                             >
-                              <img
+                              <OptimizedImage
                                 src={place.feeImageUrl}
                                 alt="Detail biaya"
-                                style={{ width: "100%", borderRadius: 12, display: "block", cursor: "pointer" }}
+                                width={800}
+                                height={1000}
+                                sizes="(max-width: 480px) 100vw, 440px"
+                                style={{ width: "100%", height: "auto", borderRadius: 12, display: "block", cursor: "pointer" }}
                               />
                             </div>
                           ) : (
                             /* Guest — blurred with register prompt */
                             <div style={{ position: "relative", borderRadius: 12, overflow: "clip" }}>
-                              <img
+                              <OptimizedImage
                                 src={place.feeImageUrl}
                                 alt="Detail biaya"
-                                style={{ width: "100%", borderRadius: 12, display: "block", filter: "blur(8px)", transform: "scale(1.05)" }}
+                                width={800}
+                                height={1000}
+                                sizes="(max-width: 480px) 100vw, 440px"
+                                style={{ width: "100%", height: "auto", borderRadius: 12, display: "block", filter: "blur(8px)", transform: "scale(1.05)" }}
                               />
                               <div
                                 style={{
@@ -1506,10 +1521,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               style={{ borderRadius: 14, overflow: "clip", cursor: "pointer" }}
               onClick={() => setFeeImageOpen(true)}
             >
-              <img
+              <OptimizedImage
                 src={place.feeImageUrl}
                 alt="Detail info"
-                style={{ width: "100%", borderRadius: 14, display: "block" }}
+                width={800}
+                height={1000}
+                sizes="(max-width: 480px) 100vw, 440px"
+                style={{ width: "100%", height: "auto", borderRadius: 14, display: "block" }}
               />
             </div>
           </div>
@@ -1963,11 +1981,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                     style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
                   >
                     <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                      <img
-                        src={s.photo}
-                        alt={s.name}
-                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
-                      />
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                        <OptimizedImage
+                          src={s.photo}
+                          alt={s.name}
+                          fill
+                          sizes="130px"
+                          style={{ objectFit: "cover", display: "block" }}
+                        />
+                      </div>
                       <div style={{ padding: "8px 9px" }}>
                         <p style={{
                           fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -2060,11 +2082,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                     style={{ textDecoration: "none", flexShrink: 0, width: 130 }}
                   >
                     <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                      <img
-                        src={s.photo}
-                        alt={s.name}
-                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
-                      />
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                        <OptimizedImage
+                          src={s.photo}
+                          alt={s.name}
+                          fill
+                          sizes="130px"
+                          style={{ objectFit: "cover", display: "block" }}
+                        />
+                      </div>
                       <div style={{ padding: "8px 9px" }}>
                         <p style={{
                           fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -2159,11 +2185,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                       borderRadius: 14, overflow: "clip",
                       border: "1.5px solid #d1ead9", background: "#fff",
                     }}>
-                      <img
-                        src={s.photo}
-                        alt={s.name}
-                        style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
-                      />
+                      <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                        <OptimizedImage
+                          src={s.photo}
+                          alt={s.name}
+                          fill
+                          sizes="130px"
+                          style={{ objectFit: "cover", display: "block" }}
+                        />
+                      </div>
                       <div style={{ padding: "8px 9px" }}>
                         <p style={{
                           fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -2258,11 +2288,15 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`}
                       style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img
-                          src={s.photo}
-                          alt={s.name}
-                          style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }}
-                        />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage
+                            src={s.photo}
+                            alt={s.name}
+                            fill
+                            sizes="130px"
+                            style={{ objectFit: "cover", display: "block" }}
+                          />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{
                             fontFamily: "var(--font-fraunces), Georgia, serif",
@@ -2348,7 +2382,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   return (
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage src={s.photo} alt={s.name} fill sizes="130px" style={{ objectFit: "cover", display: "block" }} />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
                           {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
@@ -2386,7 +2422,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   return (
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage src={s.photo} alt={s.name} fill sizes="130px" style={{ objectFit: "cover", display: "block" }} />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
                           {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
@@ -2424,7 +2462,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   return (
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage src={s.photo} alt={s.name} fill sizes="130px" style={{ objectFit: "cover", display: "block" }} />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
                           {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
@@ -2462,7 +2502,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   return (
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage src={s.photo} alt={s.name} fill sizes="130px" style={{ objectFit: "cover", display: "block" }} />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
                           {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}
@@ -2500,7 +2542,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   return (
                     <a key={s.id} href={`/place/${s.slug ?? s.id}`} style={{ textDecoration: "none", flexShrink: 0, width: 130 }}>
                       <div style={{ borderRadius: 14, overflow: "clip", border: "1.5px solid #d1ead9", background: "#fff" }}>
-                        <img src={s.photo} alt={s.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+                        <div style={{ position: "relative", width: "100%", aspectRatio: "4/3" }}>
+                          <OptimizedImage src={s.photo} alt={s.name} fill sizes="130px" style={{ objectFit: "cover", display: "block" }} />
+                        </div>
                         <div style={{ padding: "8px 9px" }}>
                           <p style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: 0, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.name}</p>
                           {distLabel && <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#64748b", margin: "3px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {distLabel}</p>}

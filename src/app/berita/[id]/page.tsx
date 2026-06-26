@@ -10,6 +10,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   "Parenting":       { bg: "#fde9c8", color: "#b45309" },
@@ -104,8 +105,9 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
         {/* Hero image */}
         {dbArticle.cover_image_url && (
           <div style={{ position: "relative", height: 240 }}>
-            <img src={dbArticle.cover_image_url} alt={dbArticle.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <OptimizedImage src={dbArticle.cover_image_url} alt={dbArticle.title} fill priority
+              sizes="(max-width: 480px) 100vw, 440px"
+              style={{ objectFit: "cover", display: "block" }} />
             <div style={{ position: "absolute", inset: 0,
               background: "linear-gradient(to bottom, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.65) 100%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 20px 20px" }}>
@@ -194,8 +196,9 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
       </div>
 
       <div style={{ position: "relative", height: 280 }}>
-        <img src={article.photo} alt={article.title}
-          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <OptimizedImage src={article.photo} alt={article.title} fill priority
+          sizes="(max-width: 480px) 100vw, 440px"
+          style={{ objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", inset: 0,
           background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.70) 100%)" }} />
         <div style={{ position: "absolute", top: 14, right: 16 }}>

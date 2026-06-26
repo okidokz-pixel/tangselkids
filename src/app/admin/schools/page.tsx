@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { getSchools, toggleSchoolFeatured } from "../actions";
 
 type School = Awaited<ReturnType<typeof getSchools>>[number];
@@ -114,9 +115,12 @@ export default function SchoolsPage() {
                 <td style={{ ...tdStyle, maxWidth: 280 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {school.photo_1 || school.logo_url ? (
-                      <img
+                      <OptimizedImage
                         src={(school.logo_url || school.photo_1) as string}
                         alt=""
+                        width={36}
+                        height={36}
+                        sizes="36px"
                         style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #e5e7eb" }}
                       />
                     ) : (

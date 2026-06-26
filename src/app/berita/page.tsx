@@ -9,6 +9,7 @@ import { ActionButton } from "@/components/ActionButton";
 import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 function formatDate(iso: string): string {
   try {
@@ -103,7 +104,7 @@ export default function BeritaPage() {
                 </div>
               </div>
               {a.cover_image_url && (
-                <img src={a.cover_image_url} alt="" style={{
+                <OptimizedImage src={a.cover_image_url} alt="" width={72} height={72} sizes="72px" style={{
                   width: 72, height: 72, objectFit: "cover", borderRadius: 4,
                   border: "1px solid rgba(15,23,42,0.08)", flexShrink: 0,
                 }} />
