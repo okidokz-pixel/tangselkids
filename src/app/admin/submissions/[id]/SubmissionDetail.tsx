@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
-import { updateSubmissionStatus, deleteSubmission } from "../../actions";
+import { updateSubmissionStatus, deleteSubmission, enrichSubmissionFromGoogle, applySubmissionEnrichment } from "../../actions";
+import type { GoogleEnrichment } from "@/lib/enrichment";
 
 type Submission = {
   id: string;
@@ -161,6 +162,131 @@ function renderCategoryData(category: string, data: Record<string, unknown>) {
   return rows.length > 0 ? <>{rows}</> : <p style={{ fontSize: 13, color: "#9ca3af" }}>No additional data.</p>;
 }
 
+const primaryBtn: React.CSSProperties = {
+  padding: "9px 18px", borderRadius: 8, background: "#0e1d4f", color: "#fff",
+  fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
+};
+
+function tag(bg: string, color: string): React.CSSProperties {
+  return { marginLeft: 8, fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10, background: bg, color, verticalAlign: "middle" };
+}
+
+function Stat({ label, value, copy }: { label: string; value: string; copy?: string }) {
+  return (
+    <div
+      onClick={copy ? () => navigator.clipboard?.writeText(copy) : undefined}
+      title={copy ? "Click to copy" : undefined}
+      style={{ background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 8, padding: "8px 10px", cursor: copy ? "pointer" : "default" }}
+    >
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginTop: 2 }}>{value}</div>
+    </div>
+  );
+}
+
+function EnrichRow({ label, current, suggested }: { label: string; current?: string | null; suggested?: string | null }) {
+  if (!suggested) return null;
+  const isNew = !current;
+  const differs = !!current && current.trim() !== suggested.trim();
+  return (
+    <div style={{ ...ROW, alignItems: "flex-start" }}>
+      <span style={KEY}>{label}</span>
+      <span style={{ ...VAL, whiteSpace: "pre-wrap" }}>
+        {suggested}
+        {isNew && <span style={tag("#dcfce7", "#166534")}>NEW</span>}
+        {differs && <span style={tag("#fef3c7", "#b45309")}>differs</span>}
+      </span>
+    </div>
+  );
+}
+
+function GoogleEnrich({ s }: { s: Submission }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [result, setResult] = useState<GoogleEnrichment | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setLoading(true); setError(null); setResult(null);
+    try {
+      const r = await enrichSubmissionFromGoogle(s.id);
+      if (r.ok) setResult(r.data);
+      else setError(r.error);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Enrichment failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Only fields the submitter left blank that Google can fill.
+  const gaps: { address?: string; phone?: string; hours?: string; website?: string } = {};
+  if (result) {
+    if (!s.address && result.formattedAddress) gaps.address = result.formattedAddress;
+    if (!s.phone && result.phone) gaps.phone = result.phone;
+    if (!s.hours && result.hours) gaps.hours = result.hours;
+    if (!s.website && result.website) gaps.website = result.website;
+  }
+  const gapKeys = Object.keys(gaps);
+
+  async function applyGaps() {
+    setApplying(true);
+    try {
+      await applySubmissionEnrichment(s.id, gaps);
+      router.refresh();
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  return (
+    <Section title="🔍 Auto-fill from Google">
+      <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "#6b7280" }}>
+        Searches Google Maps for this place and suggests rating, coordinates, address, phone, hours and website.
+      </p>
+      <button onClick={run} disabled={loading} style={{ ...primaryBtn, opacity: loading ? 0.6 : 1 }}>
+        {loading ? "Searching Google…" : result ? "Search again" : "✨ Auto-fill from Google"}
+      </button>
+
+      {error && (
+        <div style={{ marginTop: 12, padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12.5, color: "#991b1b", whiteSpace: "pre-wrap" }}>
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 16 }}>
+            <Stat label="Google Rating" value={result.rating != null ? `⭐ ${result.rating} (${result.userRatingCount ?? 0} reviews)` : "—"} />
+            <Stat label="Latitude" value={result.lat != null ? String(result.lat) : "—"} copy={result.lat != null ? String(result.lat) : undefined} />
+            <Stat label="Longitude" value={result.lng != null ? String(result.lng) : "—"} copy={result.lng != null ? String(result.lng) : undefined} />
+          </div>
+
+          <EnrichRow label="Address" current={s.address} suggested={result.formattedAddress} />
+          <EnrichRow label="Phone"   current={s.phone}   suggested={result.phone} />
+          <EnrichRow label="Hours"   current={s.hours}   suggested={result.hours} />
+          <EnrichRow label="Website" current={s.website} suggested={result.website} />
+          {result.googleMapsUri && (
+            <div style={{ ...ROW, marginTop: 6 }}>
+              <span style={KEY}>Google Maps</span>
+              <a href={result.googleMapsUri} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", fontSize: 13 }}>Open ↗</a>
+            </div>
+          )}
+
+          {gapKeys.length > 0 ? (
+            <button onClick={applyGaps} disabled={applying} style={{ ...primaryBtn, marginTop: 14, background: "#16a34a", opacity: applying ? 0.6 : 1 }}>
+              {applying ? "Applying…" : `Fill ${gapKeys.length} empty field${gapKeys.length > 1 ? "s" : ""} (${gapKeys.join(", ")})`}
+            </button>
+          ) : (
+            <p style={{ marginTop: 14, fontSize: 12.5, color: "#9ca3af" }}>No empty submission fields to fill — rating &amp; coordinates above are ready to copy into the listing.</p>
+          )}
+        </div>
+      )}
+    </Section>
+  );
+}
+
 export default function SubmissionDetail({ submission: s }: { submission: Submission }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -241,6 +367,9 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
           </Link>
         )}
       </div>
+
+      {/* Auto-fill from Google */}
+      <GoogleEnrich s={s} />
 
       {/* Submitter info */}
       {(s.submitter_name || s.submitter_phone) && (

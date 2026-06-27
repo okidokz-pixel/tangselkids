@@ -3,6 +3,7 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createAdminServerClient } from "@/lib/supabase-server";
 import { isAdminEmail } from "@/lib/adminEmails";
+import type { EnrichmentResult, GoogleEnrichment } from "@/lib/enrichment";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -688,6 +689,110 @@ export async function updateSubmissionStatus(
     .eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/submissions");
+  revalidatePath(`/admin/submissions/${id}`);
+}
+
+/**
+ * Look this submission up on Google Maps (Places API New) and return objective
+ * data — rating, coordinates, address, phone, hours, website — to fill the gaps
+ * a submitter left blank. Read-only: it never writes; the admin reviews first.
+ *
+ * Requires GOOGLE_PLACES_API_KEY (a SERVER key with no HTTP-referrer restriction
+ * and the Places API enabled — the public Maps JS key is referrer-locked and
+ * rejected for server-side calls).
+ */
+export async function enrichSubmissionFromGoogle(id: string): Promise<EnrichmentResult> {
+  await assertAdmin();
+
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) {
+    return { ok: false, error: "GOOGLE_PLACES_API_KEY is not set on the server. Add a server-side Google Places key to enable Auto-fill." };
+  }
+
+  const { data: sub, error } = await supabaseAdmin
+    .from("place_submissions")
+    .select("name, area, address")
+    .eq("id", id)
+    .single();
+  if (error || !sub) return { ok: false, error: "Submission not found." };
+
+  const query = [sub.name, sub.address, sub.area, "Tangerang Selatan"]
+    .filter(Boolean)
+    .join(", ");
+
+  let res: Response;
+  try {
+    res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": key,
+        "X-Goog-FieldMask": [
+          "places.id",
+          "places.displayName",
+          "places.formattedAddress",
+          "places.rating",
+          "places.userRatingCount",
+          "places.location",
+          "places.nationalPhoneNumber",
+          "places.internationalPhoneNumber",
+          "places.websiteUri",
+          "places.regularOpeningHours",
+          "places.googleMapsUri",
+        ].join(","),
+      },
+      body: JSON.stringify({ textQuery: query, languageCode: "id", regionCode: "ID", maxResultCount: 1 }),
+    });
+  } catch {
+    return { ok: false, error: "Could not reach Google Places API." };
+  }
+
+  if (!res.ok) {
+    const body = await res.text();
+    return { ok: false, error: `Google Places error (${res.status}): ${body.slice(0, 200)}` };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json: any = await res.json();
+  const p = json?.places?.[0];
+  if (!p) return { ok: false, error: `No matching place found on Google for "${query}".` };
+
+  const data: GoogleEnrichment = {
+    placeId: p.id,
+    name: p.displayName?.text ?? sub.name,
+    formattedAddress: p.formattedAddress ?? null,
+    rating: typeof p.rating === "number" ? p.rating : null,
+    userRatingCount: typeof p.userRatingCount === "number" ? p.userRatingCount : null,
+    lat: p.location?.latitude ?? null,
+    lng: p.location?.longitude ?? null,
+    phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber ?? null,
+    website: p.websiteUri ?? null,
+    hours: p.regularOpeningHours?.weekdayDescriptions?.join("\n") ?? null,
+    googleMapsUri: p.googleMapsUri ?? null,
+  };
+
+  return { ok: true, data };
+}
+
+/**
+ * Write selected enriched values into the submission's own columns. The UI only
+ * ever sends fields the submitter left blank, so this never overwrites user data.
+ */
+export async function applySubmissionEnrichment(
+  id: string,
+  patch: { address?: string; phone?: string; hours?: string; website?: string },
+) {
+  await assertAdmin();
+  const clean = Object.fromEntries(
+    Object.entries(patch).filter(([, v]) => typeof v === "string" && v.trim() !== ""),
+  );
+  if (Object.keys(clean).length === 0) return;
+
+  const { error } = await supabaseAdmin
+    .from("place_submissions")
+    .update(clean)
+    .eq("id", id);
+  if (error) throw error;
   revalidatePath(`/admin/submissions/${id}`);
 }
 
