@@ -57,7 +57,10 @@ function supabaseResizedUrl(src: string, displayWidth: number): string {
   const quality = targetW >= 800 ? 75 : 70;
   const [base] = src.split("?"); // drop any pre-existing query (e.g. legacy ?width=)
   const rendered = base.replace(PUBLIC_SEGMENT, RENDER_SEGMENT);
-  return `${rendered}?width=${targetW}&quality=${quality}`;
+  // resize=contain scales to `width` keeping aspect ratio (height auto). Without it
+  // Supabase pins the source height and only squeezes the width — distorting the
+  // image. CSS objectFit then crops the proportional result into the display box.
+  return `${rendered}?width=${targetW}&resize=contain&quality=${quality}`;
 }
 
 type OptimizedImageProps = {
