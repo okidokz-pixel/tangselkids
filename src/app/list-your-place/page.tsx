@@ -8,6 +8,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { useAuth } from "@/context/AuthContext";
 import { useLoginSheet } from "@/context/LoginSheetContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { compressImage } from "@/lib/compressImage";
 
 
 // ── Category-specific options ─────────────────────────────────────────────────
@@ -323,8 +324,9 @@ export default function ListYourPlacePage() {
     if (!file) return;
     e.target.value = "";
     setLogoUploading(true);
+    const { blob, filename } = await compressImage(file);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", blob, filename);
     try {
       const res = await fetch("/api/upload-place-photo", { method: "POST", body: fd });
       const json = await res.json();
@@ -346,8 +348,9 @@ export default function ListYourPlacePage() {
     if (!file || photos.length >= 10) return;
     e.target.value = "";
     setUploadingCount(n => n + 1);
+    const { blob, filename } = await compressImage(file);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", blob, filename);
     try {
       const res = await fetch("/api/upload-place-photo", { method: "POST", body: fd });
       const json = await res.json();
