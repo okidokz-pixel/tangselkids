@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveLearningCenter, deleteLearningCenter } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
+import { ImproveButton, TranslateButton } from "./AiButtons";
 
 const COURSE_TYPE_OPTIONS = [
   "Bahasa Inggris", "Matematika", "Seni Rupa", "Musik & Vokal",
@@ -39,6 +40,7 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
   const [yearFounded, setYearFounded] = useState(initial?.year_founded ?? "");
   const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
   const [about, setAbout] = useState(initial?.about ?? "");
+  const [aboutEn, setAboutEn] = useState(initial?.about_en ?? "");
   const [hours, setHours] = useState(initial?.hours ?? "");
 
   // Contact
@@ -101,7 +103,7 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
       longitude: longitude ? Number(longitude) : null,
       year_founded: yearFounded ? Number(yearFounded) : null,
       is_featured: isFeatured,
-      about: about || null, hours: hours || null,
+      about: about || null, about_en: aboutEn || null, hours: hours || null,
       phone: phone || null, whatsapp: whatsapp || null,
       email: email || null, website: website || null,
       instagram: instagram || null, facebook: facebook || null,
@@ -257,7 +259,19 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
           </Field>
 
           <Field label="About">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <ImproveButton text={about} name={name} category="learning-center" onResult={setAbout} />
+              <TranslateButton
+                fields={{ about }}
+                onResult={(out) => { if (out.about !== undefined) setAboutEn(out.about); }}
+                label="🌐 Translate to English"
+              />
+            </div>
             <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={about} onChange={(e) => setAbout(e.target.value)} />
+          </Field>
+
+          <Field label="About (English)">
+            <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={aboutEn} onChange={(e) => setAboutEn(e.target.value)} placeholder="English translation — use 🌐 Translate above, then review" />
           </Field>
 
           <SectionDivider label="Contact" />

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveBookstore, deleteBookstore } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
+import { ImproveButton, TranslateButton } from "./AiButtons";
 
 const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
 
@@ -224,6 +225,14 @@ export function BookstoreForm({ initial, id }: { initial?: Record<string, any>; 
           </Field>
 
           <Field label="About (ID)">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <ImproveButton text={about} name={name} category="bookstore" onResult={setAbout} />
+              <TranslateButton
+                fields={{ about }}
+                onResult={(out) => { if (out.about !== undefined) setAboutEn(out.about); }}
+                label="🌐 Translate to English"
+              />
+            </div>
             <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={about} onChange={(e) => setAbout(e.target.value)} />
           </Field>
 

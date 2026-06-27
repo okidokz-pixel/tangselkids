@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveDaycare, deleteDaycare } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
+import { ImproveButton, TranslateButton } from "./AiButtons";
 
 const AGE_GROUP_OPTIONS = [
   "Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)", "Usia 4+ thn",
@@ -259,6 +260,17 @@ export function DaycareForm({ initial, id }: { initial?: Record<string, any>; id
           </Field>
 
           <Field label="About (ID)">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <ImproveButton text={about} name={name} category="daycare" onResult={setAbout} />
+              <TranslateButton
+                fields={{ about, facilities }}
+                onResult={(out) => {
+                  if (out.about !== undefined) setAboutEn(out.about);
+                  if (out.facilities !== undefined) setFacilitiesEn(out.facilities);
+                }}
+                label="🌐 Translate all to English"
+              />
+            </div>
             <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={about} onChange={(e) => setAbout(e.target.value)} />
           </Field>
 
