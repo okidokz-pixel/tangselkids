@@ -390,6 +390,7 @@ function EditField({ label, value, onChange, type = "text", placeholder }: {
 }
 
 const EDIT_FIELDS: { key: string; label: string; type?: "text" | "textarea" | "number"; group: "contact" | "social" }[] = [
+  { key: "area", label: "Area (Bintaro / BSD / Bintaro/BSD)", group: "contact" },
   { key: "address", label: "Address", type: "textarea", group: "contact" },
   { key: "phone", label: "Phone", group: "contact" },
   { key: "whatsapp", label: "WhatsApp", group: "contact" },
@@ -412,13 +413,18 @@ type CatField =
 
 const CATEGORY_EDIT_FIELDS: Record<string, CatField[]> = {
   school: [
+    { kind: "text", key: "jenjang", label: "Jenjang (Preschool/TK/SD/SMP/SMA)" },
     { kind: "text", key: "curriculum", label: "Kurikulum" },
-    { kind: "list", key: "bahasa", label: "Bahasa Pengantar" },
+    { kind: "text", key: "curriculum_category", label: "Kategori Kurikulum" },
+    { kind: "list", key: "bahasa", label: "Bahasa Pengantar (kategori)" },
+    { kind: "text", key: "teaching_language", label: "Bahasa Pengantar (deskripsi)" },
     { kind: "list", key: "grades", label: "Jenjang / Grades" },
     { kind: "text", key: "students_per_class", label: "Siswa per kelas" },
     { kind: "range", minKey: "uang_pangkal_min", maxKey: "uang_pangkal_max", label: "Uang Pangkal (Rp)" },
     { kind: "range", minKey: "annual_fee_min", maxKey: "annual_fee_max", label: "Annual Fee (Rp)" },
     { kind: "range", minKey: "spp_min", maxKey: "spp_max", label: "SPP / bulan (Rp)" },
+    { kind: "text", key: "tahun_biaya", label: "Tahun Biaya (mis. 2024/2025)" },
+    { kind: "textarea", key: "jadwal_pendaftaran", label: "Jadwal Pendaftaran" },
     { kind: "list", key: "facilities", label: "Fasilitas" },
     { kind: "list", key: "extracurriculars", label: "Ekstrakurikuler" },
   ],
@@ -458,6 +464,13 @@ const CATEGORY_EDIT_FIELDS: Record<string, CatField[]> = {
 const CATEGORY_EDIT_DEFAULT: CatField[] = [
   { kind: "list", key: "facilities", label: "Fasilitas" },
   { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Harga (Rp)" },
+];
+// Place-page fields with no dedicated submission column — stashed in category_data
+// for every category so they're captured at review time (no schema migration).
+const UNIVERSAL_CAT_FIELDS: CatField[] = [
+  { kind: "text", key: "location_detail", label: "Lokasi Spesifik" },
+  { kind: "text", key: "email", label: "Email" },
+  { kind: "text", key: "slug", label: "Slug (URL)" },
 ];
 
 function flattenCat(spec: CatField[], data: Record<string, unknown>): Record<string, string> {
@@ -535,7 +548,8 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
   const [saved, setSaved] = useState(false);
   const setField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
-  const catSpec = CATEGORY_EDIT_FIELDS[s.category] ?? CATEGORY_EDIT_DEFAULT;
+  const baseCat = CATEGORY_EDIT_FIELDS[s.category] ?? CATEGORY_EDIT_DEFAULT;
+  const catSpec = [...baseCat, ...UNIVERSAL_CAT_FIELDS];
   const [cat, setCat] = useState<Record<string, string>>(() => flattenCat(catSpec, (s.category_data ?? {}) as Record<string, unknown>));
   const [videos, setVideos] = useState((s.yt_videos ?? []).filter(Boolean).join("\n"));
   const setCatField = (k: string, v: string) => setCat((p) => ({ ...p, [k]: v }));
@@ -702,12 +716,19 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
       {/* Category details (editable) */}
       <Section title={`✏️ ${CATEGORY_LABELS[s.category] ?? s.category} — details`}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
-          {catSpec.map((f) => (
+          {baseCat.map((f) => (
             <CatFieldEditor key={"minKey" in f ? f.minKey : f.key} field={f} cat={cat} set={setCatField} />
           ))}
         </div>
 
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: "10px 0 8px" }}>Media — Videos</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: "12px 0 8px" }}>Other details (slug, lokasi spesifik, email)</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+          {UNIVERSAL_CAT_FIELDS.map((f) => (
+            <CatFieldEditor key={"minKey" in f ? f.minKey : f.key} field={f} cat={cat} set={setCatField} />
+          ))}
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: "12px 0 8px" }}>Media — Videos</div>
         <EditField
           label="YouTube video links"
           value={videos}

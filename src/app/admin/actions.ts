@@ -844,7 +844,7 @@ export async function aiTranslateFields(
 
 /** Editable top-level columns on a submission (admin can fix/fill these by hand). */
 const SUBMISSION_EDITABLE = [
-  "address", "phone", "whatsapp", "gmaps_url", "hours", "year_founded",
+  "area", "address", "phone", "whatsapp", "gmaps_url", "hours", "year_founded",
   "description", "instagram", "facebook", "tiktok", "youtube", "website",
   "category_data", "yt_videos",
 ];
