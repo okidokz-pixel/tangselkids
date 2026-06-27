@@ -58,25 +58,9 @@ const STATUS_CFG = {
 function fmt(d: string) {
   return new Date(d).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-function fmtRp(v: unknown) {
-  if (!v) return "—";
-  return "Rp " + Number(v).toLocaleString("id-ID");
-}
-
 const ROW: React.CSSProperties = { display: "flex", gap: 8, marginBottom: 8, fontSize: 13 };
 const KEY: React.CSSProperties = { fontWeight: 600, color: "#374151", minWidth: 160, flexShrink: 0 };
 const VAL: React.CSSProperties = { color: "#111827" };
-
-function Field({ k, v }: { k: string; v: unknown }) {
-  if (!v && v !== 0) return null;
-  const display = Array.isArray(v) ? v.join(", ") : String(v);
-  return (
-    <div style={ROW}>
-      <span style={KEY}>{k}</span>
-      <span style={VAL}>{display}</span>
-    </div>
-  );
-}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -89,77 +73,6 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       </div>
     </div>
   );
-}
-
-function renderCategoryData(category: string, data: Record<string, unknown>) {
-  const rows: React.ReactNode[] = [];
-
-  const push = (k: string, v: unknown) => {
-    if (!v && v !== 0) return;
-    rows.push(<Field key={k} k={k} v={v} />);
-  };
-
-  switch (category) {
-    case "school":
-      push("Kurikulum", data.curriculum);
-      push("Bahasa", Array.isArray(data.bahasa) ? data.bahasa.join(", ") : data.bahasa);
-      push("Jenjang", Array.isArray(data.grades) ? data.grades.join(", ") : data.grades);
-      push("Siswa / Kelas", data.students_per_class);
-      if (data.uang_pangkal_min || data.uang_pangkal_max)
-        rows.push(<div key="up" style={ROW}><span style={KEY}>Uang Pangkal</span><span style={VAL}>{fmtRp(data.uang_pangkal_min)} – {fmtRp(data.uang_pangkal_max)}</span></div>);
-      if (data.annual_fee_min || data.annual_fee_max)
-        rows.push(<div key="af" style={ROW}><span style={KEY}>Annual Fee</span><span style={VAL}>{fmtRp(data.annual_fee_min)} – {fmtRp(data.annual_fee_max)}</span></div>);
-      if (data.spp_min || data.spp_max)
-        rows.push(<div key="spp" style={ROW}><span style={KEY}>SPP / bulan</span><span style={VAL}>{fmtRp(data.spp_min)} – {fmtRp(data.spp_max)}</span></div>);
-      push("Fasilitas", data.facilities);
-      push("Ekstrakurikuler", data.extracurriculars);
-      break;
-    case "learning-center":
-      push("Tipe Kursus", Array.isArray(data.course_types) ? data.course_types.join(", ") : data.course_types);
-      if (data.age_min || data.age_max)
-        rows.push(<div key="age" style={ROW}><span style={KEY}>Usia</span><span style={VAL}>{String(data.age_min ?? "?")} – {String(data.age_max ?? "?")} thn</span></div>);
-      push("Rasio Guru:Murid", data.teacher_ratio);
-      push("Free Trial", data.free_trial);
-      if (data.reg_fee_min || data.reg_fee_max)
-        rows.push(<div key="rf" style={ROW}><span style={KEY}>Biaya Daftar</span><span style={VAL}>{fmtRp(data.reg_fee_min)} – {fmtRp(data.reg_fee_max)}</span></div>);
-      if (data.price_min || data.price_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Harga / sesi</span><span style={VAL}>{fmtRp(data.price_min)} – {fmtRp(data.price_max)}</span></div>);
-      break;
-    case "daycare":
-      push("Usia Diterima", Array.isArray(data.ages) ? data.ages.join(", ") : data.ages);
-      push("Metode", data.method);
-      push("Rasio Pengasuh:Anak", data.carer_ratio);
-      push("CCTV", data.cctv);
-      push("Akreditasi", data.accreditation);
-      push("Fasilitas", data.facilities);
-      if (data.price_min || data.price_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Harga / bulan</span><span style={VAL}>{fmtRp(data.price_min)} – {fmtRp(data.price_max)}</span></div>);
-      break;
-    case "playground":
-      push("Tipe", Array.isArray(data.types) ? data.types.join(", ") : data.types);
-      push("Fasilitas", data.facilities);
-      if (data.price_min || data.price_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Tiket</span><span style={VAL}>{fmtRp(data.price_min)} – {fmtRp(data.price_max)}</span></div>);
-      break;
-    case "clinic":
-      push("Layanan", Array.isArray(data.services) ? data.services.join(", ") : data.services);
-      push("Fasilitas", data.facilities);
-      if (data.biaya_min || data.biaya_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Biaya / sesi</span><span style={VAL}>{fmtRp(data.biaya_min)} – {fmtRp(data.biaya_max)}</span></div>);
-      break;
-    case "cafe":
-      push("Budget Level", data.budget);
-      push("Fasilitas", data.facilities);
-      if (data.price_min || data.price_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Kisaran Harga</span><span style={VAL}>{fmtRp(data.price_min)} – {fmtRp(data.price_max)}</span></div>);
-      break;
-    default:
-      push("Fasilitas", data.facilities);
-      if (data.price_min || data.price_max)
-        rows.push(<div key="pr" style={ROW}><span style={KEY}>Harga</span><span style={VAL}>{fmtRp(data.price_min)} – {fmtRp(data.price_max)}</span></div>);
-  }
-
-  return rows.length > 0 ? <>{rows}</> : <p style={{ fontSize: 13, color: "#9ca3af" }}>No additional data.</p>;
 }
 
 const primaryBtn: React.CSSProperties = {
@@ -491,6 +404,120 @@ const EDIT_FIELDS: { key: string; label: string; type?: "text" | "textarea" | "n
   { key: "website", label: "Website", group: "social" },
 ];
 
+// ── Category-specific editable fields ─────────────────────────────────────────
+
+type CatField =
+  | { kind: "text" | "textarea" | "list"; key: string; label: string }
+  | { kind: "range"; minKey: string; maxKey: string; label: string };
+
+const CATEGORY_EDIT_FIELDS: Record<string, CatField[]> = {
+  school: [
+    { kind: "text", key: "curriculum", label: "Kurikulum" },
+    { kind: "list", key: "bahasa", label: "Bahasa Pengantar" },
+    { kind: "list", key: "grades", label: "Jenjang / Grades" },
+    { kind: "text", key: "students_per_class", label: "Siswa per kelas" },
+    { kind: "range", minKey: "uang_pangkal_min", maxKey: "uang_pangkal_max", label: "Uang Pangkal (Rp)" },
+    { kind: "range", minKey: "annual_fee_min", maxKey: "annual_fee_max", label: "Annual Fee (Rp)" },
+    { kind: "range", minKey: "spp_min", maxKey: "spp_max", label: "SPP / bulan (Rp)" },
+    { kind: "list", key: "facilities", label: "Fasilitas" },
+    { kind: "list", key: "extracurriculars", label: "Ekstrakurikuler" },
+  ],
+  "learning-center": [
+    { kind: "list", key: "course_types", label: "Tipe Kursus" },
+    { kind: "range", minKey: "age_min", maxKey: "age_max", label: "Usia (tahun)" },
+    { kind: "text", key: "teacher_ratio", label: "Rasio Guru:Murid" },
+    { kind: "text", key: "free_trial", label: "Free Trial" },
+    { kind: "range", minKey: "reg_fee_min", maxKey: "reg_fee_max", label: "Biaya Daftar (Rp)" },
+    { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Harga / sesi (Rp)" },
+  ],
+  daycare: [
+    { kind: "list", key: "ages", label: "Usia Diterima" },
+    { kind: "text", key: "method", label: "Metode" },
+    { kind: "text", key: "carer_ratio", label: "Rasio Pengasuh:Anak" },
+    { kind: "text", key: "cctv", label: "CCTV" },
+    { kind: "text", key: "accreditation", label: "Akreditasi" },
+    { kind: "list", key: "facilities", label: "Fasilitas" },
+    { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Harga / bulan (Rp)" },
+  ],
+  playground: [
+    { kind: "list", key: "types", label: "Tipe" },
+    { kind: "list", key: "facilities", label: "Fasilitas" },
+    { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Tiket (Rp)" },
+  ],
+  clinic: [
+    { kind: "list", key: "services", label: "Layanan" },
+    { kind: "list", key: "facilities", label: "Fasilitas" },
+    { kind: "range", minKey: "biaya_min", maxKey: "biaya_max", label: "Biaya / sesi (Rp)" },
+  ],
+  cafe: [
+    { kind: "text", key: "budget", label: "Budget Level" },
+    { kind: "list", key: "facilities", label: "Fasilitas" },
+    { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Kisaran Harga (Rp)" },
+  ],
+};
+const CATEGORY_EDIT_DEFAULT: CatField[] = [
+  { kind: "list", key: "facilities", label: "Fasilitas" },
+  { kind: "range", minKey: "price_min", maxKey: "price_max", label: "Harga (Rp)" },
+];
+
+function flattenCat(spec: CatField[], data: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of spec) {
+    if (f.kind === "range") {
+      out[f.minKey] = data[f.minKey] != null ? String(data[f.minKey]) : "";
+      out[f.maxKey] = data[f.maxKey] != null ? String(data[f.maxKey]) : "";
+    } else {
+      const v = data[f.key];
+      out[f.key] = v == null ? "" : Array.isArray(v) ? v.join(", ") : String(v);
+    }
+  }
+  return out;
+}
+
+function buildCat(spec: CatField[], base: Record<string, unknown>, cat: Record<string, string>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...base };
+  for (const f of spec) {
+    if (f.kind === "range") {
+      out[f.minKey] = cat[f.minKey]?.trim() ? Number(cat[f.minKey]) : null;
+      out[f.maxKey] = cat[f.maxKey]?.trim() ? Number(cat[f.maxKey]) : null;
+    } else if (f.kind === "list") {
+      const arr = (cat[f.key] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+      out[f.key] = arr.length ? arr : null;
+    } else {
+      out[f.key] = cat[f.key]?.trim() ? cat[f.key].trim() : null;
+    }
+  }
+  return out;
+}
+
+function CatFieldEditor({ field, cat, set }: { field: CatField; cat: Record<string, string>; set: (k: string, v: string) => void }) {
+  if (field.kind === "range") {
+    const minV = cat[field.minKey] ?? "";
+    const maxV = cat[field.maxKey] ?? "";
+    const empty = !minV.trim() && !maxV.trim();
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: empty ? "#b45309" : "#374151", marginBottom: 4 }}>
+          {empty ? <span title="Missing">⚠️</span> : null}{field.label}{empty ? <span style={{ fontWeight: 600, color: "#d97706", fontSize: 11 }}>— missing</span> : null}
+        </label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input type="number" placeholder="min" value={minV} onChange={(e) => set(field.minKey, e.target.value)} style={editInput(empty)} />
+          <input type="number" placeholder="max" value={maxV} onChange={(e) => set(field.maxKey, e.target.value)} style={editInput(empty)} />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <EditField
+      label={field.label}
+      value={cat[field.key] ?? ""}
+      onChange={(v) => set(field.key, v)}
+      type={field.kind === "textarea" ? "textarea" : "text"}
+      placeholder={field.kind === "list" ? "Comma-separated" : undefined}
+    />
+  );
+}
+
 export default function SubmissionDetail({ submission: s }: { submission: Submission }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -508,10 +535,17 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
   const [saved, setSaved] = useState(false);
   const setField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
+  const catSpec = CATEGORY_EDIT_FIELDS[s.category] ?? CATEGORY_EDIT_DEFAULT;
+  const [cat, setCat] = useState<Record<string, string>>(() => flattenCat(catSpec, (s.category_data ?? {}) as Record<string, unknown>));
+  const [videos, setVideos] = useState((s.yt_videos ?? []).filter(Boolean).join("\n"));
+  const setCatField = (k: string, v: string) => setCat((p) => ({ ...p, [k]: v }));
+
   async function saveFields() {
     setSaving(true); setSaved(false);
     try {
-      await updateSubmissionFields(s.id, form);
+      const category_data = buildCat(catSpec, (s.category_data ?? {}) as Record<string, unknown>, cat);
+      const yt_videos = videos.split("\n").map((t) => t.trim()).filter(Boolean);
+      await updateSubmissionFields(s.id, { ...form, category_data, yt_videos });
       setSaved(true);
       router.refresh();
       setTimeout(() => setSaved(false), 2500);
@@ -663,23 +697,35 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
           ))}
         </div>
 
+      </Section>
+
+      {/* Category details (editable) */}
+      <Section title={`✏️ ${CATEGORY_LABELS[s.category] ?? s.category} — details`}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+          {catSpec.map((f) => (
+            <CatFieldEditor key={"minKey" in f ? f.minKey : f.key} field={f} cat={cat} set={setCatField} />
+          ))}
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: "10px 0 8px" }}>Media — Videos</div>
+        <EditField
+          label="YouTube video links"
+          value={videos}
+          onChange={setVideos}
+          type="textarea"
+          placeholder="One YouTube URL per line (up to 4)"
+        />
+
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
           <button onClick={saveFields} disabled={saving} style={{ ...primaryBtn, background: "#16a34a", opacity: saving ? 0.6 : 1 }}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? "Saving…" : "Save all changes"}
           </button>
           {saved && <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 700 }}>✓ Saved</span>}
         </div>
       </Section>
 
-      {/* Category-specific */}
-      {s.category_data && Object.keys(s.category_data).some(k => s.category_data![k] != null) && (
-        <Section title={`${CATEGORY_LABELS[s.category] ?? s.category} — Details`}>
-          {renderCategoryData(s.category, s.category_data)}
-        </Section>
-      )}
-
-      {/* Media */}
-      {(s.logo_url || (s.photos && s.photos.length > 0) || (s.yt_videos && s.yt_videos.some(Boolean))) && (
+      {/* Media (logo + photos — read-only; videos are editable above) */}
+      {(s.logo_url || (s.photos && s.photos.length > 0)) && (
         <Section title="Media">
           {/* Logo */}
           {s.logo_url && (
@@ -705,17 +751,6 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
             </div>
           )}
 
-          {/* YouTube videos */}
-          {s.yt_videos && s.yt_videos.filter(Boolean).length > 0 && (
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 8 }}>YouTube Videos</div>
-              {s.yt_videos.filter(Boolean).map((url, i) => (
-                <div key={i} style={{ marginBottom: 4 }}>
-                  <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: "#2563eb" }}>{url}</a>
-                </div>
-              ))}
-            </div>
-          )}
         </Section>
       )}
 

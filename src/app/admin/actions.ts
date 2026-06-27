@@ -846,6 +846,7 @@ export async function aiTranslateFields(
 const SUBMISSION_EDITABLE = [
   "address", "phone", "whatsapp", "gmaps_url", "hours", "year_founded",
   "description", "instagram", "facebook", "tiktok", "youtube", "website",
+  "category_data", "yt_videos",
 ];
 
 /** Update a submission's editable fields. Empty strings become null. */
