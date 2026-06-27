@@ -532,9 +532,22 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
     }
   }
 
-  const submitterWaMsg =
-    `[Admin TangselKids] Halo ${s.submitter_name ?? ""}, kami sudah menerima pendaftaran untuk tempat kamu di TangselKids untuk ${s.name}. ` +
+  // WhatsApp templates. Button 2 includes the live place URL, built from the
+  // editable slug field (category_data.slug) — paste a full URL there too if you prefer.
+  const SITE_URL = "https://tangselkids.com";
+  const liveSlug = (cat.slug ?? "").trim();
+  const livePlaceUrl = liveSlug
+    ? (liveSlug.startsWith("http") ? liveSlug : `${SITE_URL}/place/${liveSlug.replace(/^\/+/, "")}`)
+    : "";
+
+  const waReceivedMsg =
+    `[Dari: Admin TangselKids] Halo, ${s.submitter_name ?? ""}!  Kami sudah menerima pendaftaran untuk *${s.name}* di *TangselKids*. ` +
     `Mohon menunggu 1-2 hari untuk proses verifikasi dan akan kami kabarkan lagi jika sudah diterima.`;
+
+  const waApprovedMsg =
+    `[Dari: Admin TangselKids] Halo, ${s.submitter_name ?? ""}! Pendaftaran *${s.name}* di *TangselKids* sudah kami approve! :) ` +
+    `Silahkan lihat link-nya disini:\n${livePlaceUrl || "[link halaman tempat]"}\n` +
+    `Terima kasih sudah menggunakan TangselKids! ^_^`;
 
   const badge = STATUS_CFG[status as keyof typeof STATUS_CFG] ?? STATUS_CFG.pending;
 
@@ -631,19 +644,39 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
               )}
             </div>
             {s.submitter_phone && (
-              <a
-                href={`https://wa.me/${normalizePhone62(s.submitter_phone)}?text=${encodeURIComponent(submitterWaMsg)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "9px 18px", borderRadius: 8,
-                  background: "#22c55e", color: "#fff",
-                  fontSize: 13, fontWeight: 700, textDecoration: "none",
-                }}
-              >
-                💬 Chat di WhatsApp
-              </a>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+                <a
+                  href={`https://wa.me/${normalizePhone62(s.submitter_phone)}?text=${encodeURIComponent(waReceivedMsg)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "9px 18px", borderRadius: 8,
+                    background: "#22c55e", color: "#fff",
+                    fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  }}
+                >
+                  📥 Konfirmasi diterima
+                </a>
+                <a
+                  href={`https://wa.me/${normalizePhone62(s.submitter_phone)}?text=${encodeURIComponent(waApprovedMsg)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8,
+                    padding: "9px 18px", borderRadius: 8,
+                    background: "#0e1d4f", color: "#fff",
+                    fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  }}
+                >
+                  ✅ Beritahu sudah live
+                </a>
+                <span style={{ fontSize: 11, color: liveSlug ? "#16a34a" : "#d97706", textAlign: "right", maxWidth: 220 }}>
+                  {liveSlug
+                    ? `Link: ${livePlaceUrl}`
+                    : "⚠️ Isi field Slug (URL) di bawah agar link terisi otomatis di pesan ke-2."}
+                </span>
+              </div>
             )}
           </div>
         </Section>
