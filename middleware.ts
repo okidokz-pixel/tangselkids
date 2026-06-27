@@ -24,7 +24,13 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Cap the auth check so a slow/IO-starved Supabase can't hang the whole
+  // middleware into a Vercel 504. On timeout we fail CLOSED (treat as not signed
+  // in → redirect to /admin/login) rather than block the request.
+  const user = await Promise.race([
+    supabase.auth.getUser().then((r) => r.data.user).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 4500)),
+  ]);
 
   const { pathname } = request.nextUrl;
   const isAdminRoute = pathname.startsWith("/admin");
