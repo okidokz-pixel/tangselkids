@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
-import { updateSubmissionStatus, deleteSubmission, enrichSubmissionFromGoogle, applySubmissionEnrichment } from "../../actions";
+import { updateSubmissionStatus, deleteSubmission, enrichSubmissionFromGoogle, applySubmissionEnrichment, updateSubmissionFields } from "../../actions";
 import type { GoogleEnrichment } from "@/lib/enrichment";
 
 type Submission = {
@@ -200,15 +200,24 @@ function EnrichRow({ label, current, suggested }: { label: string; current?: str
   );
 }
 
-function GoogleEnrich({ s }: { s: Submission }) {
+function GoogleEnrich({
+  s,
+  current,
+  onFill,
+}: {
+  s: Submission;
+  current?: { address: string; phone: string; hours: string; website: string };
+  onFill?: (patch: Record<string, string>) => void;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
   const [result, setResult] = useState<GoogleEnrichment | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filled, setFilled] = useState(false);
 
   async function run() {
-    setLoading(true); setError(null); setResult(null);
+    setLoading(true); setError(null); setResult(null); setFilled(false);
     try {
       const r = await enrichSubmissionFromGoogle(s.id);
       if (r.ok) setResult(r.data);
@@ -220,17 +229,20 @@ function GoogleEnrich({ s }: { s: Submission }) {
     }
   }
 
-  // Only fields the submitter left blank that Google can fill.
-  const gaps: { address?: string; phone?: string; hours?: string; website?: string } = {};
+  // Compare against the live form values (when wired) so already-typed fields aren't "gaps".
+  const base = current ?? { address: s.address ?? "", phone: s.phone ?? "", hours: s.hours ?? "", website: s.website ?? "" };
+
+  const gaps: Record<string, string> = {};
   if (result) {
-    if (!s.address && result.formattedAddress) gaps.address = result.formattedAddress;
-    if (!s.phone && result.phone) gaps.phone = result.phone;
-    if (!s.hours && result.hours) gaps.hours = result.hours;
-    if (!s.website && result.website) gaps.website = result.website;
+    if (!base.address.trim() && result.formattedAddress) gaps.address = result.formattedAddress;
+    if (!base.phone.trim() && result.phone) gaps.phone = result.phone;
+    if (!base.hours.trim() && result.hours) gaps.hours = result.hours;
+    if (!base.website.trim() && result.website) gaps.website = result.website;
   }
   const gapKeys = Object.keys(gaps);
 
   async function applyGaps() {
+    if (onFill) { onFill(gaps); setFilled(true); return; }
     setApplying(true);
     try {
       await applySubmissionEnrichment(s.id, gaps);
@@ -257,16 +269,19 @@ function GoogleEnrich({ s }: { s: Submission }) {
 
       {result && (
         <div style={{ marginTop: 16 }}>
+          <p style={{ margin: "0 0 12px", fontSize: 12, color: "#b45309", fontWeight: 600 }}>
+            ⚠️ Found: <b>{result.name}</b> — verify this is the right place before filling (Google returns its best guess).
+          </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 16 }}>
             <Stat label="Google Rating" value={result.rating != null ? `⭐ ${result.rating} (${result.userRatingCount ?? 0} reviews)` : "—"} />
             <Stat label="Latitude" value={result.lat != null ? String(result.lat) : "—"} copy={result.lat != null ? String(result.lat) : undefined} />
             <Stat label="Longitude" value={result.lng != null ? String(result.lng) : "—"} copy={result.lng != null ? String(result.lng) : undefined} />
           </div>
 
-          <EnrichRow label="Address" current={s.address} suggested={result.formattedAddress} />
-          <EnrichRow label="Phone"   current={s.phone}   suggested={result.phone} />
-          <EnrichRow label="Hours"   current={s.hours}   suggested={result.hours} />
-          <EnrichRow label="Website" current={s.website} suggested={result.website} />
+          <EnrichRow label="Address" current={base.address} suggested={result.formattedAddress} />
+          <EnrichRow label="Phone"   current={base.phone}   suggested={result.phone} />
+          <EnrichRow label="Hours"   current={base.hours}   suggested={result.hours} />
+          <EnrichRow label="Website" current={base.website} suggested={result.website} />
           {result.googleMapsUri && (
             <div style={{ ...ROW, marginTop: 6 }}>
               <span style={KEY}>Google Maps</span>
@@ -276,11 +291,12 @@ function GoogleEnrich({ s }: { s: Submission }) {
 
           {gapKeys.length > 0 ? (
             <button onClick={applyGaps} disabled={applying} style={{ ...primaryBtn, marginTop: 14, background: "#16a34a", opacity: applying ? 0.6 : 1 }}>
-              {applying ? "Applying…" : `Fill ${gapKeys.length} empty field${gapKeys.length > 1 ? "s" : ""} (${gapKeys.join(", ")})`}
+              {applying ? "Applying…" : `Fill ${gapKeys.length} empty field${gapKeys.length > 1 ? "s" : ""}${onFill ? " below" : ""} (${gapKeys.join(", ")})`}
             </button>
           ) : (
-            <p style={{ marginTop: 14, fontSize: 12.5, color: "#9ca3af" }}>No empty submission fields to fill — rating &amp; coordinates above are ready to copy into the listing.</p>
+            <p style={{ marginTop: 14, fontSize: 12.5, color: "#9ca3af" }}>No empty fields to fill — rating &amp; coordinates above are ready to copy into the listing.</p>
           )}
+          {filled && <p style={{ marginTop: 10, fontSize: 12.5, color: "#16a34a", fontWeight: 600 }}>✓ Filled into the form below — review and click “Save changes”.</p>}
         </div>
       )}
     </Section>
@@ -424,11 +440,85 @@ function Completeness({ s }: { s: Submission }) {
   );
 }
 
+// ── Editable fields ───────────────────────────────────────────────────────────
+
+function editInput(empty: boolean): React.CSSProperties {
+  return {
+    width: "100%", padding: "8px 10px", borderRadius: 7,
+    border: `1.5px solid ${empty ? "#fcd34d" : "#e5e7eb"}`,
+    background: empty ? "#fffbeb" : "#fff",
+    fontSize: 13, outline: "none", resize: "vertical",
+    fontFamily: "inherit", boxSizing: "border-box",
+  };
+}
+
+function EditField({ label, value, onChange, type = "text", placeholder }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: "text" | "textarea" | "number";
+  placeholder?: string;
+}) {
+  const empty = !value.trim();
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: empty ? "#b45309" : "#374151", marginBottom: 4 }}>
+        {empty ? <span title="Missing">⚠️</span> : null}
+        {label}
+        {empty ? <span style={{ fontWeight: 600, color: "#d97706", fontSize: 11 }}>— missing</span> : null}
+      </label>
+      {type === "textarea" ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...editInput(empty), minHeight: 64 }} />
+      ) : (
+        <input type={type === "number" ? "number" : "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={editInput(empty)} />
+      )}
+    </div>
+  );
+}
+
+const EDIT_FIELDS: { key: string; label: string; type?: "text" | "textarea" | "number"; group: "contact" | "social" }[] = [
+  { key: "address", label: "Address", type: "textarea", group: "contact" },
+  { key: "phone", label: "Phone", group: "contact" },
+  { key: "whatsapp", label: "WhatsApp", group: "contact" },
+  { key: "gmaps_url", label: "Google Maps link", group: "contact" },
+  { key: "hours", label: "Operating hours", group: "contact" },
+  { key: "year_founded", label: "Year founded", type: "number", group: "contact" },
+  { key: "description", label: "Description", type: "textarea", group: "contact" },
+  { key: "instagram", label: "Instagram", group: "social" },
+  { key: "facebook", label: "Facebook", group: "social" },
+  { key: "tiktok", label: "TikTok", group: "social" },
+  { key: "youtube", label: "YouTube", group: "social" },
+  { key: "website", label: "Website", group: "social" },
+];
+
 export default function SubmissionDetail({ submission: s }: { submission: Submission }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [notes, setNotes] = useState(s.admin_notes ?? "");
   const [status, setStatus] = useState(s.status);
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const f of EDIT_FIELDS) {
+      const v = (s as unknown as Record<string, unknown>)[f.key];
+      init[f.key] = v == null ? "" : String(v);
+    }
+    return init;
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const setField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  async function saveFields() {
+    setSaving(true); setSaved(false);
+    try {
+      await updateSubmissionFields(s.id, form);
+      setSaved(true);
+      router.refresh();
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   const badge = STATUS_CFG[status as keyof typeof STATUS_CFG] ?? STATUS_CFG.pending;
 
@@ -509,7 +599,11 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
       <Completeness s={s} />
 
       {/* Auto-fill from Google */}
-      <GoogleEnrich s={s} />
+      <GoogleEnrich
+        s={s}
+        current={{ address: form.address, phone: form.phone, hours: form.hours, website: form.website }}
+        onFill={(patch) => setForm((f) => ({ ...f, ...patch }))}
+      />
 
       {/* Submitter info */}
       {(s.submitter_name || s.submitter_phone) && (
@@ -542,42 +636,40 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         </Section>
       )}
 
-      {/* Core info */}
-      <Section title="Core Info">
-        <Field k="Address"       v={s.address} />
-        <Field k="Phone"         v={s.phone} />
-        <Field k="WhatsApp"      v={s.whatsapp} />
-        <Field k="Hours"         v={s.hours} />
-        <Field k="Year Founded"  v={s.year_founded} />
-        {s.gmaps_url && (
-          <div style={ROW}>
-            <span style={KEY}>Google Maps</span>
-            <a href={s.gmaps_url} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", fontSize: 13 }}>Open link</a>
-          </div>
-        )}
-        {s.description && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ ...KEY, marginBottom: 4 }}>Description</div>
-            <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.6 }}>{s.description}</p>
-          </div>
-        )}
-      </Section>
-
-      {/* Social links */}
-      {(s.instagram || s.facebook || s.tiktok || s.youtube || s.website) && (
-        <Section title="Social Links">
-          <Field k="Instagram" v={s.instagram ? `@${s.instagram}` : null} />
-          <Field k="Facebook"  v={s.facebook} />
-          <Field k="TikTok"    v={s.tiktok ? `@${s.tiktok}` : null} />
-          <Field k="YouTube"   v={s.youtube ? `@${s.youtube}` : null} />
-          {s.website && (
-            <div style={ROW}>
-              <span style={KEY}>Website</span>
-              <a href={s.website} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", fontSize: 13 }}>{s.website}</a>
+      {/* Editable details */}
+      <Section title="✏️ Details — edit &amp; fill missing fields">
+        <p style={{ margin: "0 0 14px", fontSize: 12.5, color: "#6b7280" }}>
+          Fields marked <span style={{ color: "#b45309", fontWeight: 700 }}>⚠️ missing</span> are empty. Edit any field by hand (or use Auto-fill above), then click Save.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+          {EDIT_FIELDS.filter((f) => f.group === "contact").map((f) => (
+            <div key={f.key} style={{ gridColumn: f.type === "textarea" ? "1 / -1" : undefined }}>
+              <EditField label={f.label} value={form[f.key] ?? ""} onChange={(v) => setField(f.key, v)} type={f.type} />
             </div>
-          )}
-        </Section>
-      )}
+          ))}
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", margin: "10px 0 10px" }}>Social Media</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
+          {EDIT_FIELDS.filter((f) => f.group === "social").map((f) => (
+            <EditField
+              key={f.key}
+              label={f.label}
+              value={form[f.key] ?? ""}
+              onChange={(v) => setField(f.key, v)}
+              type={f.type}
+              placeholder={["instagram", "tiktok", "youtube"].includes(f.key) ? "@handle or URL" : undefined}
+            />
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
+          <button onClick={saveFields} disabled={saving} style={{ ...primaryBtn, background: "#16a34a", opacity: saving ? 0.6 : 1 }}>
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          {saved && <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 700 }}>✓ Saved</span>}
+        </div>
+      </Section>
 
       {/* Category-specific */}
       {s.category_data && Object.keys(s.category_data).some(k => s.category_data![k] != null) && (

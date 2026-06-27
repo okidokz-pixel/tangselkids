@@ -842,6 +842,29 @@ export async function aiTranslateFields(
   }
 }
 
+/** Editable top-level columns on a submission (admin can fix/fill these by hand). */
+const SUBMISSION_EDITABLE = [
+  "address", "phone", "whatsapp", "gmaps_url", "hours", "year_founded",
+  "description", "instagram", "facebook", "tiktok", "youtube", "website",
+];
+
+/** Update a submission's editable fields. Empty strings become null. */
+export async function updateSubmissionFields(id: string, patch: Record<string, unknown>) {
+  await assertAdmin();
+  const clean: Record<string, unknown> = {};
+  for (const k of SUBMISSION_EDITABLE) {
+    if (!(k in patch)) continue;
+    let v: unknown = patch[k];
+    if (typeof v === "string") { v = v.trim(); if (v === "") v = null; }
+    if (k === "year_founded") v = v ? Number(v) : null;
+    clean[k] = v ?? null;
+  }
+  if (Object.keys(clean).length === 0) return;
+  const { error } = await supabaseAdmin.from("place_submissions").update(clean).eq("id", id);
+  if (error) throw error;
+  revalidatePath(`/admin/submissions/${id}`);
+}
+
 export async function deleteSubmission(id: string) {
   await assertAdmin();
   const { error } = await supabaseAdmin.from("place_submissions").delete().eq("id", id);
