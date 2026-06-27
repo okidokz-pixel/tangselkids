@@ -355,6 +355,48 @@ function Completeness({ s }: { s: Submission }) {
 
 // ── Editable fields ───────────────────────────────────────────────────────────
 
+const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const GRADE_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
+const BAHASA_OPTIONS = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
+const CURRICULUM_CATEGORY_OPTIONS = ["Nasional", "Cambridge", "International Baccalaureate (IB)", "Islamic", "Montessori", "Lainnya"];
+
+/** "100000" → "100.000" (Indonesian thousands). Non-digits stripped. */
+function formatThousands(s: string): string {
+  const digits = (s ?? "").replace(/\D/g, "");
+  return digits ? Number(digits).toLocaleString("id-ID") : "";
+}
+function parseThousands(s: string): number | null {
+  const digits = (s ?? "").replace(/\D/g, "");
+  return digits ? Number(digits) : null;
+}
+
+/** Social handle → "@handle" (extracts from a profile URL if one is pasted). */
+function normalizeHandle(s: string): string {
+  let v = (s ?? "").trim();
+  if (!v) return "";
+  const m = v.match(/(?:instagram\.com|tiktok\.com|youtube\.com|facebook\.com|t\.me)\/+@?([A-Za-z0-9._-]+)/i);
+  if (m) v = m[1];
+  v = v.replace(/^@+/, "");
+  return v ? "@" + v : "";
+}
+
+/** Phone → "628xxxxxxxx" (leading 0 → 62, bare 8 → 62, strips +/spaces/dashes). */
+function normalizePhone62(s: string): string {
+  let d = (s ?? "").replace(/\D/g, "");
+  if (!d) return "";
+  if (d.startsWith("0")) d = "62" + d.slice(1);
+  else if (d.startsWith("8")) d = "62" + d;
+  return d;
+}
+
+function FieldLabel({ label, empty }: { label: string; empty: boolean }) {
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: empty ? "#b45309" : "#374151", marginBottom: 4 }}>
+      {empty ? <span title="Missing">⚠️</span> : null}{label}{empty ? <span style={{ fontWeight: 600, color: "#d97706", fontSize: 11 }}>— missing</span> : null}
+    </label>
+  );
+}
+
 function editInput(empty: boolean): React.CSSProperties {
   return {
     width: "100%", padding: "8px 10px", borderRadius: 7,
@@ -365,42 +407,67 @@ function editInput(empty: boolean): React.CSSProperties {
   };
 }
 
-function EditField({ label, value, onChange, type = "text", placeholder }: {
+type FieldType = "text" | "textarea" | "number" | "select" | "handle" | "phone";
+
+function EditField({ label, value, onChange, type = "text", placeholder, options }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  type?: "text" | "textarea" | "number";
+  type?: FieldType;
   placeholder?: string;
+  options?: string[];
 }) {
   const empty = !value.trim();
+  let control: React.ReactNode;
+  if (type === "select") {
+    const opts = options ?? [];
+    const all = value && !opts.includes(value) ? [value, ...opts] : opts;
+    control = (
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={editInput(empty)}>
+        <option value="">— pilih —</option>
+        {all.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    );
+  } else if (type === "textarea") {
+    control = <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...editInput(empty), minHeight: 64 }} />;
+  } else {
+    const onBlur =
+      type === "handle" ? () => onChange(normalizeHandle(value))
+      : type === "phone" ? () => onChange(normalizePhone62(value))
+      : undefined;
+    const ph = placeholder ?? (type === "handle" ? "@handle" : type === "phone" ? "628xxxxxxxxxx" : undefined);
+    control = (
+      <input
+        type={type === "number" ? "number" : "text"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        placeholder={ph}
+        style={editInput(empty)}
+      />
+    );
+  }
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: empty ? "#b45309" : "#374151", marginBottom: 4 }}>
-        {empty ? <span title="Missing">⚠️</span> : null}
-        {label}
-        {empty ? <span style={{ fontWeight: 600, color: "#d97706", fontSize: 11 }}>— missing</span> : null}
-      </label>
-      {type === "textarea" ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3} style={{ ...editInput(empty), minHeight: 64 }} />
-      ) : (
-        <input type={type === "number" ? "number" : "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={editInput(empty)} />
-      )}
+      <FieldLabel label={label} empty={empty} />
+      {control}
     </div>
   );
 }
 
-const EDIT_FIELDS: { key: string; label: string; type?: "text" | "textarea" | "number"; group: "contact" | "social" }[] = [
-  { key: "area", label: "Area (Bintaro / BSD / Bintaro/BSD)", group: "contact" },
+const EDIT_FIELDS: { key: string; label: string; type?: FieldType; group: "contact" | "social"; options?: string[] }[] = [
+  { key: "name", label: "Name", group: "contact" },
+  { key: "area", label: "Area", type: "select", options: AREA_OPTIONS, group: "contact" },
   { key: "address", label: "Address", type: "textarea", group: "contact" },
   { key: "phone", label: "Phone", group: "contact" },
-  { key: "whatsapp", label: "WhatsApp", group: "contact" },
+  { key: "whatsapp", label: "WhatsApp", type: "phone", group: "contact" },
   { key: "gmaps_url", label: "Google Maps link", group: "contact" },
   { key: "hours", label: "Operating hours", group: "contact" },
   { key: "year_founded", label: "Year founded", type: "number", group: "contact" },
   { key: "description", label: "Description", type: "textarea", group: "contact" },
-  { key: "instagram", label: "Instagram", group: "social" },
+  { key: "instagram", label: "Instagram", type: "handle", group: "social" },
   { key: "facebook", label: "Facebook", group: "social" },
-  { key: "tiktok", label: "TikTok", group: "social" },
+  { key: "tiktok", label: "TikTok", type: "handle", group: "social" },
   { key: "youtube", label: "YouTube", group: "social" },
   { key: "website", label: "Website", group: "social" },
 ];
@@ -409,16 +476,17 @@ const EDIT_FIELDS: { key: string; label: string; type?: "text" | "textarea" | "n
 
 type CatField =
   | { kind: "text" | "textarea" | "list"; key: string; label: string }
+  | { kind: "select"; key: string; label: string; options: string[] }
+  | { kind: "checkboxes"; key: string; label: string; options: string[] }
   | { kind: "range"; minKey: string; maxKey: string; label: string };
 
 const CATEGORY_EDIT_FIELDS: Record<string, CatField[]> = {
   school: [
-    { kind: "text", key: "jenjang", label: "Jenjang (Preschool/TK/SD/SMP/SMA)" },
+    { kind: "checkboxes", key: "grades", label: "Jenjang Lengkap", options: GRADE_OPTIONS },
     { kind: "text", key: "curriculum", label: "Kurikulum" },
-    { kind: "text", key: "curriculum_category", label: "Kategori Kurikulum" },
-    { kind: "list", key: "bahasa", label: "Bahasa Pengantar (kategori)" },
+    { kind: "select", key: "curriculum_category", label: "Kategori Kurikulum", options: CURRICULUM_CATEGORY_OPTIONS },
+    { kind: "checkboxes", key: "bahasa", label: "Bahasa Pengantar", options: BAHASA_OPTIONS },
     { kind: "text", key: "teaching_language", label: "Bahasa Pengantar (deskripsi)" },
-    { kind: "list", key: "grades", label: "Jenjang / Grades" },
     { kind: "text", key: "students_per_class", label: "Siswa per kelas" },
     { kind: "range", minKey: "uang_pangkal_min", maxKey: "uang_pangkal_max", label: "Uang Pangkal (Rp)" },
     { kind: "range", minKey: "annual_fee_min", maxKey: "annual_fee_max", label: "Annual Fee (Rp)" },
@@ -477,8 +545,8 @@ function flattenCat(spec: CatField[], data: Record<string, unknown>): Record<str
   const out: Record<string, string> = {};
   for (const f of spec) {
     if (f.kind === "range") {
-      out[f.minKey] = data[f.minKey] != null ? String(data[f.minKey]) : "";
-      out[f.maxKey] = data[f.maxKey] != null ? String(data[f.maxKey]) : "";
+      out[f.minKey] = data[f.minKey] != null ? formatThousands(String(data[f.minKey])) : "";
+      out[f.maxKey] = data[f.maxKey] != null ? formatThousands(String(data[f.maxKey])) : "";
     } else {
       const v = data[f.key];
       out[f.key] = v == null ? "" : Array.isArray(v) ? v.join(", ") : String(v);
@@ -491,9 +559,9 @@ function buildCat(spec: CatField[], base: Record<string, unknown>, cat: Record<s
   const out: Record<string, unknown> = { ...base };
   for (const f of spec) {
     if (f.kind === "range") {
-      out[f.minKey] = cat[f.minKey]?.trim() ? Number(cat[f.minKey]) : null;
-      out[f.maxKey] = cat[f.maxKey]?.trim() ? Number(cat[f.maxKey]) : null;
-    } else if (f.kind === "list") {
+      out[f.minKey] = parseThousands(cat[f.minKey] ?? "");
+      out[f.maxKey] = parseThousands(cat[f.maxKey] ?? "");
+    } else if (f.kind === "list" || f.kind === "checkboxes") {
       const arr = (cat[f.key] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
       out[f.key] = arr.length ? arr : null;
     } else {
@@ -510,15 +578,41 @@ function CatFieldEditor({ field, cat, set }: { field: CatField; cat: Record<stri
     const empty = !minV.trim() && !maxV.trim();
     return (
       <div style={{ marginBottom: 12 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: empty ? "#b45309" : "#374151", marginBottom: 4 }}>
-          {empty ? <span title="Missing">⚠️</span> : null}{field.label}{empty ? <span style={{ fontWeight: 600, color: "#d97706", fontSize: 11 }}>— missing</span> : null}
-        </label>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input type="number" placeholder="min" value={minV} onChange={(e) => set(field.minKey, e.target.value)} style={editInput(empty)} />
-          <input type="number" placeholder="max" value={maxV} onChange={(e) => set(field.maxKey, e.target.value)} style={editInput(empty)} />
+        <FieldLabel label={field.label} empty={empty} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input inputMode="numeric" placeholder="min" value={minV} onChange={(e) => set(field.minKey, formatThousands(e.target.value))} style={editInput(empty)} />
+          <span style={{ color: "#9ca3af" }}>–</span>
+          <input inputMode="numeric" placeholder="max" value={maxV} onChange={(e) => set(field.maxKey, formatThousands(e.target.value))} style={editInput(empty)} />
         </div>
       </div>
     );
+  }
+  if (field.kind === "checkboxes") {
+    const selected = (cat[field.key] ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+    const empty = selected.length === 0;
+    const all = [...field.options, ...selected.filter((v) => !field.options.includes(v))];
+    const toggle = (opt: string) => {
+      const next = selected.includes(opt) ? selected.filter((x) => x !== opt) : [...selected, opt];
+      set(field.key, next.join(", "));
+    };
+    return (
+      <div style={{ marginBottom: 12 }}>
+        <FieldLabel label={field.label} empty={empty} />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {all.map((opt) => {
+            const on = selected.includes(opt);
+            return (
+              <label key={opt} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 7, border: `1.5px solid ${on ? "#16a34a" : "#e5e7eb"}`, background: on ? "#f0fdf4" : "#fff", fontSize: 12.5, cursor: "pointer" }}>
+                <input type="checkbox" checked={on} onChange={() => toggle(opt)} /> {opt}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  if (field.kind === "select") {
+    return <EditField label={field.label} value={cat[field.key] ?? ""} onChange={(v) => set(field.key, v)} type="select" options={field.options} />;
   }
   return (
     <EditField
@@ -557,9 +651,16 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
   async function saveFields() {
     setSaving(true); setSaved(false);
     try {
+      const normForm = {
+        ...form,
+        instagram: normalizeHandle(form.instagram ?? ""),
+        tiktok: normalizeHandle(form.tiktok ?? ""),
+        whatsapp: normalizePhone62(form.whatsapp ?? ""),
+      };
+      setForm(normForm);
       const category_data = buildCat(catSpec, (s.category_data ?? {}) as Record<string, unknown>, cat);
       const yt_videos = videos.split("\n").map((t) => t.trim()).filter(Boolean);
-      await updateSubmissionFields(s.id, { ...form, category_data, yt_videos });
+      await updateSubmissionFields(s.id, { ...normForm, category_data, yt_videos });
       setSaved(true);
       router.refresh();
       setTimeout(() => setSaved(false), 2500);
@@ -692,7 +793,7 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
           {EDIT_FIELDS.filter((f) => f.group === "contact").map((f) => (
             <div key={f.key} style={{ gridColumn: f.type === "textarea" ? "1 / -1" : undefined }}>
-              <EditField label={f.label} value={form[f.key] ?? ""} onChange={(v) => setField(f.key, v)} type={f.type} />
+              <EditField label={f.label} value={form[f.key] ?? ""} onChange={(v) => setField(f.key, v)} type={f.type} options={f.options} />
             </div>
           ))}
         </div>
@@ -706,7 +807,7 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
               value={form[f.key] ?? ""}
               onChange={(v) => setField(f.key, v)}
               type={f.type}
-              placeholder={["instagram", "tiktok", "youtube"].includes(f.key) ? "@handle or URL" : undefined}
+              options={f.options}
             />
           ))}
         </div>
