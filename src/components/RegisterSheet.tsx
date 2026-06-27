@@ -7,6 +7,7 @@ function track(event: string, params?: Record<string, unknown>) {
 import { X, ChevronLeft, Plus, Camera, User } from "lucide-react";
 import { useAuth, type Kid } from "@/context/AuthContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
+import { useLoginSheet } from "@/context/LoginSheetContext";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "./ActionButton";
 import { OtpResend } from "./OtpResend";
@@ -64,7 +65,13 @@ const bigConfetti = [
 export function RegisterSheet() {
   const { register, sendOtp, verifyOtp } = useAuth();
   const { isOpen, options, closeRegisterSheet } = useRegisterSheet();
+  const { openLoginSheet } = useLoginSheet();
   const { t, lang } = useLang();
+
+  function handleSwitchToLogin() {
+    closeRegisterSheet();
+    setTimeout(() => openLoginSheet(), 200);
+  }
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");
@@ -678,8 +685,23 @@ export function RegisterSheet() {
                 <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0f172a", margin: "0 0 4px" }}>
                   {options.title ?? t.obPhoneTitle}
                 </h2>
-                <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 24px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 14px", lineHeight: 1.5 }}>
                   {options.subtitle ?? t.obPhoneDesc}
+                </p>
+
+                <p style={{
+                  fontSize: 12.5, color: "#15803d", textAlign: "center",
+                  background: "#ecfdf3", border: "1px solid #c5ecd3", borderRadius: 12,
+                  padding: "10px 12px", margin: "0 0 22px",
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                }}>
+                  Sudah punya akun?{" "}
+                  <ActionButton
+                    onClick={handleSwitchToLogin}
+                    style={{ color: "#15803d", fontWeight: 800, textDecoration: "underline", display: "inline" }}
+                  >
+                    Log in di sini
+                  </ActionButton>
                 </p>
 
                 <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
@@ -759,9 +781,6 @@ export function RegisterSheet() {
                     {sendOtpError}
                   </p>
                 )}
-                <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", marginTop: 12, fontFamily: "var(--font-jakarta), sans-serif" }}>
-                  Gratis selamanya · Tanpa kartu kredit
-                </p>
               </div>
             )}
 

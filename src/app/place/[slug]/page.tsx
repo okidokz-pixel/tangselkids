@@ -20,7 +20,6 @@ import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { useLocation } from "@/context/LocationContext";
-import { useLoginSheet } from "@/context/LoginSheetContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
 
@@ -153,7 +152,6 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const router  = useRouter();
   const { t, lang } = useLang();
   const { loaded, user } = useAuth();
-  const { openLoginSheet } = useLoginSheet();
   const { openRegisterSheet } = useRegisterSheet();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
 
@@ -423,7 +421,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
   function toggleSave() {
     if (!user) {
-      openLoginSheet();
+      openRegisterSheet();
       return;
     }
     const placeId = place?.id ?? slug;
@@ -1486,7 +1484,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                                   <Lock size={20} color="#0e1d4f" strokeWidth={2.5} />
                                 </div>
                                 <ActionButton
-                                  onClick={openRegisterSheet}
+                                  onClick={() => openRegisterSheet()}
                                   style={{
                                     padding: "8px 18px", borderRadius: 999,
                                     background: "#2e8a5a", color: "#fff",
@@ -1742,7 +1740,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               📝 {t.notesLabel}
             </p>
             <ActionButton
-              onClick={openLoginSheet}
+              onClick={() => openRegisterSheet()}
               style={{
                 position: "relative", width: "100%",
                 padding: "9px 40px 9px 12px", borderRadius: 12,
@@ -1952,7 +1950,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         ) : (
           <ActionButton
             onClick={() => {
-              if (!user) { openLoginSheet(); return; }
+              if (!user) { openRegisterSheet(); return; }
               router.push(`/write-review/${place.id}`);
             }}
             style={{
@@ -2581,8 +2579,11 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>
               {lang === "id" ? "Apakah ini tempat Anda?" : "Is this your facility?"}
             </p>
-            <Link
-              href={`/claim/${place.slug ?? place.id}`}
+            <ActionButton
+              onClick={() => {
+                if (!user) { openRegisterSheet(); return; }
+                router.push(`/claim/${place.slug ?? place.id}`);
+              }}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
                 fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700,
@@ -2592,7 +2593,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               }}
             >
               Klaim listing ini →
-            </Link>
+            </ActionButton>
           </div>
         )}
 
@@ -2600,7 +2601,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
           <ActionButton
             onClick={() => {
-              if (!user) { openLoginSheet(); return; }
+              if (!user) { openRegisterSheet(); return; }
               setSuggestSubmitted(false); setShowSuggestSheet(true);
             }}
             style={{

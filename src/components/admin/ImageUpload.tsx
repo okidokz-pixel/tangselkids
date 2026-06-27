@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { compressImage } from "@/lib/compressImage";
 
 interface ImageUploadProps {
   value: string;
@@ -26,8 +27,9 @@ export function ImageUpload({
   async function handleFile(file: File) {
     setUploading(true);
     setError("");
+    const { blob, filename } = await compressImage(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", blob, filename);
     formData.append("bucket", bucket);
     formData.append("path", path);
 
@@ -203,11 +205,11 @@ export function PhotoGrid({ photos, onChange, bucket, entityId, maxPhotos = 10 }
   async function uploadFile(file: File) {
     setUploading(true);
     setError("");
-    const ext = file.name.split(".").pop() ?? "jpg";
+    const { blob, ext, filename } = await compressImage(file);
     const slot = photos.length + 1;
     const path = `${entityId}/photo_${slot}_${Date.now()}.${ext}`;
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", blob, filename);
     formData.append("bucket", bucket);
     formData.append("path", path);
 
