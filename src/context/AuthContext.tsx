@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", session.user.id)
@@ -103,15 +103,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lifetime:         data.lifetime         ?? false,
         premiumExpiresAt: data.premium_expires_at ?? undefined,
       });
-    } else {
-      // Handle trigger delay — profile row may not exist yet
-      setUser({
-        id:    session.user.id,
-        phone: session.user.phone ?? "",
-        name:  "",
-        kids:  [],
-      });
+      setLoaded(true);
+      return;
     }
+
+    // No row returned. PGRST116 = "no rows" (genuinely new user / trigger delay).
+    // Anything else is a transient fetch failure (network blip, Supabase IO
+    // timeout). On a transient failure we must NOT clobber an already-loaded
+    // profile — otherwise a routine token-refresh that happens to hit a slow
+    // DB flips the UI into a half-logged-out limbo (session valid, but name +
+    // avatar wiped → homepage shows "Login" while the profile page still shows
+    // "Log Out"). Keep the good state and let the next refresh recover it.
+    const isMissingRow = !error || error.code === "PGRST116";
+    if (!isMissingRow) {
+      console.error("[auth] profile fetch failed, keeping current state:", error?.message);
+      setUser((prev) => prev ?? {
+        id: session.user.id, phone: session.user.phone ?? "", name: "", kids: [],
+      });
+      setLoaded(true);
+      return;
+    }
+
+    // Genuinely no profile row yet — don't downgrade a known user if we somehow
+    // already have one loaded for this session.
+    setUser((prev) =>
+      prev && prev.id === session.user.id
+        ? prev
+        : { id: session.user.id, phone: session.user.phone ?? "", name: "", kids: [] },
+    );
     setLoaded(true);
   }, [supabase]);
 

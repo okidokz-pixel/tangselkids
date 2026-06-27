@@ -44,6 +44,11 @@ export default function ProfilePage() {
   const [showCropper, setShowCropper] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Photo shown in the header. The profile page persists edits under the
+  // "profilePhoto" key, but a photo set during signup lives on the user object
+  // (avatar / avatarUrl). Fall back to those so a registered photo still shows.
+  const avatarSrc = profilePhoto || user?.avatar || user?.avatarUrl || "";
+
   // Edit mode state
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -176,14 +181,14 @@ export default function ProfilePage() {
         <div className="rounded-2xl p-4 flex items-center gap-4" style={{ background: "rgba(255,255,255,0.12)" }}>
           <div className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
             style={{
-              background: (profilePhoto && user) ? "transparent" : (user ? "#0e1d4f" : "rgba(255,255,255,0.2)"),
+              background: (avatarSrc && user) ? "transparent" : (user ? "#0e1d4f" : "rgba(255,255,255,0.2)"),
               border: "2px solid rgba(255,255,255,0.3)",
               fontSize: 24, fontWeight: 700, color: "#fff",
               fontFamily: "var(--font-jakarta), sans-serif",
               overflow: "clip",
             }}>
-            {profilePhoto && user
-              ? <img src={profilePhoto} alt="" style={{ width: 56, height: 56, objectFit: "cover" }} />
+            {avatarSrc && user
+              ? <img src={avatarSrc} alt="" style={{ width: 56, height: 56, objectFit: "cover" }} />
               : user ? (user.name?.charAt(0).toUpperCase() || "?") : <User size={28} color="white" strokeWidth={1.5} />
             }
           </div>
