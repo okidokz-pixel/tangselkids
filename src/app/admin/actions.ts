@@ -693,21 +693,21 @@ export async function updateSubmissionStatus(
 }
 
 /**
- * Look this submission up on Google Maps (Places API New) and return objective
- * data — rating, coordinates, address, phone, hours, website — to fill the gaps
- * a submitter left blank. Read-only: it never writes; the admin reviews first.
+ * Look this submission up on Google Maps and return objective data — rating,
+ * coordinates, address, phone, hours, website — to fill the gaps a submitter
+ * left blank. Read-only: it never writes; the admin reviews first.
  *
- * Requires GOOGLE_PLACES_API_KEY (a SERVER key with no HTTP-referrer restriction
- * and the Places API enabled — the public Maps JS key is referrer-locked and
- * rejected for server-side calls).
+ * Reuses GOOGLE_MAPS_API_KEY and the legacy Places web service (same key + APIs
+ * as /api/places and /api/geocode). The key must NOT have an HTTP-referrer
+ * restriction — server calls have no referrer, so Google rejects referrer-locked
+ * keys. Since this key is only ever used server-side, restrict it by API
+ * (Places API + Geocoding API), not by referrer.
  */
 export async function enrichSubmissionFromGoogle(id: string): Promise<EnrichmentResult> {
   await assertAdmin();
 
-  const key = process.env.GOOGLE_PLACES_API_KEY;
-  if (!key) {
-    return { ok: false, error: "GOOGLE_PLACES_API_KEY is not set on the server. Add a server-side Google Places key to enable Auto-fill." };
-  }
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return { ok: false, error: "GOOGLE_MAPS_API_KEY is not set on the server." };
 
   const { data: sub, error } = await supabaseAdmin
     .from("place_submissions")
@@ -720,55 +720,61 @@ export async function enrichSubmissionFromGoogle(id: string): Promise<Enrichment
     .filter(Boolean)
     .join(", ");
 
-  let res: Response;
+  // 1) Text Search → best-matching place_id + rating, coords, address.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let search: any;
   try {
-    res = await fetch("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": [
-          "places.id",
-          "places.displayName",
-          "places.formattedAddress",
-          "places.rating",
-          "places.userRatingCount",
-          "places.location",
-          "places.nationalPhoneNumber",
-          "places.internationalPhoneNumber",
-          "places.websiteUri",
-          "places.regularOpeningHours",
-          "places.googleMapsUri",
-        ].join(","),
-      },
-      body: JSON.stringify({ textQuery: query, languageCode: "id", regionCode: "ID", maxResultCount: 1 }),
-    });
+    const r = await fetch(
+      "https://maps.googleapis.com/maps/api/place/textsearch/json" +
+        `?query=${encodeURIComponent(query)}&language=id&region=id&key=${key}`,
+      { cache: "no-store" },
+    );
+    search = await r.json();
   } catch {
     return { ok: false, error: "Could not reach Google Places API." };
   }
 
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, error: `Google Places error (${res.status}): ${body.slice(0, 200)}` };
+  if (search.status !== "OK" || !search.results?.length) {
+    const hint =
+      search.status === "REQUEST_DENIED"
+        ? " (the key likely has an HTTP-referrer restriction — remove it; this key is server-only)"
+        : "";
+    return {
+      ok: false,
+      error: `Google Places: ${search.status ?? "unknown"}${search.error_message ? " — " + search.error_message : ""}${hint}`,
+    };
+  }
+  const top = search.results[0];
+
+  // 2) Place Details → phone, website, opening hours, canonical maps URL.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let det: any = {};
+  try {
+    const r = await fetch(
+      "https://maps.googleapis.com/maps/api/place/details/json" +
+        `?place_id=${encodeURIComponent(top.place_id)}` +
+        "&fields=formatted_phone_number,international_phone_number,website,opening_hours,url" +
+        `&language=id&key=${key}`,
+      { cache: "no-store" },
+    );
+    const j = await r.json();
+    if (j.status === "OK") det = j.result ?? {};
+  } catch {
+    /* details are optional — keep the Text Search data */
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const json: any = await res.json();
-  const p = json?.places?.[0];
-  if (!p) return { ok: false, error: `No matching place found on Google for "${query}".` };
-
   const data: GoogleEnrichment = {
-    placeId: p.id,
-    name: p.displayName?.text ?? sub.name,
-    formattedAddress: p.formattedAddress ?? null,
-    rating: typeof p.rating === "number" ? p.rating : null,
-    userRatingCount: typeof p.userRatingCount === "number" ? p.userRatingCount : null,
-    lat: p.location?.latitude ?? null,
-    lng: p.location?.longitude ?? null,
-    phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber ?? null,
-    website: p.websiteUri ?? null,
-    hours: p.regularOpeningHours?.weekdayDescriptions?.join("\n") ?? null,
-    googleMapsUri: p.googleMapsUri ?? null,
+    placeId: top.place_id,
+    name: top.name ?? sub.name,
+    formattedAddress: top.formatted_address ?? null,
+    rating: typeof top.rating === "number" ? top.rating : null,
+    userRatingCount: typeof top.user_ratings_total === "number" ? top.user_ratings_total : null,
+    lat: top.geometry?.location?.lat ?? null,
+    lng: top.geometry?.location?.lng ?? null,
+    phone: det.formatted_phone_number ?? det.international_phone_number ?? null,
+    website: det.website ?? null,
+    hours: det.opening_hours?.weekday_text?.join("\n") ?? null,
+    googleMapsUri: det.url ?? null,
   };
 
   return { ok: true, data };
