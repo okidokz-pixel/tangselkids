@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createAdminServerClient } from "@/lib/supabase-server";
 import { isAdminEmail } from "@/lib/adminEmails";
 import type { EnrichmentResult, GoogleEnrichment } from "@/lib/enrichment";
+import { hasAnthropicKey, improveDescription, translateFields } from "@/lib/ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -800,6 +801,45 @@ export async function applySubmissionEnrichment(
     .eq("id", id);
   if (error) throw error;
   revalidatePath(`/admin/submissions/${id}`);
+}
+
+// ── AI assist (Claude) ────────────────────────────────────────────────────────
+
+/** Rewrite/expand an Indonesian description into ~4 clean paragraphs. */
+export async function aiImproveDescription(input: {
+  text: string;
+  name?: string;
+  category?: string;
+  paragraphs?: number;
+}): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  await assertAdmin();
+  if (!hasAnthropicKey()) {
+    return { ok: false, error: "ANTHROPIC_API_KEY is not set on the server. Add a Claude API key to enable AI assist." };
+  }
+  if (!input.text?.trim()) return { ok: false, error: "Write a short draft first, then Improve." };
+  try {
+    const text = await improveDescription(input);
+    return text ? { ok: true, text } : { ok: false, error: "No text returned from Claude." };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "AI request failed." };
+  }
+}
+
+/** Translate a map of Indonesian fields to English (same keys back). */
+export async function aiTranslateFields(
+  fields: Record<string, string>,
+): Promise<{ ok: true; data: Record<string, string> } | { ok: false; error: string }> {
+  await assertAdmin();
+  if (!hasAnthropicKey()) {
+    return { ok: false, error: "ANTHROPIC_API_KEY is not set on the server. Add a Claude API key to enable AI assist." };
+  }
+  try {
+    const data = await translateFields(fields);
+    if (Object.keys(data).length === 0) return { ok: false, error: "Nothing to translate — fill the Indonesian fields first." };
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "AI request failed." };
+  }
 }
 
 export async function deleteSubmission(id: string) {

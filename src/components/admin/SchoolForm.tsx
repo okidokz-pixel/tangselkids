@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveSchool, deleteSchool } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { TagInput } from "./TagInput";
+import { ImproveButton, TranslateButton } from "./AiButtons";
 
 const JENJANG_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
 const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
@@ -54,6 +55,10 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
   const [extracurriculars, setExtracurriculars] = useState<string[]>(
     initial?.extracurriculars ? initial.extracurriculars.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
   );
+  // English (bilingual) versions — filled via AI Translate, then reviewed.
+  const [aboutEn, setAboutEn] = useState(initial?.about_en ?? "");
+  const [facilitiesEn, setFacilitiesEn] = useState(initial?.facilities_en ?? "");
+  const [extracurricularsEn, setExtracurricularsEn] = useState(initial?.extracurriculars_en ?? "");
 
   // Contact
   const [phone, setPhone] = useState(initial?.phone ?? "");
@@ -126,6 +131,9 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
       about, hours,
       facilities: facilities.join(", ") || null,
       extracurriculars: extracurriculars.join(", ") || null,
+      about_en: aboutEn || null,
+      facilities_en: facilitiesEn || null,
+      extracurriculars_en: extracurricularsEn || null,
       phone, whatsapp: whatsapp || null, email: email || null,
       website: website || null, instagram: instagram || null,
       facebook: facebook || null, tiktok: tiktok || null, youtube: youtube || null,
@@ -320,7 +328,23 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
           </Field>
 
           <Field label="About">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+              <ImproveButton text={about} name={name} category="school" onResult={setAbout} />
+              <TranslateButton
+                fields={{ about, facilities: facilities.join(", "), extracurriculars: extracurriculars.join(", ") }}
+                onResult={(out) => {
+                  if (out.about !== undefined) setAboutEn(out.about);
+                  if (out.facilities !== undefined) setFacilitiesEn(out.facilities);
+                  if (out.extracurriculars !== undefined) setExtracurricularsEn(out.extracurriculars);
+                }}
+                label="🌐 Translate all to English"
+              />
+            </div>
             <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={about} onChange={(e) => setAbout(e.target.value)} />
+          </Field>
+
+          <Field label="About (English)">
+            <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" }} value={aboutEn} onChange={(e) => setAboutEn(e.target.value)} placeholder="English translation — use 🌐 Translate above, then review" />
           </Field>
 
           <SectionDivider label="Contact" />
@@ -511,8 +535,14 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
           <Field label="Facilities">
             <TagInput value={facilities} onChange={setFacilities} placeholder="Type a facility and press Enter…" />
           </Field>
+          <Field label="Facilities (English)">
+            <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical" }} value={facilitiesEn} onChange={(e) => setFacilitiesEn(e.target.value)} placeholder="Comma-separated English list — use 🌐 Translate on the General tab" />
+          </Field>
           <Field label="Extracurriculars">
             <TagInput value={extracurriculars} onChange={setExtracurriculars} placeholder="Type an extracurricular and press Enter…" />
+          </Field>
+          <Field label="Extracurriculars (English)">
+            <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical" }} value={extracurricularsEn} onChange={(e) => setExtracurricularsEn(e.target.value)} placeholder="Comma-separated English list — use 🌐 Translate on the General tab" />
           </Field>
         </div>
       )}
