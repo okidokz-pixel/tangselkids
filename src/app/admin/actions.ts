@@ -968,6 +968,13 @@ export async function getAdminFeedback() {
   }));
 }
 
+export async function setFeedbackStatus(id: string, status: "new" | "resolved") {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("feedback").update({ status }).eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/feedback");
+}
+
 export async function deleteFeedback(id: string) {
   await assertAdmin();
   const { error } = await supabaseAdmin.from("feedback").delete().eq("id", id);
@@ -1038,14 +1045,14 @@ export async function getPendingReviewsCount(): Promise<number> {
   }
 }
 
-/** Visitor feedback in the inbox. Feedback has no status column, so every row
- *  counts as something to read. */
+/** Count of unresolved ("new") feedback for the nav badge. */
 export async function getFeedbackCount(): Promise<number> {
   try {
     await assertAdmin();
     const { count } = await supabaseAdmin
       .from("feedback")
-      .select("id", { count: "exact", head: true });
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new");
     return count ?? 0;
   } catch {
     return 0;

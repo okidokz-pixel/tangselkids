@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import { Trash2 } from "lucide-react";
-import { getAdminFeedback, deleteFeedback } from "@/app/admin/actions";
+import { Trash2, Check, RotateCcw } from "lucide-react";
+import { getAdminFeedback, deleteFeedback, setFeedbackStatus } from "@/app/admin/actions";
+
+type FeedbackStatus = "new" | "resolved";
 
 type Feedback = {
   id:         string;
   user_id:    string | null;
   topic:      string;
   message:    string;
+  status:     FeedbackStatus | null;
   created_at: string;
   user_name:  string | null;
   user_phone: string | null;
@@ -16,13 +19,10 @@ type Feedback = {
   place_slug: string | null;
 };
 
-const TOPIC_LABELS: Record<string, string> = {
-  suggestion: "💡 Saran / Ide",
-  correction: "✏️ Koreksi Info Tempat",
-  "new-place": "📍 Usul Tempat Baru",
-  bug:        "🐛 Bug / Masalah Teknis",
-  other:      "💬 Lainnya",
-};
+/** Treat a missing status (pre-migration rows) as "new". */
+function statusOf(f: Feedback): FeedbackStatus {
+  return f.status === "resolved" ? "resolved" : "new";
+}
 
 const SITE_URL = "https://tangselkids.com";
 
@@ -40,9 +40,17 @@ const miniInput: React.CSSProperties = {
   fontSize: 13, outline: "none", boxSizing: "border-box", width: "100%",
 };
 
-function FeedbackCard({ f, onDelete, deleting }: { f: Feedback; onDelete: () => void; deleting: boolean }) {
+function FeedbackCard({ f, onDelete, onSetStatus, busy }: {
+  f: Feedback;
+  onDelete: () => void;
+  onSetStatus: (status: FeedbackStatus) => void;
+  busy: boolean;
+}) {
   const [place, setPlace] = useState(f.place_name ?? "");
   const [link, setLink] = useState(f.place_slug ?? "");
+
+  const status = statusOf(f);
+  const resolved = status === "resolved";
 
   const wa = waNumber(f.user_phone);
   const placeName = place.trim() || "[nama tempat]";
@@ -56,24 +64,52 @@ function FeedbackCard({ f, onDelete, deleting }: { f: Feedback; onDelete: () => 
   const waHref = wa ? `https://wa.me/${wa}?text=${encodeURIComponent(msg)}` : null;
 
   return (
-    <div style={{ background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+    <div style={{
+      background: resolved ? "#f8fafc" : "#fff",
+      border: "1.5px solid #e2e8f0", borderRadius: 16, padding: 16,
+      boxShadow: "0 1px 4px rgba(0,0,0,0.05)", opacity: resolved ? 0.85 : 1,
+    }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 10 }}>
         <div>
-          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, background: "#f1f5f9", color: "#475569", borderRadius: 999, padding: "3px 10px", marginBottom: 6 }}>
-            {TOPIC_LABELS[f.topic] ?? f.topic}
+          <span style={{
+            display: "inline-block", fontSize: 11, fontWeight: 700, borderRadius: 999,
+            padding: "3px 10px", marginBottom: 6,
+            background: resolved ? "#dcfce7" : "#fef3c7",
+            color:      resolved ? "#166534" : "#b45309",
+          }}>
+            {resolved ? "✓ Selesai" : "● Baru"}
           </span>
           <div style={{ fontSize: 11, color: "#94a3b8" }}>
             {new Date(f.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             {f.user_id ? " · Pengguna terdaftar" : " · Anonim"}
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          disabled={deleting}
-          style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
-        >
-          <Trash2 size={13} /> Hapus
-        </button>
+        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          {resolved ? (
+            <button
+              onClick={() => onSetStatus("new")}
+              disabled={busy}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "1.5px solid #e2e8f0", background: "#fff", color: "#475569", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              <RotateCcw size={13} /> Buka lagi
+            </button>
+          ) : (
+            <button
+              onClick={() => onSetStatus("resolved")}
+              disabled={busy}
+              style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "#dcfce7", color: "#166534", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              <Check size={13} /> Tandai Selesai
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            disabled={busy}
+            style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", borderRadius: 8, border: "none", background: "#fee2e2", color: "#dc2626", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+          >
+            <Trash2 size={13} /> Hapus
+          </button>
+        </div>
       </div>
 
       {/* Submitter name + WhatsApp number */}
@@ -116,10 +152,16 @@ function FeedbackCard({ f, onDelete, deleting }: { f: Feedback; onDelete: () => 
   );
 }
 
+const TABS: { key: "new" | "resolved" | "all"; label: string }[] = [
+  { key: "new",      label: "Baru" },
+  { key: "resolved", label: "Selesai" },
+  { key: "all",      label: "Semua" },
+];
+
 export default function AdminFeedbackPage() {
   const [items,   setItems]   = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter,  setFilter]  = useState("all");
+  const [filter,  setFilter]  = useState<"new" | "resolved" | "all">("new");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -129,48 +171,51 @@ export default function AdminFeedbackPage() {
   }, []);
 
   function handleDelete(id: string) {
-    if (!confirm("Hapus feedback ini?")) return;
+    if (!confirm("Hapus feedback ini? Tindakan ini permanen.")) return;
     startTransition(async () => {
       await deleteFeedback(id);
       setItems(prev => prev.filter(f => f.id !== id));
     });
   }
 
-  const topics = Array.from(new Set(items.map(f => f.topic)));
-  const filtered = filter === "all" ? items : items.filter(f => f.topic === filter);
+  function handleStatus(id: string, status: FeedbackStatus) {
+    setItems(prev => prev.map(f => f.id === id ? { ...f, status } : f));
+    startTransition(async () => {
+      await setFeedbackStatus(id, status);
+    });
+  }
+
+  const countNew      = items.filter(f => statusOf(f) === "new").length;
+  const countResolved = items.filter(f => statusOf(f) === "resolved").length;
+  const counts: Record<"new" | "resolved" | "all", number> = {
+    new: countNew, resolved: countResolved, all: items.length,
+  };
+
+  const filtered = filter === "all" ? items : items.filter(f => statusOf(f) === filter);
 
   return (
     <div style={{ padding: "32px 24px", maxWidth: 900 }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: "#0f172a", margin: 0 }}>Feedback</h1>
-        <p style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>{items.length} masukan diterima</p>
+        <p style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>
+          {countNew} baru · {items.length} total
+        </p>
       </div>
 
-      {/* Filter tabs */}
+      {/* Status tabs */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
-        <button
-          onClick={() => setFilter("all")}
-          style={{
-            padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-            border: "none", cursor: "pointer",
-            background: filter === "all" ? "#0f172a" : "#f1f5f9",
-            color:      filter === "all" ? "#fff"    : "#475569",
-          }}
-        >
-          Semua ({items.length})
-        </button>
-        {topics.map(t => (
+        {TABS.map(t => (
           <button
-            key={t}
-            onClick={() => setFilter(t)}
+            key={t.key}
+            onClick={() => setFilter(t.key)}
             style={{
               padding: "6px 16px", borderRadius: 999, fontSize: 13, fontWeight: 600,
               border: "none", cursor: "pointer",
-              background: filter === t ? "#0f172a" : "#f1f5f9",
-              color:      filter === t ? "#fff"    : "#475569",
+              background: filter === t.key ? "#0f172a" : "#f1f5f9",
+              color:      filter === t.key ? "#fff"    : "#475569",
             }}
           >
-            {TOPIC_LABELS[t] ?? t} ({items.filter(f => f.topic === t).length})
+            {t.label} ({counts[t.key]})
           </button>
         ))}
       </div>
@@ -180,12 +225,20 @@ export default function AdminFeedbackPage() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "64px 0", color: "#94a3b8" }}>
           <p style={{ fontSize: 32, marginBottom: 8 }}>📭</p>
-          <p style={{ fontSize: 14 }}>Belum ada feedback.</p>
+          <p style={{ fontSize: 14 }}>
+            {filter === "new" ? "Tidak ada feedback baru." : filter === "resolved" ? "Belum ada yang ditandai selesai." : "Belum ada feedback."}
+          </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map(f => (
-            <FeedbackCard key={f.id} f={f} onDelete={() => handleDelete(f.id)} deleting={isPending} />
+            <FeedbackCard
+              key={f.id}
+              f={f}
+              onDelete={() => handleDelete(f.id)}
+              onSetStatus={(status) => handleStatus(f.id, status)}
+              busy={isPending}
+            />
           ))}
         </div>
       )}
