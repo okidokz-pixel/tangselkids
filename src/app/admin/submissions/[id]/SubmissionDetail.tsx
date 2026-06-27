@@ -216,143 +216,6 @@ function GoogleEnrich({
   );
 }
 
-// ── Completeness checklist ────────────────────────────────────────────────────
-
-function isFilled(v: unknown): boolean {
-  if (v == null) return false;
-  if (Array.isArray(v)) return v.filter(Boolean).length > 0;
-  if (typeof v === "string") return v.trim() !== "";
-  return true;
-}
-
-const CORE_FIELDS: { label: string; key: keyof Submission }[] = [
-  { label: "Area", key: "area" },
-  { label: "Address", key: "address" },
-  { label: "Phone", key: "phone" },
-  { label: "WhatsApp", key: "whatsapp" },
-  { label: "Google Maps link", key: "gmaps_url" },
-  { label: "Operating hours", key: "hours" },
-  { label: "Year founded", key: "year_founded" },
-  { label: "Description", key: "description" },
-];
-const SOCIAL_FIELDS: { label: string; key: keyof Submission }[] = [
-  { label: "Instagram", key: "instagram" },
-  { label: "Facebook", key: "facebook" },
-  { label: "TikTok", key: "tiktok" },
-  { label: "YouTube", key: "youtube" },
-  { label: "Website", key: "website" },
-];
-const MEDIA_FIELDS: { label: string; key: keyof Submission }[] = [
-  { label: "Logo", key: "logo_url" },
-  { label: "Photos", key: "photos" },
-  { label: "YouTube videos", key: "yt_videos" },
-];
-
-// Category-specific fields (mirrors renderCategoryData). Present if ANY key is filled.
-const CATEGORY_FIELDS: Record<string, { label: string; keys: string[] }[]> = {
-  school: [
-    { label: "Kurikulum", keys: ["curriculum"] },
-    { label: "Bahasa Pengantar", keys: ["bahasa"] },
-    { label: "Jenjang / Grades", keys: ["grades"] },
-    { label: "Siswa per kelas", keys: ["students_per_class"] },
-    { label: "Uang Pangkal", keys: ["uang_pangkal_min", "uang_pangkal_max"] },
-    { label: "Annual Fee", keys: ["annual_fee_min", "annual_fee_max"] },
-    { label: "SPP / bulan", keys: ["spp_min", "spp_max"] },
-    { label: "Fasilitas", keys: ["facilities"] },
-    { label: "Ekstrakurikuler", keys: ["extracurriculars"] },
-  ],
-  "learning-center": [
-    { label: "Tipe Kursus", keys: ["course_types"] },
-    { label: "Usia", keys: ["age_min", "age_max"] },
-    { label: "Rasio Guru:Murid", keys: ["teacher_ratio"] },
-    { label: "Free Trial", keys: ["free_trial"] },
-    { label: "Biaya Daftar", keys: ["reg_fee_min", "reg_fee_max"] },
-    { label: "Harga / sesi", keys: ["price_min", "price_max"] },
-  ],
-  daycare: [
-    { label: "Usia Diterima", keys: ["ages"] },
-    { label: "Metode", keys: ["method"] },
-    { label: "Rasio Pengasuh:Anak", keys: ["carer_ratio"] },
-    { label: "CCTV", keys: ["cctv"] },
-    { label: "Akreditasi", keys: ["accreditation"] },
-    { label: "Fasilitas", keys: ["facilities"] },
-    { label: "Harga / bulan", keys: ["price_min", "price_max"] },
-  ],
-  playground: [
-    { label: "Tipe", keys: ["types"] },
-    { label: "Fasilitas", keys: ["facilities"] },
-    { label: "Tiket", keys: ["price_min", "price_max"] },
-  ],
-  clinic: [
-    { label: "Layanan", keys: ["services"] },
-    { label: "Fasilitas", keys: ["facilities"] },
-    { label: "Biaya / sesi", keys: ["biaya_min", "biaya_max"] },
-  ],
-  cafe: [
-    { label: "Budget Level", keys: ["budget"] },
-    { label: "Fasilitas", keys: ["facilities"] },
-    { label: "Kisaran Harga", keys: ["price_min", "price_max"] },
-  ],
-};
-const CATEGORY_FIELDS_DEFAULT = [
-  { label: "Fasilitas", keys: ["facilities"] },
-  { label: "Harga", keys: ["price_min", "price_max"] },
-];
-
-function ChecklistRow({ label, filled }: { label: string; filled: boolean }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", fontSize: 13 }}>
-      <span style={{ width: 14, textAlign: "center", color: filled ? "#16a34a" : "#ef4444", fontWeight: 800 }}>
-        {filled ? "✓" : "✗"}
-      </span>
-      <span style={{ color: filled ? "#6b7280" : "#b91c1c", fontWeight: filled ? 400 : 600 }}>
-        {label}{filled ? "" : " — missing"}
-      </span>
-    </div>
-  );
-}
-
-function CompletenessGroup({ title, fields }: { title: string; fields: { label: string; filled: boolean }[] }) {
-  const missing = fields.filter((f) => !f.filled).length;
-  return (
-    <div style={{ marginBottom: 4 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
-        {title}{missing > 0 && <span style={{ color: "#ef4444" }}> ({missing} missing)</span>}
-      </div>
-      {fields.map((f) => <ChecklistRow key={f.label} label={f.label} filled={f.filled} />)}
-    </div>
-  );
-}
-
-function Completeness({ s }: { s: Submission }) {
-  const cd = (s.category_data ?? {}) as Record<string, unknown>;
-  const core = CORE_FIELDS.map((f) => ({ label: f.label, filled: isFilled(s[f.key]) }));
-  const social = SOCIAL_FIELDS.map((f) => ({ label: f.label, filled: isFilled(s[f.key]) }));
-  const media = MEDIA_FIELDS.map((f) => ({ label: f.label, filled: isFilled(s[f.key]) }));
-  const catSpec = CATEGORY_FIELDS[s.category] ?? CATEGORY_FIELDS_DEFAULT;
-  const cat = catSpec.map((spec) => ({ label: spec.label, filled: spec.keys.some((k) => isFilled(cd[k])) }));
-
-  const all = [...core, ...social, ...media, ...cat];
-  const filledCount = all.filter((f) => f.filled).length;
-  const missingCount = all.length - filledCount;
-
-  return (
-    <Section title="✅ Completeness — what's still missing">
-      <div style={{ fontSize: 13, marginBottom: 14, fontWeight: 700, color: missingCount ? "#b45309" : "#166534" }}>
-        {missingCount > 0
-          ? `${filledCount} of ${all.length} fields filled — ${missingCount} still missing`
-          : `All ${all.length} expected fields are filled 🎉`}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "16px 24px" }}>
-        <CompletenessGroup title="Contact & Location" fields={core} />
-        <CompletenessGroup title="Social Media" fields={social} />
-        <CompletenessGroup title="Media" fields={media} />
-        <CompletenessGroup title={`${CATEGORY_LABELS[s.category] ?? s.category} details`} fields={cat} />
-      </div>
-    </Section>
-  );
-}
-
 // ── Editable fields ───────────────────────────────────────────────────────────
 
 const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
@@ -669,6 +532,10 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
     }
   }
 
+  const submitterWaMsg =
+    `[Admin TangselKids] Halo ${s.submitter_name ?? ""}, kami sudah menerima pendaftaran untuk tempat kamu di TangselKids untuk ${s.name}. ` +
+    `Mohon menunggu 1-2 hari untuk proses verifikasi dan akan kami kabarkan lagi jika sudah diterima.`;
+
   const badge = STATUS_CFG[status as keyof typeof STATUS_CFG] ?? STATUS_CFG.pending;
 
   function handleStatus(newStatus: "pending" | "approved" | "rejected") {
@@ -744,9 +611,6 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         )}
       </div>
 
-      {/* Completeness checklist */}
-      <Completeness s={s} />
-
       {/* Auto-fill from Google */}
       <GoogleEnrich
         s={s}
@@ -768,7 +632,7 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
             </div>
             {s.submitter_phone && (
               <a
-                href={`https://wa.me/${s.submitter_phone.replace(/^\+/, "")}`}
+                href={`https://wa.me/${normalizePhone62(s.submitter_phone)}?text=${encodeURIComponent(submitterWaMsg)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
