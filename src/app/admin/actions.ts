@@ -948,7 +948,24 @@ export async function getAdminFeedback() {
     .select("id,user_id,topic,message,created_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+
+  // Attach the submitter's name + phone (WhatsApp) from their profile.
+  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+  let byId: Record<string, { name: string | null; phone: string | null }> = {};
+  if (ids.length) {
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id,name,phone")
+      .in("id", ids);
+    byId = Object.fromEntries((profs ?? []).map((p) => [p.id, { name: p.name, phone: p.phone }]));
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    user_name: r.user_id ? byId[r.user_id]?.name ?? null : null,
+    user_phone: r.user_id ? byId[r.user_id]?.phone ?? null : null,
+  }));
 }
 
 export async function deleteFeedback(id: string) {
