@@ -909,6 +909,53 @@ export async function getAppUser(id: string) {
   return data;
 }
 
+/**
+ * Registration stats for the dashboard + analytics: how many people completed
+ * registration (profile has a name), grouped by WIB (UTC+7) calendar day.
+ */
+export async function getRegistrationStats() {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("profiles")
+    .select("created_at,name");
+  if (error) throw error;
+
+  const rows = (data ?? []).filter((r) => r.name && String(r.name).trim());
+
+  const WIB_MS = 7 * 60 * 60 * 1000;
+  const dayKey = (iso: string) =>
+    new Date(new Date(iso).getTime() + WIB_MS).toISOString().slice(0, 10);
+  const todayKey = new Date(Date.now() + WIB_MS).toISOString().slice(0, 10);
+
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    if (!r.created_at) continue;
+    const k = dayKey(r.created_at as string);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+
+  // Last 30 days, oldest → newest, zero-filled.
+  const base = new Date(todayKey + "T00:00:00Z").getTime();
+  const daily: { date: string; count: number }[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(base - i * 86_400_000).toISOString().slice(0, 10);
+    daily.push({ date: d, count: counts.get(d) ?? 0 });
+  }
+
+  const yesterdayKey = new Date(base - 86_400_000).toISOString().slice(0, 10);
+  const last7 = daily.slice(-7).reduce((s, d) => s + d.count, 0);
+  const prev7 = daily.slice(-14, -7).reduce((s, d) => s + d.count, 0);
+
+  return {
+    total:     rows.length,
+    today:     counts.get(todayKey) ?? 0,
+    yesterday: counts.get(yesterdayKey) ?? 0,
+    last7,
+    prev7,
+    daily,
+  };
+}
+
 export async function updateAppUser(
   id: string,
   payload: {

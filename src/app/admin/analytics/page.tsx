@@ -1,9 +1,12 @@
 import { getGaStats, fetchGaRange } from "@/lib/ga-data";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
+import { getRegistrationStats } from "@/app/admin/actions";
 
 export const metadata = { title: "Analytics" };
 
 export default async function AnalyticsPage() {
+  const registrations = await getRegistrationStats().catch(() => null);
+
   let stats, initial;
   try {
     // stats → realtime/today banner; initial → all period-dependent sections at the default 7-day window
@@ -22,5 +25,5 @@ export default async function AnalyticsPage() {
     );
   }
 
-  return <AnalyticsDashboard stats={stats} initial={initial} />;
+  return <AnalyticsDashboard stats={stats} initial={initial} registrations={registrations} />;
 }

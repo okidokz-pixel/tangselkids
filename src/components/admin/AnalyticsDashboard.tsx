@@ -9,6 +9,12 @@ import { getRangeStats } from "@/app/admin/analytics/actions";
 
 type Range = "today" | "yesterday" | "7d" | "30d" | "all" | "custom";
 
+type RegistrationStats = {
+  total: number; today: number; yesterday: number;
+  last7: number; prev7: number;
+  daily: { date: string; count: number }[];
+};
+
 function pct(current: number, prev: number) {
   if (prev === 0) return null;
   return ((current - prev) / prev) * 100;
@@ -192,7 +198,7 @@ function rangeConfig(key: Range, pickerStart: string, pickerEnd: string): RangeC
   }
 }
 
-export function AnalyticsDashboard({ stats, initial }: { stats: GaStats; initial: RangeStats }) {
+export function AnalyticsDashboard({ stats, initial, registrations }: { stats: GaStats; initial: RangeStats; registrations: RegistrationStats | null }) {
   const [range, setRange] = useState<Range>("7d");
   const [data, setData] = useState<RangeStats>(initial);
   const [periodNote, setPeriodNote] = useState("7 hari");
@@ -370,6 +376,57 @@ export function AnalyticsDashboard({ stats, initial }: { stats: GaStats; initial
           ))}
         </div>
       </div>
+
+      {/* ── Registrasi Pengguna (independent of the GA range selector) ── */}
+      {registrations && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ marginBottom: 14 }}>
+            <p className="eyebrow" style={{ marginBottom: 2 }}>Registrasi Pengguna</p>
+            <p style={{ fontSize: 13, color: "var(--ink-2)", margin: 0 }}>
+              Akun baru yang menyelesaikan registrasi · 30 hari terakhir
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
+            <KpiCard label="Total Terdaftar" value={fmt(registrations.total)} current={0} prev={0} sub="" showTrend={false} />
+            <KpiCard label="Daftar Hari Ini" value={fmt(registrations.today)} current={registrations.today} prev={registrations.yesterday} sub="kemarin" />
+            <KpiCard label="Daftar 7 Hari" value={fmt(registrations.last7)} current={registrations.last7} prev={registrations.prev7} sub="minggu lalu" />
+          </div>
+
+          <div style={{ ...cardStyle, padding: "20px 24px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Registrasi per Hari</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>Akun baru · 30 hari terakhir</div>
+              </div>
+            </div>
+            {registrations.daily.every((d) => d.count === 0) ? (
+              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13 }}>
+                Belum ada registrasi dalam 30 hari terakhir
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={registrations.daily.map((d) => ({ date: d.date.slice(5), count: d.count }))} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gRegs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_PRIMARY} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={CHART_PRIMARY} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1E8DA" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "1px solid var(--line)", fontSize: 12, background: "var(--surface)" }}
+                    labelStyle={{ fontWeight: 600, color: "var(--ink)" }}
+                  />
+                  <Area type="monotone" dataKey="count" name="Registrasi" stroke={CHART_PRIMARY} strokeWidth={2} fill="url(#gRegs)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Everything below responds to the selected period ── */}
       <div style={{ position: "relative" }}>

@@ -11,9 +11,14 @@ const thStyle: React.CSSProperties = {
   fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em",
 };
 
-function fmt(dateStr: string | null) {
+function fmtDate(dateStr: string | null) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function fmtTime(dateStr: string | null) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB";
 }
 
 function waLink(phone: string | null) {
@@ -58,11 +63,33 @@ export default function UsersPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0e1d4f", margin: 0 }}>App Users</h1>
-        <p style={{ fontSize: 14, color: "#6b7280", marginTop: 4 }}>
-          {loading ? "Loading…" : `${users.length} total · ${registeredCount} terdaftar · ${premiumCount} premium`}
-        </p>
+      </div>
+
+      {/* Stat strip — total users is the headline number */}
+      <div style={{ display: "flex", gap: 14, marginBottom: 24, flexWrap: "wrap" }}>
+        <div style={{
+          background: "linear-gradient(135deg, #0e1d4f 0%, #1e3a8a 100%)", color: "#fff",
+          borderRadius: 14, padding: "18px 26px", minWidth: 180, flex: "0 0 auto",
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, opacity: 0.7, textTransform: "uppercase", letterSpacing: "0.05em" }}>Total Users</div>
+          <div style={{ fontSize: 40, fontWeight: 800, lineHeight: 1.1, marginTop: 4 }}>
+            {loading ? "—" : users.length.toLocaleString("id-ID")}
+          </div>
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "18px 24px", minWidth: 140 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Terdaftar</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#0e1d4f", marginTop: 6 }}>
+            {loading ? "—" : registeredCount.toLocaleString("id-ID")}
+          </div>
+        </div>
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 14, padding: "18px 24px", minWidth: 140 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Premium</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#b45309", marginTop: 6 }}>
+            {loading ? "—" : premiumCount.toLocaleString("id-ID")}
+          </div>
+        </div>
       </div>
 
       {/* Filters row */}
@@ -163,9 +190,12 @@ export default function UsersPage() {
                     {kids.length > 0 ? kids.length : <span style={{ color: "#d1d5db" }}>—</span>}
                   </td>
 
-                  {/* Joined date */}
-                  <td style={{ padding: "12px 16px", fontSize: 12, color: "#9ca3af" }}>
-                    {fmt(u.created_at)}
+                  {/* Joined date + time */}
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ fontSize: 12.5, color: "#374151", fontWeight: 500 }}>{fmtDate(u.created_at)}</div>
+                    {fmtTime(u.created_at) && (
+                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 1 }}>{fmtTime(u.created_at)}</div>
+                    )}
                   </td>
 
                   {/* Actions */}

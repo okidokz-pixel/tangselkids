@@ -7,7 +7,7 @@ import {
 import {
   getDashboardStats, getPendingSubmissionsCount,
   getPendingReviewsCount, getFeedbackCount, getRecentActivity,
-  getPendingClaimsCount,
+  getPendingClaimsCount, getRegistrationStats,
   type ActivityEvent,
 } from "./actions";
 import { getGaStats } from "@/lib/ga-data";
@@ -49,7 +49,7 @@ function timeAgo(iso: string): string {
 }
 
 export default async function AdminDashboard() {
-  const [stats, ga, pendingSubmissions, pendingReviews, feedbackCount, pendingClaims, activity] =
+  const [stats, ga, pendingSubmissions, pendingReviews, feedbackCount, pendingClaims, activity, reg] =
     await Promise.all([
       getDashboardStats(),
       getGaStats().catch(() => null),
@@ -58,6 +58,7 @@ export default async function AdminDashboard() {
       getFeedbackCount(),
       getPendingClaimsCount(),
       getRecentActivity(8),
+      getRegistrationStats().catch(() => null),
     ]);
 
   const totalEntries = stats.categories.reduce((s, c) => s + c.total, 0);
@@ -155,6 +156,27 @@ export default async function AdminDashboard() {
             </div>
           )}
         </section>
+
+        {/* ===== PENGGUNA TERDAFTAR ===== */}
+        {reg && (
+          <section className="section">
+            <div className="stat-label">
+              <p className="eyebrow">Pengguna Terdaftar</p>
+              <Link href="/admin/users" className="note" style={{ textDecoration: "none" }}>Lihat semua →</Link>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+              <Kpi label="Total terdaftar" value={reg.total} variant="accent">
+                <span className="delta-cap">akun dengan profil lengkap</span>
+              </Kpi>
+              <Kpi label="Daftar hari ini" value={reg.today}>
+                <Delta mode="abs" cur={reg.today} prev={reg.yesterday} caption="vs kemarin" />
+              </Kpi>
+              <Kpi label="Daftar 7 hari" value={reg.last7} variant="accent">
+                <Delta mode="pct" cur={reg.last7} prev={reg.prev7} caption="vs mgg lalu" />
+              </Kpi>
+            </div>
+          </section>
+        )}
 
         {/* ===== DATA SINGKAT ===== */}
         <section className="section">
