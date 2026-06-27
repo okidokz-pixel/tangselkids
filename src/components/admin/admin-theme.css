@@ -77,6 +77,10 @@
   position: sticky; top: 0; align-self: flex-start; height: 100vh;
   background: var(--surface); border-right: 1px solid var(--line);
   display: flex; flex-direction: column; padding: 22px 16px 18px;
+  /* Scroll the whole sidebar when the nav is taller than the viewport,
+     otherwise the logout footer gets pushed off-screen with no way to reach it. */
+  overflow-y: auto; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .admin-warm .brand { display: flex; align-items: center; gap: 11px; padding: 4px 8px 22px; }
 .admin-warm .brand-mark {
