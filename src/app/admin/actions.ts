@@ -945,7 +945,7 @@ export async function getAdminFeedback() {
   await assertAdmin();
   const { data, error } = await supabaseAdmin
     .from("feedback")
-    .select("id,user_id,topic,message,created_at")
+    .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
   const rows = data ?? [];

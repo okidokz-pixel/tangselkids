@@ -12,6 +12,8 @@ type Feedback = {
   created_at: string;
   user_name:  string | null;
   user_phone: string | null;
+  place_name: string | null;
+  place_slug: string | null;
 };
 
 const TOPIC_LABELS: Record<string, string> = {
@@ -39,8 +41,8 @@ const miniInput: React.CSSProperties = {
 };
 
 function FeedbackCard({ f, onDelete, deleting }: { f: Feedback; onDelete: () => void; deleting: boolean }) {
-  const [place, setPlace] = useState("");
-  const [link, setLink] = useState("");
+  const [place, setPlace] = useState(f.place_name ?? "");
+  const [link, setLink] = useState(f.place_slug ?? "");
 
   const wa = waNumber(f.user_phone);
   const placeName = place.trim() || "[nama tempat]";

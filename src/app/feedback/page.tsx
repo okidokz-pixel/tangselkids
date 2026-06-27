@@ -36,8 +36,6 @@ export default function FeedbackPage() {
 
   const topicOptions = [
     { value: "suggestion",   label: "💡 Saran / Ide" },
-    { value: "correction",   label: "✏️ Koreksi Info Tempat" },
-    { value: "new-place",    label: "📍 Usul Tempat Baru" },
     { value: "bug",          label: "🐛 Bug / Masalah Teknis" },
     { value: "other",        label: "💬 Lainnya" },
   ];
@@ -139,6 +137,14 @@ export default function FeedbackPage() {
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+            {/* Redirects for place registration / data corrections */}
+            <div style={{ background: "#f6f1e8", border: "1px solid #e8dcc8", borderRadius: 14, padding: "14px 16px" }}>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#475569", lineHeight: 1.7, fontFamily: "var(--font-jakarta), sans-serif" }}>
+                <li>Untuk <b>mendaftarkan tempat</b> kamu, <a href="/list-your-place" style={{ color: "#2e8a5a", fontWeight: 700 }}>klik di sini</a>.</li>
+                <li>Untuk <b>menyarankan perubahan data</b>, silakan ke halaman sekolah/tempat yang dimaksud, lalu klik tombol <b>&ldquo;Sarankan Perubahan Data&rdquo;</b> di halaman tersebut.</li>
+              </ul>
+            </div>
 
             {/* Topic */}
             <div>

@@ -74,9 +74,6 @@ function toWaNumber(phone: string): string {
   return digits.startsWith("0") ? "62" + digits.slice(1) : digits;
 }
 
-// TODO: replace with real support/editorial WhatsApp number
-const SUGGEST_WA_NUMBER = "6281234567890";
-
 // ── Category colours ──────────────────────────────────────────────────────────
 const categoryColor: Record<string, { bg: string; text: string }> = {
   school:            { bg: "#e6f4ed", text: "#1f6b43" },
@@ -196,6 +193,20 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
   const [suggestField,     setSuggestField]     = useState(0);
   const [suggestDetails,   setSuggestDetails]   = useState("");
   const [suggestSubmitted, setSuggestSubmitted] = useState(false);
+  const [suggestSaving,    setSuggestSaving]    = useState(false);
+
+  async function submitSuggestion() {
+    if (!place || !suggestDetails.trim() || suggestSaving) return;
+    setSuggestSaving(true);
+    const supabase = getSupabaseBrowserClient();
+    const message = `Bidang: ${t.suggestEditFieldOptions[suggestField]}\n${suggestDetails.trim()}`;
+    const base = { user_id: user?.id ?? null, topic: "correction", message };
+    // Try with place context; fall back if the place_name/place_slug columns aren't added yet.
+    let { error } = await supabase.from("feedback").insert({ ...base, place_name: place.name, place_slug: place.slug ?? null });
+    if (error) ({ error } = await supabase.from("feedback").insert(base));
+    setSuggestSaving(false);
+    if (!error) setSuggestSubmitted(true);
+  }
 
   // ── Favorites tooltip state ──────────────────────────────────────────────────
   const [favTooltip, setFavTooltip] = useState<"add" | "remove" | null>(null);
@@ -2722,34 +2733,23 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 </div>
 
                 {/* Submit */}
-                <a
-                  href={suggestDetails.trim()
-                    ? `https://wa.me/${SUGGEST_WA_NUMBER}?text=${encodeURIComponent(
-                        `[TangselKids — Sarankan Perubahan]\nTempat: ${place.name}\nBidang: ${t.suggestEditFieldOptions[suggestField]}\nDetail: ${suggestDetails.trim()}`
-                      )}`
-                    : undefined}
-                  onClick={(e) => {
-                    if (!suggestDetails.trim()) { e.preventDefault(); return; }
-                    setSuggestSubmitted(true);
-                  }}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <ActionButton
+                  onClick={submitSuggestion}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                    padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
-                    fontFamily: "var(--font-jakarta), sans-serif",
-                    background: suggestDetails.trim()
-                      ? "linear-gradient(135deg, #128C7E 0%, #25D366 100%)"
+                    width: "100%", padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
+                    fontFamily: "var(--font-jakarta), sans-serif", border: "none",
+                    background: (suggestDetails.trim() && !suggestSaving)
+                      ? "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)"
                       : "#E5E7EB",
-                    color: suggestDetails.trim() ? "#fff" : "#9CA3AF",
-                    textDecoration: "none",
-                    pointerEvents: suggestDetails.trim() ? "auto" : "none",
-                    boxShadow: suggestDetails.trim() ? "0 4px 14px rgba(37,211,102,0.30)" : "none",
+                    color: (suggestDetails.trim() && !suggestSaving) ? "#fff" : "#9CA3AF",
+                    pointerEvents: (suggestDetails.trim() && !suggestSaving) ? "auto" : "none",
+                    boxShadow: suggestDetails.trim() ? "0 4px 14px rgba(46,138,90,0.30)" : "none",
+                    cursor: "pointer",
                   }}
                 >
-                  <WhatsAppIcon size={16} color={suggestDetails.trim() ? "#fff" : "#9CA3AF"} />
-                  {t.suggestEditSubmitBtn}
-                </a>
+                  {suggestSaving ? "Mengirim…" : t.suggestEditSubmitBtn}
+                </ActionButton>
               </div>
             )}
           </div>

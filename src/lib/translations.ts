@@ -818,7 +818,7 @@ export const translations = {
     suggestEditFieldOptions: ["Nama Tempat", "Alamat", "Nomor Telepon", "Jam Operasional", "Rentang Harga", "Kategori", "Lainnya"],
     suggestEditDetailsLabel: "Detail perubahan",
     suggestEditDetailsPlaceholder: "Jelaskan data yang salah dan apa yang seharusnya benar...",
-    suggestEditSubmitBtn: "Kirim via WhatsApp",
+    suggestEditSubmitBtn: "Kirim Saran",
     suggestEditLockMsg: "Upgrade ke Premium untuk menyarankan perubahan data",
     suggestEditSuccess: "Terima kasih! Saran kamu akan kami tinjau segera.",
 
@@ -1734,7 +1734,7 @@ export const translations = {
     suggestEditFieldOptions: ["Place Name", "Address", "Phone Number", "Opening Hours", "Price Range", "Category", "Other"],
     suggestEditDetailsLabel: "Change details",
     suggestEditDetailsPlaceholder: "Describe what's wrong and what the correct information should be...",
-    suggestEditSubmitBtn: "Send via WhatsApp",
+    suggestEditSubmitBtn: "Send Suggestion",
     suggestEditLockMsg: "Upgrade to Premium to suggest data edits",
     suggestEditSuccess: "Thank you! We'll review your suggestion shortly.",
 
