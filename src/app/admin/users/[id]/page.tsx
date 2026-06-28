@@ -3,10 +3,17 @@
 import { useState, useEffect, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getAppUser, updateAppUser, deleteAppUser } from "../../actions";
+import { getAppUser, updateAppUser, deleteAppUser, getUserActivity } from "../../actions";
 
 type AppUser = Awaited<ReturnType<typeof getAppUser>>;
+type Activity = Awaited<ReturnType<typeof getUserActivity>>;
 type Kid = { name: string; dob: string; gender?: string };
+
+const REVIEW_STATUS_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+  pending:  { bg: "#FEF3C7", color: "#92400e", label: "Pending"  },
+  approved: { bg: "#dcfce7", color: "#15803d", label: "Approved" },
+  rejected: { bg: "#fee2e2", color: "#991b1b", label: "Rejected" },
+};
 
 function fmt(dateStr: string | null) {
   if (!dateStr) return "—";
@@ -23,6 +30,7 @@ export default function UserDetailPage() {
   const router = useRouter();
 
   const [user,      setUser]      = useState<AppUser | null>(null);
+  const [activity,  setActivity]  = useState<Activity | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [saved,     setSaved]     = useState(false);
@@ -51,6 +59,7 @@ export default function UserDetailPage() {
       );
       setLoading(false);
     });
+    getUserActivity(id).then(setActivity).catch(() => setActivity(null));
   }, [id]);
 
   async function handleSave() {
@@ -233,6 +242,81 @@ export default function UserDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Activity: favorites, reviews, notes */}
+      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", padding: 20, marginBottom: 20 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 700, color: "#0e1d4f", margin: "0 0 16px" }}>Aktivitas</h2>
+        {!activity ? (
+          <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Memuat aktivitas…</p>
+        ) : (
+          <>
+            {/* Counts */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+              {[
+                { label: "Favorit", value: activity.favorites.length, color: "#0e1d4f" },
+                { label: "Review",  value: activity.reviews.length,   color: "#2e8a5a" },
+                { label: "Catatan", value: activity.notesCount,       color: "#b45309" },
+              ].map(s => (
+                <div key={s.label} style={{ flex: "1 1 100px", minWidth: 100, background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 10, padding: "12px 16px" }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+              {/* Favorites */}
+              <div>
+                <h3 style={{ fontSize: 12, fontWeight: 700, color: "#374151", margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Tempat Favorit</h3>
+                {activity.favorites.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Belum ada favorit.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {activity.favorites.map(f => {
+                      const inner = (
+                        <>
+                          <span style={{ fontSize: 13, color: "#111827", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                          <span style={{ fontSize: 10.5, color: "#64748b", flexShrink: 0 }}>{f.category}</span>
+                        </>
+                      );
+                      const boxStyle: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 12px", borderRadius: 8, background: "#f9fafb", border: "1px solid #f3f4f6", textDecoration: "none" };
+                      return f.slug
+                        ? <a key={f.place_id} href={`/place/${f.slug}`} target="_blank" rel="noopener noreferrer" style={boxStyle}>{inner}</a>
+                        : <div key={f.place_id} style={boxStyle}>{inner}</div>;
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Reviews */}
+              <div>
+                <h3 style={{ fontSize: 12, fontWeight: 700, color: "#374151", margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Review</h3>
+                {activity.reviews.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Belum ada review.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {activity.reviews.map((r, i) => {
+                      const badge = REVIEW_STATUS_BADGE[r.status as string] ?? REVIEW_STATUS_BADGE.pending;
+                      return (
+                        <div key={i} style={{ padding: "10px 12px", borderRadius: 8, background: "#f9fafb", border: "1px solid #f3f4f6" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontSize: 12.5, fontWeight: 600, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.place_name}</span>
+                            <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "1px 8px", borderRadius: 999, background: badge.bg, color: badge.color }}>{badge.label}</span>
+                          </div>
+                          <div style={{ marginBottom: 4, color: "#FBBF24", fontSize: 12, letterSpacing: 1 }}>
+                            {"★".repeat(r.rating)}<span style={{ color: "#D1D5DB" }}>{"★".repeat(5 - r.rating)}</span>
+                          </div>
+                          <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}>{r.liked}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Save + Delete row */}

@@ -956,6 +956,57 @@ export async function getRegistrationStats() {
   };
 }
 
+// Directory tables → display label. saved_places stores only a bare place_id,
+// so we resolve names by looking the id up across every category table.
+const ACTIVITY_CATEGORY_TABLES: { table: string; label: string }[] = [
+  { table: "schools",          label: "Sekolah" },
+  { table: "learning_centers", label: "Tempat Kursus" },
+  { table: "daycares",         label: "Daycare" },
+  { table: "playgrounds",      label: "Playground" },
+  { table: "clinics",          label: "Klinik" },
+  { table: "cafes",            label: "Kafe" },
+  { table: "mini_zoo",         label: "Mini Zoo" },
+  { table: "swimming_pools",   label: "Kolam Renang" },
+  { table: "bookstores",       label: "Toko Buku" },
+  { table: "others",           label: "Lainnya" },
+];
+
+/** Per-user activity for the admin user-detail page: favorites, reviews, notes count. */
+export async function getUserActivity(userId: string) {
+  await assertAdmin();
+
+  const [savedRes, reviewsRes, notesRes] = await Promise.all([
+    supabaseAdmin.from("saved_places").select("place_id,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+    supabaseAdmin.from("reviews").select("place_id,place_name,place_category,rating,status,liked,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+    supabaseAdmin.from("notes").select("place_id", { count: "exact", head: true }).eq("user_id", userId),
+  ]);
+
+  const savedIds = (savedRes.data ?? []).map((r) => r.place_id as string);
+  let favorites: { place_id: string; name: string; category: string; slug: string | null }[] = [];
+  if (savedIds.length) {
+    const lookups = await Promise.all(
+      ACTIVITY_CATEGORY_TABLES.map(async ({ table, label }) => {
+        const { data } = await supabaseAdmin.from(table).select("id,name,slug").in("id", savedIds);
+        return (data ?? []).map((row) => ({
+          place_id: row.id as string,
+          name: (row.name as string) ?? "(tanpa nama)",
+          category: label,
+          slug: (row.slug as string) ?? null,
+        }));
+      }),
+    );
+    const byId = new Map(lookups.flat().map((f) => [f.place_id, f]));
+    // Preserve saved order; show a placeholder for ids whose listing was removed.
+    favorites = savedIds.map((id) => byId.get(id) ?? { place_id: id, name: "(listing tidak ditemukan)", category: "—", slug: null });
+  }
+
+  return {
+    favorites,
+    reviews: reviewsRes.data ?? [],
+    notesCount: notesRes.count ?? 0,
+  };
+}
+
 export async function updateAppUser(
   id: string,
   payload: {
