@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useMemo, use } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Check, Clock, Star, X } from "lucide-react";
 import { type Place } from "@/lib/mockData";
@@ -43,6 +43,37 @@ const labelCls = "font-jakarta text-sm font-bold text-[#0e1d4f] mb-1.5 block";
 const helpCls = "font-jakarta text-xs text-gray-400 mb-2 leading-relaxed";
 const taCls = "w-full px-4 py-3 rounded-2xl border-2 font-jakarta text-sm text-gray-800 outline-none resize-none";
 
+// Falling confetti for the success screen.
+function Confetti() {
+  const COLORS = ["#2e8a5a", "#FBBF24", "#EF4444", "#10B981", "#8B5CF6", "#F97316", "#EC4899"];
+  const particles = useMemo(() =>
+    Array.from({ length: 80 }, (_, i) => ({
+      id: i,
+      x:        Math.random() * 100,
+      color:    COLORS[i % COLORS.length],
+      delay:    Math.random() * 1.5,
+      duration: 2.2 + Math.random() * 2,
+      size:     6 + Math.random() * 9,
+      aspect:   Math.random() > 0.5 ? 0.4 : 1,
+      rotation: Math.random() * 360,
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  , []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, pointerEvents: "none", overflow: "clip" }}>
+      {particles.map(p => (
+        <div key={p.id} style={{
+          position: "absolute", left: `${p.x}%`, top: -12,
+          width: p.size, height: p.size * p.aspect,
+          background: p.color, borderRadius: p.aspect === 1 ? 999 : 2,
+          animation: `wr-confetti-fall ${p.duration}s ${p.delay}s ease-in forwards`,
+          transform: `rotate(${p.rotation}deg)`,
+        }} />
+      ))}
+    </div>
+  );
+}
+
 export default function WriteReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id }   = use(params);
   const router   = useRouter();
@@ -60,6 +91,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const [improve, setImprove]       = useState("");
   const [suggestion, setSuggestion] = useState("");
   const [anonymous, setAnonymous]   = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError]           = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [existing, setExisting]     = useState<UserReview | null>(null);
@@ -119,6 +151,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
     setSubmitting(false);
     if (err) { setError(`Gagal mengirim review: ${err}`); return; }
     setExisting({ ...review, status: "pending" });
+    setShowConfetti(true);
     setStep("success");
   }
 
@@ -126,6 +159,13 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col pb-10" style={{ background: "#fff" }}>
+      <style>{`
+        @keyframes wr-slide-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes wr-pop { 0% { opacity: 0; transform: scale(0.5); } 60% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes wr-confetti-fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(105vh) rotate(780deg); opacity: 0; } }
+      `}</style>
+
+      {step === "success" && showConfetti && <Confetti />}
 
       {/* Header */}
       <div className="px-5 pt-12 pb-6" style={{ background: "linear-gradient(135deg, #1f6b43 0%, #2e8a5a 100%)", borderRadius: "0 0 32px 32px" }}>
@@ -139,10 +179,10 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
             <ChevronLeft size={20} color="white" />
           </button>
           <div style={{ minWidth: 0 }}>
-            <h1 className="text-white text-lg font-bold" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+            <h1 className="text-white text-2xl font-bold" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
               Tulis Review
             </h1>
-            <p className="text-white/70 text-xs font-jakarta mt-0.5 truncate">{place.name}</p>
+            <p className="text-white/80 text-base font-jakarta mt-0.5 truncate">{place.name}</p>
           </div>
         </div>
       </div>
@@ -186,8 +226,8 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
           </div>
         ) : step === "success" ? (
           /* ── Success ── */
-          <div className="flex flex-col items-center justify-center text-center gap-4 py-16">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-2" style={{ background: "#e6f4ed" }}>
+          <div className="flex flex-col items-center justify-center text-center gap-4 py-16" style={{ animation: "wr-slide-up 0.55s cubic-bezier(0.22,1,0.36,1) both" }}>
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-2" style={{ background: "#e6f4ed", animation: "wr-pop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) 0.15s both" }}>
               <Check size={40} style={{ color: "#2e8a5a" }} strokeWidth={2.5} />
             </div>
             <h2 className="text-2xl font-bold text-[#0e1d4f]" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
@@ -207,12 +247,10 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
           /* ── Form ── */
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold text-[#0e1d4f] leading-snug" style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-                Bagikan pengalaman kamu di {place.name}
-              </h2>
-              <p className="font-jakarta text-sm text-gray-500 mt-2 leading-relaxed">
+              <p className="font-jakarta text-base font-semibold text-gray-700 leading-relaxed">
                 Pengalaman jujurmu bantu orang tua lain milih tempat yang tepat buat anaknya 💙
               </p>
+              <hr style={{ border: "none", borderTop: "1px solid #E5E7EB", marginTop: 16 }} />
             </div>
 
             {/* 1. Star rating */}
@@ -308,7 +346,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
               >
                 {anonymous && <Check size={13} color="#fff" strokeWidth={3} />}
               </div>
-              <span className="font-jakarta text-sm text-gray-700">Tampilkan saya sebagai Anonim</span>
+              <span className="font-jakarta text-xs text-gray-600">Sembunyikan identitas saya</span>
             </label>
 
             {/* Error */}
@@ -331,7 +369,7 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
                 {submitting ? "Mengirim…" : "Kirim Review"}
               </button>
               <p className="font-jakarta text-xs text-gray-400 mt-3 leading-relaxed text-center">
-                Review kamu akan tampil dengan nama depan (atau Anonim kalau kamu mau). Kami nggak terima review berbayar atau titipan. 🙏
+                Kami nggak terima review berbayar atau titipan. 🙏
               </p>
             </div>
           </div>
