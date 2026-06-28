@@ -115,9 +115,9 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
       isAnonymous:  anonymous,
       date:         `${new Date().toLocaleString("id-ID", { month: "short" })} ${new Date().getFullYear()}`,
     };
-    const { error: err } = await saveReview(review, user!.id);
+    const { error: err } = await saveReview(review);
     setSubmitting(false);
-    if (err) { setError("Gagal mengirim review. Coba lagi ya."); return; }
+    if (err) { setError(`Gagal mengirim review: ${err}`); return; }
     setExisting({ ...review, status: "pending" });
     setStep("success");
   }

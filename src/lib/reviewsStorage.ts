@@ -53,17 +53,19 @@ export function getReviewForPlace(placeId: string): UserReview | undefined {
  * token refresh), and only caches to localStorage AFTER a confirmed DB write —
  * so a failed submit never leaves a phantom "already reviewed" state.
  */
-export async function saveReview(review: UserReview, fallbackUserId?: string): Promise<{ error?: string }> {
+export async function saveReview(review: UserReview): Promise<{ error?: string }> {
   try {
     const supabase = getSupabaseBrowserClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id ?? fallbackUserId;
-    if (!userId) {
-      return { error: "Sesi kamu sudah berakhir. Silakan login lagi, lalu kirim ulang reviewnya." };
+    // Require a LIVE session — the RLS insert check is user_id = auth.uid(), so a
+    // stale cached login (valid-looking UI but no real session) must NOT attempt
+    // the insert with a context id, or it fails RLS with a confusing message.
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr || !user) {
+      return { error: "Sesi kamu sudah berakhir. Refresh halaman & login lagi, lalu kirim ulang reviewnya." };
     }
 
     const { error } = await supabase.from("reviews").insert({
-      user_id:               userId,
+      user_id:               user.id,
       place_id:              review.placeId,
       place_name:            review.placeName,
       place_icon:            review.placeIcon,
@@ -77,13 +79,17 @@ export async function saveReview(review: UserReview, fallbackUserId?: string): P
       is_anonymous:          review.isAnonymous ?? false,
       status:                "pending",
     });
-    if (error) return { error: error.message };
+    if (error) {
+      console.error("[saveReview] insert failed:", error);
+      return { error: error.message };
+    }
 
     // Cache only after the DB confirms the insert.
     const existing = lsGet().filter(r => r.placeId !== review.placeId);
     lsSet([{ ...review, status: "pending" }, ...existing]);
     return {};
   } catch (e) {
+    console.error("[saveReview] unexpected:", e);
     return { error: e instanceof Error ? e.message : "Gagal mengirim review." };
   }
 }
