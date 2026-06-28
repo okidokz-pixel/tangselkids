@@ -14,7 +14,7 @@ import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } 
 import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters, fetchSimilarDaycares, fetchSimilarPlaygrounds, fetchSimilarClinics, fetchSimilarCafes, fetchSimilarMiniZoos, fetchSimilarSwimmingPools, fetchSimilarBookstores } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
-import { getReviewForPlace, relationshipLabel, type UserReview, type ReviewRelationship } from "@/lib/reviewsStorage";
+import { fetchMyReviewForPlace, relationshipLabel, type UserReview, type ReviewRelationship } from "@/lib/reviewsStorage";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
@@ -248,8 +248,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     setIsSaved(ids.includes(placeId));
 
     function loadUserReview() {
-      const found = getReviewForPlace(placeId);
-      setUserReview(found ?? null);
+      // Authoritative own-review state from the DB (not localStorage), so a
+      // failed submit never shows a phantom "pending" review here.
+      fetchMyReviewForPlace(placeId).then(setUserReview);
     }
     loadUserReview();
     window.addEventListener("focus", loadUserReview);

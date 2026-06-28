@@ -48,17 +48,20 @@ export function getReviewForPlace(placeId: string): UserReview | undefined {
 }
 
 /**
- * Insert a structured review. Writes to localStorage immediately (so the user
- * sees their own pending review), then inserts into Supabase as `pending`.
- * Returns an error string on failure.
+ * Insert a structured review as `pending`. Uses the LIVE authenticated session
+ * (so the insert satisfies the RLS `user_id = auth.uid()` check even after a
+ * token refresh), and only caches to localStorage AFTER a confirmed DB write —
+ * so a failed submit never leaves a phantom "already reviewed" state.
  */
-export async function saveReview(review: UserReview, userId: string): Promise<{ error?: string }> {
-  // Local cache (the submitter's own copy)
-  const existing = lsGet().filter(r => r.placeId !== review.placeId);
-  lsSet([{ ...review, status: "pending" }, ...existing]);
-
+export async function saveReview(review: UserReview, fallbackUserId?: string): Promise<{ error?: string }> {
   try {
     const supabase = getSupabaseBrowserClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id ?? fallbackUserId;
+    if (!userId) {
+      return { error: "Sesi kamu sudah berakhir. Silakan login lagi, lalu kirim ulang reviewnya." };
+    }
+
     const { error } = await supabase.from("reviews").insert({
       user_id:               userId,
       place_id:              review.placeId,
@@ -75,9 +78,55 @@ export async function saveReview(review: UserReview, userId: string): Promise<{ 
       status:                "pending",
     });
     if (error) return { error: error.message };
+
+    // Cache only after the DB confirms the insert.
+    const existing = lsGet().filter(r => r.placeId !== review.placeId);
+    lsSet([{ ...review, status: "pending" }, ...existing]);
     return {};
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal mengirim review." };
+  }
+}
+
+/** Map a Supabase reviews row → UserReview. */
+function mapRow(r: Record<string, unknown>): UserReview {
+  return {
+    placeId:       r.place_id as string,
+    placeName:     (r.place_name as string)     ?? "",
+    placeIcon:     (r.place_icon as string)     ?? "📍",
+    placeCategory: (r.place_category as string) ?? undefined,
+    name:          (r.reviewer_name as string)  ?? "",
+    rating:        r.rating as number,
+    relationship:  (r.reviewer_relationship as ReviewRelationship) ?? null,
+    liked:         (r.liked as string)      ?? "",
+    improve:       (r.improve as string)    ?? undefined,
+    suggestion:    (r.suggestion as string) ?? undefined,
+    isAnonymous:   (r.is_anonymous as boolean) ?? false,
+    date:          new Date(r.created_at as string).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
+    status:        (r.status as ReviewStatus) ?? "pending",
+  };
+}
+
+/**
+ * Fetch the signed-in user's own review for a place straight from the DB
+ * (authoritative — RLS lets users read their own rows regardless of status).
+ * Returns null for guests or when no review exists. This is the source of
+ * truth for "have I already reviewed", NOT localStorage.
+ */
+export async function fetchMyReviewForPlace(placeId: string): Promise<UserReview | null> {
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("place_id", placeId)
+      .maybeSingle();
+    return data ? mapRow(data) : null;
+  } catch {
+    return null;
   }
 }
 
@@ -94,21 +143,7 @@ export async function syncReviewsFromRemote(userId: string): Promise<void> {
       .eq("user_id", userId);
     if (!data?.length) return;
 
-    const remote: UserReview[] = data.map((r: Record<string, unknown>) => ({
-      placeId:       r.place_id as string,
-      placeName:     (r.place_name as string)     ?? "",
-      placeIcon:     (r.place_icon as string)     ?? "📍",
-      placeCategory: (r.place_category as string) ?? undefined,
-      name:          (r.reviewer_name as string)  ?? "",
-      rating:        r.rating as number,
-      relationship:  (r.reviewer_relationship as ReviewRelationship) ?? null,
-      liked:         (r.liked as string)      ?? "",
-      improve:       (r.improve as string)    ?? undefined,
-      suggestion:    (r.suggestion as string) ?? undefined,
-      isAnonymous:   (r.is_anonymous as boolean) ?? false,
-      date:          new Date(r.created_at as string).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
-      status:        (r.status as ReviewStatus) ?? "pending",
-    }));
+    const remote: UserReview[] = data.map(mapRow);
 
     // Merge: remote wins for places where both exist
     const local = lsGet().filter(l => !remote.find(r => r.placeId === l.placeId));

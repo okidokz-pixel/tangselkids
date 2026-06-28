@@ -7,7 +7,7 @@ import { fetchPlaceById } from "@/lib/db";
 import { useAuth } from "@/context/AuthContext";
 import { ActionButton } from "@/components/ActionButton";
 import {
-  saveReview, getReviewForPlace,
+  saveReview, fetchMyReviewForPlace,
   type UserReview, type ReviewRelationship,
 } from "@/lib/reviewsStorage";
 
@@ -64,10 +64,12 @@ export default function WriteReviewPage({ params }: { params: Promise<{ id: stri
   const [submitting, setSubmitting] = useState(false);
   const [existing, setExisting]     = useState<UserReview | null>(null);
 
+  // Authoritative "already reviewed?" check — straight from the DB, so a
+  // failed previous submit (cached locally but not saved) never blocks a retry.
   useEffect(() => {
-    const found = getReviewForPlace(id);
-    if (found) setExisting(found);
-  }, [id]);
+    if (!user) return;
+    fetchMyReviewForPlace(id).then(r => { if (r) setExisting(r); });
+  }, [id, user]);
 
   // Login is required to review.
   useEffect(() => {
