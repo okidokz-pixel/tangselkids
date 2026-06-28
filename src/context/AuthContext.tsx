@@ -1,7 +1,7 @@
 "use client";
 import {
   createContext, useContext, useState, useEffect,
-  useCallback, type ReactNode,
+  useCallback, useRef, type ReactNode,
 } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { Session } from "@supabase/supabase-js";
@@ -63,75 +63,118 @@ export function normalizePhone(raw: string): string {
   return `+62${digits}`;
 }
 
+// ── Profile cache ─────────────────────────────────────────────────────────────
+// The logged-in UI must not depend on a live `profiles` fetch (which can be slow
+// or fail under DB load). We cache the last-known profile per user id so name +
+// avatar are always available instantly — a failing fetch can never wipe them.
+const PROFILE_CACHE_PREFIX = "tk_profile_";
+
+function localPhoto(id: string): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  return localStorage.getItem(`profilePhoto_${id}`) ?? undefined;
+}
+
+function readProfileCache(id: string): UserData | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem(PROFILE_CACHE_PREFIX + id);
+    if (!s) return null;
+    const u = JSON.parse(s) as UserData;
+    return { ...u, avatar: localPhoto(id) };
+  } catch { return null; }
+}
+
+function writeProfileCache(u: UserData) {
+  if (typeof window === "undefined") return;
+  try {
+    // Exclude the (possibly large) base64 avatar; it lives under its own key.
+    const { avatar: _avatar, ...rest } = u;
+    void _avatar;
+    localStorage.setItem(PROFILE_CACHE_PREFIX + u.id, JSON.stringify(rest));
+  } catch {}
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+function mapProfileRow(data: any, session: Session): UserData {
+  return {
+    id:               data.id,
+    phone:            data.phone            ?? session.user.phone ?? "",
+    name:             data.name             ?? "",
+    address:          data.address          ?? undefined,
+    addressLat:       data.address_lat      ?? undefined,
+    addressLng:       data.address_lng      ?? undefined,
+    dob:              data.dob              ?? undefined,
+    kids:             (data.kids as Kid[])  ?? [],
+    avatar:           localPhoto(data.id),
+    avatarUrl:        data.avatar_url       ?? undefined,
+    tier:             (data.tier as "free" | "premium") ?? "free",
+    lifetime:         data.lifetime         ?? false,
+    premiumExpiresAt: data.premium_expires_at ?? undefined,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabaseBrowserClient();
   const [user, setUser]     = useState<UserData | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // The uid we currently hold a FRESH DB profile for — lets us skip redundant
+  // refetches (token-refresh / window-focus fire SIGNED_IN repeatedly).
+  const profileFor = useRef<string | null>(null);
 
-  /** Fetch profile row and set user state from a Supabase session */
-  const loadProfile = useCallback(async (session: Session | null) => {
+  /**
+   * Reconcile auth state from a Supabase session.
+   *
+   * Logged-in state is reflected IMMEDIATELY from the session + cached profile,
+   * so the UI is never half-logged-out while the DB read is in flight or
+   * failing. The `profiles` fetch is best-effort with retries and can never
+   * downgrade a logged-in user.
+   */
+  const loadProfile = useCallback(async (session: Session | null, force = false) => {
     if (!session?.user) {
+      profileFor.current = null;
       setUser(null);
       setLoaded(true);
       return;
     }
+    const uid = session.user.id;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", session.user.id)
-      .single();
-
-    const localPhoto =
-      typeof window !== "undefined"
-        ? (localStorage.getItem(`profilePhoto_${session.user.id}`) ?? undefined)
-        : undefined;
-
-    if (data) {
-      setUser({
-        id:               data.id,
-        phone:            data.phone            ?? session.user.phone ?? "",
-        name:             data.name             ?? "",
-        address:          data.address          ?? undefined,
-        addressLat:       data.address_lat      ?? undefined,
-        addressLng:       data.address_lng      ?? undefined,
-        dob:              data.dob              ?? undefined,
-        kids:             (data.kids as Kid[])  ?? [],
-        avatar:           localPhoto,
-        avatarUrl:        data.avatar_url       ?? undefined,
-        tier:             (data.tier as "free" | "premium") ?? "free",
-        lifetime:         data.lifetime         ?? false,
-        premiumExpiresAt: data.premium_expires_at ?? undefined,
-      });
+    // Already hold a fresh profile for this user → nothing to do. Cuts the
+    // refetch churn from token-refresh / focus events (each was a failure chance).
+    if (profileFor.current === uid && !force) {
       setLoaded(true);
       return;
     }
 
-    // No row returned. PGRST116 = "no rows" (genuinely new user / trigger delay).
-    // Anything else is a transient fetch failure (network blip, Supabase IO
-    // timeout). On a transient failure we must NOT clobber an already-loaded
-    // profile — otherwise a routine token-refresh that happens to hit a slow
-    // DB flips the UI into a half-logged-out limbo (session valid, but name +
-    // avatar wiped → homepage shows "Login" while the profile page still shows
-    // "Log Out"). Keep the good state and let the next refresh recover it.
-    const isMissingRow = !error || error.code === "PGRST116";
-    if (!isMissingRow) {
-      console.error("[auth] profile fetch failed, keeping current state:", error?.message);
-      setUser((prev) => prev ?? {
-        id: session.user.id, phone: session.user.phone ?? "", name: "", kids: [],
-      });
-      setLoaded(true);
-      return;
-    }
-
-    // Genuinely no profile row yet — don't downgrade a known user if we somehow
-    // already have one loaded for this session.
-    setUser((prev) =>
-      prev && prev.id === session.user.id
-        ? prev
-        : { id: session.user.id, phone: session.user.phone ?? "", name: "", kids: [] },
-    );
+    // 1) Reflect logged-in state instantly from cache (or a minimal session
+    //    profile), so a slow/failing fetch never shows a half-logged-out UI.
+    setUser((prev) => {
+      if (prev && prev.id === uid && !force) return prev;
+      return readProfileCache(uid)
+        ?? { id: uid, phone: session.user.phone ?? "", name: "", kids: [] };
+    });
     setLoaded(true);
+
+    // 2) Best-effort fetch with retries. NEVER downgrade on failure.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
+        .from("profiles").select("*").eq("id", uid).single();
+
+      if (data) {
+        const mapped = mapProfileRow(data, session);
+        profileFor.current = uid;
+        writeProfileCache(mapped);
+        setUser(mapped);
+        setLoaded(true);
+        return;
+      }
+      // PGRST116 = no row yet (genuinely new user / trigger delay). Keep the
+      // minimal/cached profile and stop — retrying won't conjure a row.
+      if (error && error.code === "PGRST116") return;
+
+      // Transient failure (network blip / DB IO timeout) → short backoff, retry.
+      await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+    }
+    // All retries failed: keep cache/minimal state; self-heals on the next event.
   }, [supabase]);
 
   useEffect(() => {
@@ -142,11 +185,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Keep state in sync across session changes (login / logout / token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: string, session: Session | null) => {
-        void event;
-        loadProfile(session);
+        if (event === "SIGNED_OUT") {
+          profileFor.current = null;
+          setUser(null);
+          setLoaded(true);
+          return;
+        }
+        // A token refresh rotates the access token but the profile is unchanged.
+        // Don't refetch — loadProfile() short-circuits when we already hold the
+        // profile, avoiding the churn (and transient-failure window) entirely.
+        // USER_UPDATED is the one case that needs a forced refetch.
+        loadProfile(session, event === "USER_UPDATED");
       }
     );
     return () => subscription.unsubscribe();
@@ -210,7 +261,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Keep local photo in localStorage keyed by user ID until Phase 2 Storage migration
     if (data.avatar) localStorage.setItem(`profilePhoto_${session.user.id}`, data.avatar);
 
-    await loadProfile(session);
+    await loadProfile(session, true);
     return {};
   }
 
@@ -233,13 +284,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.from("profiles").update(patch).eq("id", session.user.id);
     }
     if (data.avatar) localStorage.setItem(`profilePhoto_${session.user.id}`, data.avatar);
-    await loadProfile(session);
+    await loadProfile(session, true);
   }
 
   // ── logout ────────────────────────────────────────────────────────────────
   async function logout(): Promise<void> {
     // Clear local UI state first so the app reflects logout even if the network
     // signOut is slow or fails.
+    profileFor.current = null;
     setUser(null);
     try {
       await supabase.auth.signOut();
