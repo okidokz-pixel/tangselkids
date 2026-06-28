@@ -1397,14 +1397,34 @@ export async function rejectClaim(id: string, notes?: string) {
 
 export async function deleteClaim(id: string) {
   await assertAdmin();
-  // Remove the uploaded verification document from storage too (best-effort).
   const { data: claim } = await supabaseAdmin
-    .from("place_claims").select("document_url").eq("id", id).single();
+    .from("place_claims").select("document_url,status,category,place_slug").eq("id", id).single();
+
+  // Remove the uploaded verification document from storage too (best-effort).
   if (claim?.document_url) {
     await supabaseAdmin.storage.from("claim-documents").remove([claim.document_url]);
   }
+
   const { error } = await supabaseAdmin.from("place_claims").delete().eq("id", id);
   if (error) throw error;
+
+  // If this was the approved claim that verified the place, revert the badge —
+  // unless another approved claim still vouches for the same place.
+  if (claim?.status === "approved" && claim.place_slug) {
+    const { count } = await supabaseAdmin
+      .from("place_claims")
+      .select("id", { count: "exact", head: true })
+      .eq("place_slug", claim.place_slug)
+      .eq("status", "approved");
+    if (!count) {
+      const table = CLAIM_TABLE[claim.category];
+      if (table) {
+        await supabaseAdmin.from(table).update({ is_verified: false }).eq("slug", claim.place_slug);
+        revalidatePath(`/place/${claim.place_slug}`);
+      }
+    }
+  }
+
   revalidatePath("/admin/claims");
 }
 

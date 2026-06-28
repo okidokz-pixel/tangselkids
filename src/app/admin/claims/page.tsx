@@ -76,7 +76,7 @@ export default function ClaimsPage() {
   }
 
   function handleDelete(id: string) {
-    if (!confirm("Hapus klaim ini permanen? Dokumen verifikasinya juga akan dihapus. (Badge Terverifikasi pada tempat tidak otomatis hilang.)")) return;
+    if (!confirm("Hapus klaim ini permanen? Dokumen verifikasinya ikut dihapus. Jika klaim ini sudah di-approve, badge Terverifikasi pada tempat akan dilepas (kecuali ada klaim approved lain untuk tempat yang sama).")) return;
     startTransition(async () => {
       await deleteClaim(id);
       setItems(prev => prev.filter(c => c.id !== id));
