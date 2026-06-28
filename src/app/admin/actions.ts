@@ -1395,6 +1395,19 @@ export async function rejectClaim(id: string, notes?: string) {
   revalidatePath("/admin/claims");
 }
 
+export async function deleteClaim(id: string) {
+  await assertAdmin();
+  // Remove the uploaded verification document from storage too (best-effort).
+  const { data: claim } = await supabaseAdmin
+    .from("place_claims").select("document_url").eq("id", id).single();
+  if (claim?.document_url) {
+    await supabaseAdmin.storage.from("claim-documents").remove([claim.document_url]);
+  }
+  const { error } = await supabaseAdmin.from("place_claims").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/claims");
+}
+
 export async function getClaimDocumentUrl(path: string) {
   await assertAdmin();
   const { data, error } = await supabaseAdmin.storage

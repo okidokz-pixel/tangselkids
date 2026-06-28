@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { getClaims, approveClaim, rejectClaim, getClaimDocumentUrl } from "../actions";
+import { getClaims, approveClaim, rejectClaim, deleteClaim, getClaimDocumentUrl } from "../actions";
 
 type Claim = Awaited<ReturnType<typeof getClaims>>[number];
 
@@ -72,6 +72,14 @@ export default function ClaimsPage() {
     startTransition(async () => {
       await rejectClaim(id, notes);
       setItems(prev => prev.map(c => c.id === id ? { ...c, status: "rejected", admin_notes: notes ?? null } : c));
+    });
+  }
+
+  function handleDelete(id: string) {
+    if (!confirm("Hapus klaim ini permanen? Dokumen verifikasinya juga akan dihapus. (Badge Terverifikasi pada tempat tidak otomatis hilang.)")) return;
+    startTransition(async () => {
+      await deleteClaim(id);
+      setItems(prev => prev.filter(c => c.id !== id));
     });
   }
 
@@ -273,6 +281,12 @@ export default function ClaimsPage() {
                           </button>
                         </div>
                       )}
+                      <button
+                        onClick={() => handleDelete(c.id)}
+                        style={{ fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 6, border: "1.5px solid #fecaca", background: "#fff", color: "#dc2626", cursor: "pointer", whiteSpace: "nowrap" }}
+                      >
+                        🗑 Hapus
+                      </button>
                     </div>
                   </td>
                 </tr>
