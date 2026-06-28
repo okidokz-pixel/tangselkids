@@ -11,6 +11,9 @@ import { useLang } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { PremiumBadge } from "@/components/PremiumBadge";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { ShareButtons } from "@/components/ShareButtons";
+
+const SITE_URL = "https://tangselkids.com";
 
 const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
   "Parenting":       { bg: "#fde9c8", color: "#b45309" },
@@ -166,6 +169,12 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
           .article-body li { font-family: var(--font-jakarta),sans-serif; font-size: 14px; color: #374151; line-height: 1.7; margin-bottom: 4px; }
         `}</style>
 
+        <div style={{ padding: "8px 20px 24px", marginTop: 12, borderTop: "1px solid #e2e8f0" }}>
+          <div style={{ paddingTop: 18 }}>
+            <ShareButtons title={dbArticle.title} url={`${SITE_URL}/berita/${dbArticle.slug ?? id}`} />
+          </div>
+        </div>
+
         <BottomNav active="explore" />
       </div>
     );
@@ -250,6 +259,10 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
               {article.category}
             </span>
           </div>
+        </div>
+
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid #e2e8f0" }}>
+          <ShareButtons title={article.title} url={`${SITE_URL}/berita/${staticRaw!.id}`} />
         </div>
       </div>
 
