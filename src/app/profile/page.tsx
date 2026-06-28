@@ -2,9 +2,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
-  User, Globe, Bell, Info, MessageSquare, HelpCircle,
+  User, Bell, MessageSquare, HelpCircle, Store,
   ChevronRight, Heart, Pencil, LogOut,
-  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera, Crown, ShieldCheck,
+  Calendar, Baby, Plus, Trash2, Check, X, FileText, Camera, Crown,
 } from "lucide-react";
 import { useLang } from "@/context/LanguageContext";
 import { LangToggle } from "@/components/LangToggle";
@@ -127,11 +127,16 @@ export default function ProfilePage() {
   }
 
   const appRows: { Icon: React.ElementType; label: string; value: string; href?: string }[] = [
-    { Icon: Info,          label: t.profileAbout,    value: "", href: "/about" },
     { Icon: MessageSquare, label: t.profileFeedback, value: "", href: "/feedback" },
     { Icon: HelpCircle,    label: t.profileHelp,     value: "", href: "/help" },
-    { Icon: FileText,      label: t.profileTerms,    value: "", href: "/terms" },
-    { Icon: ShieldCheck,   label: t.profilePrivacy,  value: "", href: "/privacy" },
+    { Icon: Store,         label: lang === "id" ? "Daftarkan Tempatmu" : "List Your Place", value: "", href: "/list-your-place" },
+  ];
+
+  // Secondary links shown small at the bottom (below logout).
+  const legalRows = [
+    { label: t.profileAbout,   href: "/about" },
+    { label: t.profileTerms,   href: "/terms" },
+    { label: t.profilePrivacy, href: "/privacy" },
   ];
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -169,12 +174,15 @@ export default function ProfilePage() {
           borderRadius: "0 0 32px 32px",
         }}
       >
-        <div className="mb-5">
-          <p className="text-[#a8d5ba] text-xs font-jakarta font-semibold tracking-widest uppercase">TangselKids</p>
-          <h1 className="text-white text-3xl font-bold leading-tight mt-0.5"
-              style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
-            {t.profileTitle}
-          </h1>
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[#a8d5ba] text-xs font-jakarta font-semibold tracking-widest uppercase">TangselKids</p>
+            <h1 className="text-white text-3xl font-bold leading-tight mt-0.5"
+                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}>
+              {t.profileTitle}
+            </h1>
+          </div>
+          <LangToggle variant="dark" />
         </div>
 
         {/* Profile card */}
@@ -560,21 +568,6 @@ export default function ProfilePage() {
         </section>
 
 
-        {/* Preferences */}
-        <section>
-          <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
-            {t.profileSectionPref}
-          </p>
-          <div className="rounded-2xl"
-               style={{ background: "#fff", border: "1px solid var(--tk-line)", boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)", borderColor: "var(--tk-line)", overflow: "clip" }}>
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Globe size={20} strokeWidth={1.75} style={{ color: "var(--tk-muted)" }} className="w-7 flex-shrink-0" />
-              <span className="flex-1 font-jakarta text-sm font-semibold" style={{ color: "var(--tk-ink)" }}>{t.profileLang}</span>
-              <LangToggle variant="dark" />
-            </div>
-          </div>
-        </section>
-
         {/* App */}
         <section>
           <p className="text-xs font-jakarta font-semibold uppercase tracking-widest mb-2 px-1" style={{ color: "var(--tk-muted)" }}>
@@ -623,6 +616,15 @@ export default function ProfilePage() {
             <LogOut size={17} /> Log Out
           </ActionButton>
         </section>
+
+        {/* Secondary links — about / legal (less prominent) */}
+        <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-1.5 pt-1">
+          {legalRows.map((r) => (
+            <Link key={r.href} href={r.href} className="font-jakarta text-xs" style={{ color: "var(--tk-muted)", textDecoration: "none" }}>
+              {r.label}
+            </Link>
+          ))}
+        </div>
 
         {/* Footer */}
         <div className="text-center pt-4 pb-2">
