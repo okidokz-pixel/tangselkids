@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
+import Link from "next/link";
 import { getClaims, approveClaim, rejectClaim, getClaimDocumentUrl } from "../actions";
 
 type Claim = Awaited<ReturnType<typeof getClaims>>[number];
@@ -203,6 +204,17 @@ export default function ClaimsPage() {
                   <td style={{ padding: "12px 16px" }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#374151" }}>{c.claimant_name}</div>
                     <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>{c.claimant_role}</div>
+                    {c.user_id ? (
+                      <Link
+                        href={`/admin/users/${c.user_id}`}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 5, fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: "#eef2ff", color: "#3730a3", textDecoration: "none" }}
+                        title={c.account_name ? `Akun: ${c.account_name}` : "Lihat akun terhubung"}
+                      >
+                        👤 {c.account_name || "Akun terhubung"}
+                      </Link>
+                    ) : (
+                      <div style={{ fontSize: 11, color: "#cbd5e1", marginTop: 5, fontStyle: "italic" }}>Tanpa akun (form publik)</div>
+                    )}
                   </td>
 
                   {/* Contact */}

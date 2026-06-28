@@ -1264,7 +1264,25 @@ export async function getClaims(status?: string) {
   if (status && status !== "all") q = q.eq("status", status);
   const { data, error } = await q;
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+
+  // Attach the linked account's profile (name + phone) when the claim was
+  // submitted by a signed-in user. Tolerates a missing user_id column.
+  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+  let byId: Record<string, { name: string | null; phone: string | null }> = {};
+  if (ids.length) {
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id,name,phone")
+      .in("id", ids);
+    byId = Object.fromEntries((profs ?? []).map((p) => [p.id, { name: p.name, phone: p.phone }]));
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    account_name:  r.user_id ? byId[r.user_id]?.name ?? null : null,
+    account_phone: r.user_id ? byId[r.user_id]?.phone ?? null : null,
+  }));
 }
 
 export async function getPendingClaimsCount() {

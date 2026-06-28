@@ -67,6 +67,10 @@ export default function ClaimPage({ params }: { params: Promise<{ slug: string }
     setSubmitting(true);
     try {
       const supabase = getSupabaseBrowserClient();
+      // Link this claim to the signed-in account (the claim button is gated to
+      // logged-in users, but capture it defensively in case of direct navigation).
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+
       const ext = file.name.split(".").pop() ?? "pdf";
       const path = `${slug}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
@@ -84,6 +88,7 @@ export default function ClaimPage({ params }: { params: Promise<{ slug: string }
         claimant_email:   email.trim(),
         claimant_whatsapp: whatsapp.trim(),
         document_url:     path,
+        user_id:          authUser?.id ?? null,
       });
       if (insertErr) throw new Error(insertErr.message);
 
