@@ -14,7 +14,7 @@ import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } 
 import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters, fetchSimilarDaycares, fetchSimilarPlaygrounds, fetchSimilarClinics, fetchSimilarCafes, fetchSimilarMiniZoos, fetchSimilarSwimmingPools, fetchSimilarBookstores } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
-import { getReviewForPlace, type UserReview } from "@/lib/reviewsStorage";
+import { getReviewForPlace, relationshipLabel, type UserReview, type ReviewRelationship } from "@/lib/reviewsStorage";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
@@ -254,12 +254,12 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     loadUserReview();
     window.addEventListener("focus", loadUserReview);
 
-    // Fetch approved reviews from Supabase
+    // Fetch approved reviews from Supabase (RLS also enforces status = approved)
     getSupabaseBrowserClient()
       .from("reviews")
-      .select("place_id,place_name,place_icon,reviewer_name,rating,comment,created_at")
+      .select("place_id,place_name,place_icon,reviewer_name,rating,reviewer_relationship,liked,improve,suggestion,is_anonymous,created_at")
       .eq("place_id", placeId)
-      .eq("is_published", true)
+      .eq("status", "approved")
       .order("created_at", { ascending: false })
       .then(({ data }: { data: any[] | null }) => {
         if (!data) return;
@@ -267,9 +267,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           placeId:   r.place_id,
           placeName: r.place_name  ?? "",
           placeIcon: r.place_icon  ?? "📍",
-          name:      r.reviewer_name ?? "",
+          name:      r.is_anonymous ? "Anonim" : (r.reviewer_name || "Anonim"),
           rating:    r.rating,
-          comment:   r.comment    ?? "",
+          relationship: r.reviewer_relationship ?? null,
+          liked:     r.liked      ?? "",
+          improve:   r.improve    ?? undefined,
+          suggestion: r.suggestion ?? undefined,
+          isAnonymous: r.is_anonymous ?? false,
           date:      new Date(r.created_at).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
         })));
       });
@@ -1872,13 +1876,51 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
         {/* Reviews */}
         {(() => {
-          const totalCount = publishedReviews.length + (userReview ? 1 : 0);
-          const isPending = userReview && userReview.isPublished === false;
+          const ownPending = userReview && userReview.status !== "approved";
+          // Avoid double-counting the user's own review if it's already in the approved list.
+          const others = publishedReviews.filter(r => !(userReview && r.liked === userReview.liked && r.rating === userReview.rating));
+          const totalCount = others.length + (userReview ? 1 : 0);
+          const avg = others.length ? (others.reduce((s, r) => s + r.rating, 0) / others.length) : 0;
+
+          const RelBadge = ({ rel }: { rel?: ReviewRelationship | null }) => {
+            const label = relationshipLabel(rel);
+            if (!label) return null;
+            return (
+              <span style={{ fontSize: 10, fontWeight: 700, background: "#EEF2FF", color: "#3730A3", borderRadius: 999, padding: "2px 8px", fontFamily: "var(--font-jakarta), sans-serif" }}>{label}</span>
+            );
+          };
+
+          const Body = ({ r }: { r: UserReview }) => (
+            <>
+              <p className="font-jakarta text-gray-700 text-sm leading-relaxed">{r.liked}</p>
+              {r.improve && (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Bisa diperbaiki:</p>
+                  <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{r.improve}</p>
+                </div>
+              )}
+              {r.suggestion && (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>Saran:</p>
+                  <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{r.suggestion}</p>
+                </div>
+              )}
+            </>
+          );
+
           return (
             <div>
-              <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f", marginBottom: 4 }}>
-                {t.pdUserReviewsTitle}{totalCount > 0 ? ` (${totalCount})` : ""}
-              </h2>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <h2 style={{ fontFamily: "var(--font-fraunces), Georgia, serif", fontSize: 22, fontWeight: 700, color: "#0e1d4f" }}>
+                  Review{totalCount > 0 ? ` (${totalCount})` : ""}
+                </h2>
+                {avg > 0 && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 999, padding: "3px 10px" }}>
+                    <Star size={14} fill="#FBBF24" stroke="none" />
+                    <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700, color: "#92400e" }}>{avg.toFixed(1)}</span>
+                  </span>
+                )}
+              </div>
               {totalCount === 0 ? (
                 <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, color: "#94a3b8" }}>
                   Belum ada review.
@@ -1887,12 +1929,13 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                 <div className="space-y-3">
                   {/* User's own review — shown first */}
                   {userReview && (
-                    <div className="rounded-2xl p-4" style={{ background: isPending ? "#FFFBEB" : "#F0F9FF", border: `1.5px solid ${isPending ? "#FDE68A" : "#BAE6FD"}` }}>
+                    <div className="rounded-2xl p-4" style={{ background: ownPending ? "#FFFBEB" : "#F0F9FF", border: `1.5px solid ${ownPending ? "#FDE68A" : "#BAE6FD"}` }}>
                       <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.name}</span>
-                          <span style={{ fontSize: 10, fontWeight: 700, background: isPending ? "#F59E0B" : "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
-                            {isPending ? "Menunggu persetujuan" : "Ulasanmu"}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-jakarta font-semibold text-sm text-gray-800">{userReview.isAnonymous ? "Anonim" : userReview.name}</span>
+                          <RelBadge rel={userReview.relationship} />
+                          <span style={{ fontSize: 10, fontWeight: 700, background: ownPending ? "#F59E0B" : "#2e8a5a", color: "#fff", borderRadius: 999, padding: "2px 7px", fontFamily: "var(--font-jakarta), sans-serif" }}>
+                            {ownPending ? "Menunggu persetujuan" : "Ulasanmu"}
                           </span>
                         </div>
                         <span className="font-jakarta text-xs text-gray-400">{userReview.date}</span>
@@ -1902,19 +1945,22 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                           <Star key={s} size={13} fill={s < userReview.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
                         ))}
                       </div>
-                      <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{userReview.comment}</p>
-                      {isPending && (
+                      <Body r={userReview} />
+                      {ownPending && (
                         <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, color: "#92400e", marginTop: 8 }}>
                           Ulasanmu sedang ditinjau dan akan ditampilkan setelah disetujui.
                         </p>
                       )}
                     </div>
                   )}
-                  {/* Published reviews from other users */}
-                  {publishedReviews.map((review, i) => (
+                  {/* Approved reviews from other users */}
+                  {others.map((review, i) => (
                     <div key={i} className="bg-gray-50 rounded-2xl p-4">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-jakarta font-semibold text-sm text-gray-800">{review.name}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-jakarta font-semibold text-sm text-gray-800">{review.name}</span>
+                          <RelBadge rel={review.relationship} />
+                        </div>
                         <span className="font-jakarta text-xs text-gray-400">{review.date}</span>
                       </div>
                       <div className="flex items-center gap-0.5 mb-2">
@@ -1922,7 +1968,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                           <Star key={s} size={13} fill={s < review.rating ? "#FBBF24" : "#D1D5DB"} stroke="none" />
                         ))}
                       </div>
-                      <p className="font-jakarta text-gray-600 text-sm leading-relaxed">{review.comment}</p>
+                      <Body r={review} />
                     </div>
                   ))}
                 </div>
@@ -1945,7 +1991,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
               touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
             }}
           >
-            <Pencil size={15} /> {t.reviewEditBtn}
+            <Pencil size={15} /> Lihat Ulasanmu
           </ActionButton>
         ) : (
           <ActionButton

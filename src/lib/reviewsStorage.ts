@@ -1,15 +1,24 @@
 import { getSupabaseBrowserClient } from "./supabase-browser";
 
+export type ReviewRelationship =
+  | "murid_sekarang" | "alumni" | "pernah_ikut" | "ortu_calon_murid";
+
+export type ReviewStatus = "pending" | "approved" | "rejected";
+
 export type UserReview = {
   placeId:       string;
   placeName:     string;
   placeIcon:     string;
   placeCategory?: string;
-  name:          string;   // reviewer display name
+  name:          string;   // reviewer first name (public display)
   rating:        number;
-  comment:       string;
+  relationship?: ReviewRelationship | null;
+  liked:         string;   // required main field
+  improve?:      string;
+  suggestion?:   string;
+  isAnonymous?:  boolean;
   date:          string;   // e.g. "Apr 2026"
-  isPublished?:  boolean;  // set by admin — undefined = unknown (legacy local-only)
+  status?:       ReviewStatus;
 };
 
 const LS_KEY = "userReviews";
@@ -33,47 +42,48 @@ export function getReviews(): UserReview[] {
   return lsGet();
 }
 
-/** Retrieve the review for a specific place (localStorage) */
+/** Retrieve the current user's own review for a place (localStorage cache) */
 export function getReviewForPlace(placeId: string): UserReview | undefined {
   return lsGet().find(r => r.placeId === placeId);
 }
 
 /**
- * Save a review.
- * Writes to localStorage immediately; also upserts to Supabase when userId supplied.
+ * Insert a structured review. Writes to localStorage immediately (so the user
+ * sees their own pending review), then inserts into Supabase as `pending`.
+ * Returns an error string on failure.
  */
-export async function saveReview(review: UserReview, userId?: string): Promise<void> {
-  // Local cache
+export async function saveReview(review: UserReview, userId: string): Promise<{ error?: string }> {
+  // Local cache (the submitter's own copy)
   const existing = lsGet().filter(r => r.placeId !== review.placeId);
-  lsSet([review, ...existing]);
+  lsSet([{ ...review, status: "pending" }, ...existing]);
 
-  // Supabase persistence
-  if (userId) {
-    try {
-      const supabase = getSupabaseBrowserClient();
-      await supabase.from("reviews").upsert(
-        {
-          user_id:        userId,
-          place_id:       review.placeId,
-          place_name:     review.placeName,
-          place_icon:     review.placeIcon,
-          place_category: review.placeCategory ?? null,
-          reviewer_name:  review.name,
-          rating:         review.rating,
-          comment:        review.comment,
-          is_published:   false,
-        },
-        { onConflict: "user_id,place_id" }
-      );
-    } catch (e) {
-      console.error("[reviewsStorage] Supabase upsert failed:", e);
-    }
+  try {
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.from("reviews").insert({
+      user_id:               userId,
+      place_id:              review.placeId,
+      place_name:            review.placeName,
+      place_icon:            review.placeIcon,
+      place_category:        review.placeCategory ?? null,
+      reviewer_name:         review.name,
+      rating:                review.rating,
+      reviewer_relationship: review.relationship ?? null,
+      liked:                 review.liked,
+      improve:               review.improve?.trim() || null,
+      suggestion:            review.suggestion?.trim() || null,
+      is_anonymous:          review.isAnonymous ?? false,
+      status:                "pending",
+    });
+    if (error) return { error: error.message };
+    return {};
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal mengirim review." };
   }
 }
 
 /**
- * Sync reviews from Supabase into localStorage on login.
- * Does not overwrite existing local reviews that aren't in Supabase yet.
+ * Sync the current user's own reviews from Supabase into localStorage on login,
+ * so their pending/approved status is reflected on place pages.
  */
 export async function syncReviewsFromRemote(userId: string): Promise<void> {
   try {
@@ -85,19 +95,34 @@ export async function syncReviewsFromRemote(userId: string): Promise<void> {
     if (!data?.length) return;
 
     const remote: UserReview[] = data.map((r: Record<string, unknown>) => ({
-      placeId:       r.place_id,
-      placeName:     r.place_name     ?? "",
-      placeIcon:     r.place_icon     ?? "📍",
-      placeCategory: r.place_category ?? undefined,
-      name:          r.reviewer_name  ?? "",
-      rating:        r.rating,
-      comment:       r.comment        ?? "",
+      placeId:       r.place_id as string,
+      placeName:     (r.place_name as string)     ?? "",
+      placeIcon:     (r.place_icon as string)     ?? "📍",
+      placeCategory: (r.place_category as string) ?? undefined,
+      name:          (r.reviewer_name as string)  ?? "",
+      rating:        r.rating as number,
+      relationship:  (r.reviewer_relationship as ReviewRelationship) ?? null,
+      liked:         (r.liked as string)      ?? "",
+      improve:       (r.improve as string)    ?? undefined,
+      suggestion:    (r.suggestion as string) ?? undefined,
+      isAnonymous:   (r.is_anonymous as boolean) ?? false,
       date:          new Date(r.created_at as string).toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
-      isPublished:   r.is_published as boolean ?? false,
+      status:        (r.status as ReviewStatus) ?? "pending",
     }));
 
     // Merge: remote wins for places where both exist
     const local = lsGet().filter(l => !remote.find(r => r.placeId === l.placeId));
     lsSet([...remote, ...local]);
   } catch {}
+}
+
+/** Human label for a relationship value (public badge + admin). */
+export function relationshipLabel(rel?: ReviewRelationship | null): string | null {
+  switch (rel) {
+    case "murid_sekarang":  return "Murid sekarang";
+    case "alumni":          return "Alumni";
+    case "pernah_ikut":     return "Pernah ikut kelas";
+    case "ortu_calon_murid": return "Ortu calon murid";
+    default: return null;
+  }
 }

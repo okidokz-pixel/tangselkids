@@ -1035,18 +1035,35 @@ export async function getAdminReviews() {
   await assertAdmin();
   const { data, error } = await supabaseAdmin
     .from("reviews")
-    .select("user_id,place_id,place_name,place_icon,place_category,reviewer_name,rating,comment,is_published,created_at")
-    .order("is_published", { ascending: true })   // pending (false) first
-    .order("created_at",   { ascending: false });
+    .select("user_id,place_id,place_name,place_icon,place_category,reviewer_name,rating,reviewer_relationship,liked,improve,suggestion,is_anonymous,status,reviewed_at,created_at")
+    .order("created_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  const rows = data ?? [];
+
+  // Attach the submitter's REAL identity (name + phone) from their profile —
+  // always available to admin, regardless of the is_anonymous (public) flag.
+  const ids = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+  let byId: Record<string, { name: string | null; phone: string | null }> = {};
+  if (ids.length) {
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id,name,phone")
+      .in("id", ids);
+    byId = Object.fromEntries((profs ?? []).map((p) => [p.id, { name: p.name, phone: p.phone }]));
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    real_name:  r.user_id ? byId[r.user_id]?.name ?? null : null,
+    real_phone: r.user_id ? byId[r.user_id]?.phone ?? null : null,
+  }));
 }
 
-export async function approveReview(userId: string, placeId: string) {
+export async function setReviewStatus(userId: string, placeId: string, status: "pending" | "approved" | "rejected") {
   await assertAdmin();
   const { error } = await supabaseAdmin
     .from("reviews")
-    .update({ is_published: true })
+    .update({ status, reviewed_at: status === "pending" ? null : new Date().toISOString() })
     .eq("user_id", userId)
     .eq("place_id", placeId);
   if (error) throw error;
@@ -1078,14 +1095,14 @@ export async function getAppUsersCount(): Promise<number> {
 
 // ── Dashboard: approval queue counts ──────────────────────────────────────────
 
-/** Reviews awaiting moderation (is_published = false). */
+/** Reviews awaiting moderation (status = pending). */
 export async function getPendingReviewsCount(): Promise<number> {
   try {
     await assertAdmin();
     const { count } = await supabaseAdmin
       .from("reviews")
       .select("user_id", { count: "exact", head: true })
-      .eq("is_published", false);
+      .eq("status", "pending");
     return count ?? 0;
   } catch {
     return 0;

@@ -135,14 +135,16 @@ export default function MyReviewsPage() {
                       }}>
                         {review.placeName}
                       </span>
-                      {review.isPublished === false && (
+                      {review.status && review.status !== "approved" && (
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 3,
-                          fontSize: 10, fontWeight: 700, color: "#92400e",
-                          background: "#FEF3C7", borderRadius: 999, padding: "1px 7px",
+                          fontSize: 10, fontWeight: 700,
+                          color: review.status === "rejected" ? "#991b1b" : "#92400e",
+                          background: review.status === "rejected" ? "#FEE2E2" : "#FEF3C7",
+                          borderRadius: 999, padding: "1px 7px",
                           fontFamily: "var(--font-jakarta),sans-serif", marginTop: 2,
                         }}>
-                          <Clock size={9} /> Menunggu persetujuan
+                          <Clock size={9} /> {review.status === "rejected" ? "Tidak ditampilkan" : "Menunggu persetujuan"}
                         </span>
                       )}
                     </div>
@@ -171,7 +173,7 @@ export default function MyReviewsPage() {
                   WebkitBoxOrient: "vertical",
                   overflow: "hidden",
                 } as React.CSSProperties}>
-                  {review.comment}
+                  {review.liked}
                 </p>
 
                 {/* Reviewer name */}
