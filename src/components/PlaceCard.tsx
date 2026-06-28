@@ -3,6 +3,7 @@ import { MapPin, Star } from "lucide-react";
 import { type Place, formatPriceRange, formatTicketPrice } from "@/lib/mockData";
 import { useLang } from "@/context/LanguageContext";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { VerifiedBadge, VERIFIED_GREEN } from "@/components/VerifiedBadge";
 
 export function PlaceCard({
   place,
@@ -30,10 +31,12 @@ export function PlaceCard({
       display: "flex",
       background: "#fff",
       borderRadius: 18,
-      border: "1px solid var(--tk-line)",
+      border: place.isVerified ? `2px solid ${VERIFIED_GREEN}` : "1px solid var(--tk-line)",
       outline: selected ? "2.5px solid var(--tk-accent, #2e8a5a)" : undefined,
       outlineOffset: selected ? -1 : undefined,
-      boxShadow: "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)",
+      boxShadow: place.isVerified
+        ? "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(22,163,74,0.12)"
+        : "0 1px 0 rgba(15,23,42,0.04), 0 6px 16px rgba(15,23,42,0.06)",
       overflow: "clip",
       minHeight: 96,
     }}>
@@ -59,6 +62,11 @@ export function PlaceCard({
             whiteSpace: "nowrap",
           }}>
             ✦ Featured
+          </div>
+        )}
+        {place.isVerified && (
+          <div style={{ position: "absolute", top: 6, right: 6 }}>
+            <VerifiedBadge size="sm" label={false} />
           </div>
         )}
         {photoOverlay}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { use } from "react";
 import {
   ChevronLeft, ChevronRight, ChevronDown, X, MapPin, Clock, Phone,
-  Heart, Pencil, Star, Globe, Play, Check, Lock, MessageCircle,
+  Heart, Pencil, Star, Globe, Play, Check, BadgeCheck, Lock, MessageCircle,
   GraduationCap, BookOpen, Banknote, Calendar, Users, Monitor,
   Droplets, Gift, Wallet, Camera, Award, Layers, Ticket,
   CreditCard, Activity, Baby, Home,
@@ -22,6 +22,7 @@ import { OptimizedImage } from "@/components/OptimizedImage";
 import { useLocation } from "@/context/LocationContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 // ── Social icon SVGs ──────────────────────────────────────────────────────────
 function InstagramIcon({ size = 20, color = "currentColor" }: { size?: number; color?: string }) {
@@ -160,6 +161,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
   const [heroIndex,      setHeroIndex]      = useState(0);
   const [lightboxOpen,   setLightboxOpen]   = useState(false);
+  const [showVerifiedInfo, setShowVerifiedInfo] = useState(false);
   const [isSaved,        setIsSaved]        = useState(false);
   const [videoOpen,      setVideoOpen]      = useState<string | null>(null);
   const [feeImageOpen,   setFeeImageOpen]   = useState(false);
@@ -867,6 +869,26 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           </div>
         )}
 
+        {/* Verified badge — top right, prominent */}
+        {place.isVerified && (
+          <div
+            style={{ position: "absolute", top: 14, right: 14, zIndex: 11 }}
+            onClick={(e) => { e.stopPropagation(); setShowVerifiedInfo(v => !v); }}
+          >
+            <VerifiedBadge size="md" variant="hero" />
+            {showVerifiedInfo && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 6px)", right: 0, width: 224,
+                background: "#fff", borderRadius: 12, padding: "10px 12px",
+                boxShadow: "0 10px 28px rgba(0,0,0,0.22)",
+                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11.5, color: "#475569", lineHeight: 1.55,
+              }}>
+                Identitas &amp; info tempat ini sudah dikonfirmasi pemiliknya bersama TangselKids. 💙
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Dot indicators */}
         {allPhotos.length > 1 && (
           <div style={{ position: "absolute", bottom: 42, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, zIndex: 10, pointerEvents: "none" }}>
@@ -966,9 +988,11 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
               <h1 className="text-2xl font-bold text-[#0e1d4f] leading-tight" style={{ fontFamily: "var(--font-fraunces), Georgia, serif", letterSpacing: "-0.5px" }}>{place.name}</h1>
               {place.isVerified && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 5, marginBottom: 2, padding: "3px 10px", borderRadius: 999, background: "#dcfce7", border: "1px solid #bbf7d0" }}>
-                  <Check size={12} color="#16a34a" strokeWidth={3} />
-                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 11, fontWeight: 700, color: "#16a34a" }}>Terverifikasi</span>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, marginBottom: 2 }}>
+                  <BadgeCheck size={15} color="#fff" fill="#2563eb" strokeWidth={2.5} />
+                  <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, fontWeight: 700, color: "#2563eb" }}>
+                    Diverifikasi oleh TangselKids
+                  </span>
                 </div>
               )}
               {place.address && (
@@ -2620,27 +2644,41 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           </div>
         )}
 
-        {/* ── Claim this listing ───────────────────────────────────────────── */}
+        {/* ── Claim this listing (verify nudge) ────────────────────────────── */}
         {!place.isVerified && (
-          <div style={{ marginTop: 8, paddingTop: 18, borderTop: "1px solid #f1f5f9", textAlign: "center" }}>
-            <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12, color: "#94a3b8", margin: "0 0 8px" }}>
-              {lang === "id" ? "Apakah ini tempat Anda?" : "Is this your facility?"}
-            </p>
-            <ActionButton
-              onClick={() => {
-                if (!user) { openRegisterSheet(); return; }
-                router.push(`/claim/${place.slug ?? place.id}`);
-              }}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 5,
-                fontFamily: "var(--font-jakarta), sans-serif", fontSize: 13, fontWeight: 700,
-                color: "#2e8a5a", textDecoration: "none",
-                padding: "8px 16px", borderRadius: 10,
-                border: "1.5px solid #bbf7d0", background: "#f0faf4",
-              }}
-            >
-              Klaim listing ini →
-            </ActionButton>
+          <div style={{ marginTop: 8, paddingTop: 18, borderTop: "1px solid #f1f5f9" }}>
+            <div style={{
+              borderRadius: 16, padding: "16px 16px",
+              background: "linear-gradient(135deg, #eff6ff 0%, #ecfdf5 100%)",
+              border: "1.5px solid #bfdbfe",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <BadgeCheck size={20} color="#fff" fill="#2563eb" strokeWidth={2.5} />
+                <span style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 800, color: "#0e1d4f" }}>
+                  Pemilik tempat ini?
+                </span>
+              </div>
+              <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12.5, color: "#475569", lineHeight: 1.55, margin: "0 0 12px" }}>
+                Verifikasi gratis untuk dapat badge <b style={{ color: "#2563eb" }}>VERIFIED</b>, tampil lebih menonjol, &amp; lebih dipercaya orang tua.
+              </p>
+              <ActionButton
+                onClick={() => {
+                  if (!user) { openRegisterSheet(); return; }
+                  router.push(`/claim/${place.slug ?? place.id}`);
+                }}
+                style={{
+                  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  width: "100%",
+                  fontFamily: "var(--font-jakarta), sans-serif", fontSize: 14, fontWeight: 700,
+                  color: "#fff", textDecoration: "none",
+                  padding: "12px 16px", borderRadius: 12,
+                  background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                  boxShadow: "0 6px 16px rgba(37,99,235,0.28)",
+                }}
+              >
+                Verifikasi tempat ini gratis →
+              </ActionButton>
+            </div>
           </div>
         )}
 

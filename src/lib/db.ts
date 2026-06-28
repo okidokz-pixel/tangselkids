@@ -279,6 +279,7 @@ export async function fetchPlacesPreview(category: Place["category"], limit = 4,
   const { data, error } = await supabase
     .from(TABLE[category])
     .select("*")
+    .order("is_verified", { ascending: false })
     .order("is_featured", { ascending: false })
     .order("name",        { ascending: true })
     .range(offset, offset + limit - 1);
@@ -290,6 +291,7 @@ export async function fetchPlacesByCategory(category: Place["category"]): Promis
   const { data, error } = await supabase
     .from(TABLE[category])
     .select("*")
+    .order("is_verified", { ascending: false })
     .order("is_featured", { ascending: false })
     .order("name",        { ascending: true });
   if (error || !data) return [];
