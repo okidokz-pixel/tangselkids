@@ -245,11 +245,11 @@
   border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
   border-radius: var(--r-lg); padding: 18px 20px 20px;
 }
-.admin-warm .attn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.admin-warm .attn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .admin-warm .attn-card {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 12px;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
-  box-shadow: var(--shadow-sm); padding: 16px 18px; text-decoration: none;
+  box-shadow: var(--shadow-sm); padding: 14px 15px; text-decoration: none;
   transition: border-color .15s, transform .12s, box-shadow .15s;
 }
 .admin-warm .attn-card:hover { transform: translateY(-1px); box-shadow: var(--shadow); border-color: var(--faint); }
@@ -257,8 +257,8 @@
 .admin-warm .attn-card .ic svg { width: 20px; height: 20px; stroke-width: 1.7; }
 .admin-warm .attn-card .body { flex: 1; min-width: 0; }
 .admin-warm .attn-card .lab { font-size: 13px; font-weight: 600; color: var(--ink-2); }
-.admin-warm .attn-card .ct { font-family: var(--serif); font-size: 25px; font-weight: 600; letter-spacing: -.02em; line-height: 1; margin-top: 4px; display: flex; align-items: baseline; color: var(--ink); }
-.admin-warm .attn-card .ct small { font-family: var(--sans); font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 8px; letter-spacing: 0; }
+.admin-warm .attn-card .ct { font-family: var(--serif); font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; color: var(--ink); }
+.admin-warm .attn-card .ct small { font-family: var(--sans); font-size: 11.5px; font-weight: 500; color: var(--muted); margin-left: 7px; letter-spacing: 0; }
 .admin-warm .attn-card .go { color: var(--faint); flex: 0 0 auto; display: grid; }
 .admin-warm .attn-card .go svg { width: 18px; height: 18px; stroke-width: 2; }
 .admin-warm .attn-card.has { border-color: color-mix(in srgb, var(--primary) 36%, transparent); }
@@ -303,9 +303,25 @@
 
 @media (max-width: 1080px) {
   .admin-warm .g-6 { grid-template-columns: repeat(3, 1fr); }
-  .admin-warm .attn-grid { grid-template-columns: 1fr; }
+  .admin-warm .attn-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-warm .data-row { grid-template-columns: 1fr; }
 }
+
+/* Phones: 2-up stat grid + compact attention cards */
+@media (max-width: 600px) {
+  .admin-warm .g-6 { grid-template-columns: repeat(2, 1fr); }
+  .admin-warm .attn-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .admin-warm .attn-card { padding: 12px 12px; gap: 9px; }
+  .admin-warm .attn-card .ic { width: 36px; height: 36px; flex: 0 0 36px; }
+  .admin-warm .attn-card .ct { font-size: 21px; }
+  .admin-warm .attn-card .go { display: none; }
+  .admin-warm .cat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Any wide table inside the admin scrolls horizontally on small screens
+   instead of cramming its columns. Pages wrap tables in .admin-table-wrap. */
+.admin-warm .admin-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.admin-warm .admin-table-wrap > table { min-width: 640px; }
 
 @media (max-width: 768px) {
   .admin-warm .sidebar {

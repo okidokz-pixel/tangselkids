@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { AdminSidebar } from "./AdminSidebar";
+import { AdminLogo } from "./AdminLogo";
 import "./admin-theme.css";
 
 export function AdminShell({ children, fontClass = "" }: { children: React.ReactNode; fontClass?: string }) {
@@ -22,7 +23,7 @@ export function AdminShell({ children, fontClass = "" }: { children: React.React
       <div className="main">
         {/* Mobile-only chrome (desktop tool, but keep it reachable) */}
         <div className="mobile-topbar">
-          <span className="mt-brand">Tangsel<span style={{ color: "var(--primary)" }}>.</span>Kids</span>
+          <AdminLogo height={32} fallback={<span className="mt-brand">Tangsel<span style={{ color: "var(--primary)" }}>.</span>Kids</span>} />
           <button className="mt-toggle" aria-label="Menu" onClick={() => setDrawerOpen((v) => !v)}>
             {drawerOpen ? "✕" : "☰"}
           </button>

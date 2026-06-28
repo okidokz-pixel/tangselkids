@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase-browser";
+import { AdminLogo } from "./AdminLogo";
 
 const NAV_MAIN: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Dashboard",   href: "/admin",             icon: LayoutDashboard },
@@ -54,7 +55,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
     <aside className="sidebar">
       {/* Brand */}
       <div className="brand">
-        <div className="brand-mark">T</div>
+        <AdminLogo height={38} fallback={<div className="brand-mark">T</div>} />
         <div>
           <div className="brand-name">Tangsel<span className="dot">.</span>Kids</div>
           <div className="brand-sub">Admin</div>

@@ -33,10 +33,15 @@ export default function UsersPage() {
   const [tierFilter, setTierFilter] = useState<"all" | "free" | "premium">("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isPending,  startTransition] = useTransition();
+  const [page,       setPage]       = useState(1);
+  const [perPage,    setPerPage]    = useState(20);
 
   useEffect(() => {
     getAppUsers().then(data => { setUsers(data); setLoading(false); });
   }, []);
+
+  // Reset to first page whenever the result set changes.
+  useEffect(() => { setPage(1); }, [search, tierFilter, perPage]);
 
   function handleDelete(id: string, name: string) {
     if (!confirm(`Hapus user "${name || "ini"}"? Aksi ini tidak bisa dibatalkan dan akan menghapus semua data user.`)) return;
@@ -56,6 +61,10 @@ export default function UsersPage() {
       (u.phone ?? "").includes(q);
     return matchTier && matchSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+  const pageSafe   = Math.min(page, totalPages);
+  const paged      = filtered.slice((pageSafe - 1) * perPage, pageSafe * perPage);
 
   const premiumCount = users.filter(u => u.tier === "premium").length;
   const registeredCount = users.filter(u => u.name).length;
@@ -115,12 +124,23 @@ export default function UsersPage() {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Cari nama atau nomor HP…"
-          style={{ padding: "8px 14px", borderRadius: 8, border: "1.5px solid #d1d5db", fontSize: 13, outline: "none", marginLeft: "auto", minWidth: 220 }}
+          style={{ padding: "8px 14px", borderRadius: 8, border: "1.5px solid #d1d5db", fontSize: 13, outline: "none", marginLeft: "auto", minWidth: 180, flex: "1 1 180px" }}
         />
+
+        {/* Per-page */}
+        <select
+          value={perPage}
+          onChange={e => setPerPage(Number(e.target.value))}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1.5px solid #d1d5db", fontSize: 13, outline: "none", background: "#fff", cursor: "pointer" }}
+        >
+          <option value={10}>10 / halaman</option>
+          <option value={20}>20 / halaman</option>
+          <option value={50}>50 / halaman</option>
+        </select>
       </div>
 
       {/* Table */}
-      <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", overflow: "clip" }}>
+      <div className="admin-table-wrap" style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
@@ -137,7 +157,7 @@ export default function UsersPage() {
               <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Loading…</td></tr>
             ) : filtered.length === 0 ? (
               <tr><td colSpan={6} style={{ padding: 32, textAlign: "center", color: "#9ca3af" }}>Tidak ada user ditemukan.</td></tr>
-            ) : filtered.map(u => {
+            ) : paged.map(u => {
               const wa = waLink(u.phone);
               const kids = Array.isArray(u.kids) ? u.kids : [];
               const isPremium = u.tier === "premium";
@@ -227,6 +247,32 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {!loading && filtered.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#6b7280" }}>
+            {(pageSafe - 1) * perPage + 1}–{Math.min(pageSafe * perPage, filtered.length)} dari {filtered.length}
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={pageSafe <= 1}
+              style={{ padding: "7px 14px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontSize: 13, fontWeight: 600, color: "#374151", cursor: pageSafe <= 1 ? "default" : "pointer", opacity: pageSafe <= 1 ? 0.45 : 1 }}
+            >
+              ← Sebelumnya
+            </button>
+            <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>{pageSafe} / {totalPages}</span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={pageSafe >= totalPages}
+              style={{ padding: "7px 14px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontSize: 13, fontWeight: 600, color: "#374151", cursor: pageSafe >= totalPages ? "default" : "pointer", opacity: pageSafe >= totalPages ? 0.45 : 1 }}
+            >
+              Berikutnya →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
