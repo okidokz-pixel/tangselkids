@@ -186,21 +186,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: string, session: Session | null) => {
+      async (event: string, session: Session | null) => {
         if (event === "SIGNED_OUT") {
+          // A refresh-token race (e.g. two tabs refreshing at once) or a transient
+          // rejection can emit a SPURIOUS SIGNED_OUT. Re-check storage before
+          // tearing down the UI: if a valid session is still present (another tab
+          // refreshed it), keep the user logged in instead of bouncing them out.
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.user) { loadProfile(data.session); return; }
           profileFor.current = null;
           setUser(null);
           setLoaded(true);
           return;
         }
         // A token refresh rotates the access token but the profile is unchanged.
-        // Don't refetch — loadProfile() short-circuits when we already hold the
-        // profile, avoiding the churn (and transient-failure window) entirely.
-        // USER_UPDATED is the one case that needs a forced refetch.
+        // loadProfile() short-circuits when we already hold the profile, avoiding
+        // churn. USER_UPDATED is the one case that needs a forced refetch.
         loadProfile(session, event === "USER_UPDATED");
       }
     );
-    return () => subscription.unsubscribe();
+
+    // Returning to the tab after idle: the access token may have expired while
+    // hidden. Proactively reconcile — getSession() refreshes the token when
+    // needed; if the session is still valid we stay logged in rather than
+    // waiting for an event. Never forces a logout (only restores a valid session).
+    function onVisible() {
+      if (typeof document === "undefined" || document.visibilityState !== "visible") return;
+      supabase.auth.getSession().then((res: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
+        if (res.data.session?.user) loadProfile(res.data.session);
+      });
+    }
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      subscription.unsubscribe();
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [supabase, loadProfile]);
 
   // ── sendOtp ───────────────────────────────────────────────────────────────
