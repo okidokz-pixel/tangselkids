@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      // Canonical host: send the Vercel deployment domain to tangselkids.com so
+      // the site isn't a public, separately-indexed/tracked duplicate. Targets
+      // the exact production alias, so localhost + preview deploys are untouched.
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "bintarokids.vercel.app" }],
+        destination: "https://tangselkids.com/:path*",
+        permanent: true,
+      },
       {
         source: "/place/kb-tk-islam-ibnu-rusyd-preschool-bsd-city",
         destination: "/place/kb-tk-tarbiyah-quraniyah-preschool-bsd",
