@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { Copy } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { getSchools, toggleSchoolFeatured } from "../actions";
 
@@ -158,7 +159,12 @@ export default function SchoolsPage() {
                   </button>
                 </td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                    <Link href={`/admin/schools/new?duplicate=${school.id}`}
+                      title="Duplicate (e.g. for another jenjang)"
+                      style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#374151", textDecoration: "none" }}>
+                      <Copy size={14} />
+                    </Link>
                     <Link href={`/admin/schools/${school.id}`}
                       style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#eff2fa", color: "#0e1d4f", textDecoration: "none" }}>
                       Edit
