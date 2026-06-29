@@ -402,6 +402,7 @@ const UNIVERSAL_CAT_FIELDS: CatField[] = [
   { kind: "text", key: "location_detail", label: "Lokasi Spesifik" },
   { kind: "text", key: "email", label: "Email" },
   { kind: "text", key: "slug", label: "Slug (URL)" },
+  { kind: "text", key: "fee_image_url", label: "Detil Biaya (URL gambar infografis)" },
 ];
 
 function flattenCat(spec: CatField[], data: Record<string, unknown>): Record<string, string> {
@@ -503,6 +504,7 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const setField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const baseCat = CATEGORY_EDIT_FIELDS[s.category] ?? CATEGORY_EDIT_DEFAULT;
@@ -623,6 +625,34 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
           </Link>
         )}
       </div>
+
+      {/* Copyable place URL (after approval) */}
+      {status === "approved" && (
+        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "#f0faf4", border: "1px solid #bbf7d0" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+            URL Halaman Tempat
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              readOnly
+              value={liveSlug ? livePlaceUrl : `${SITE_URL}/place/(isi Slug dulu)`}
+              onFocus={(e) => e.currentTarget.select()}
+              style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1.5px solid #bbf7d0", fontSize: 13, color: "#0f172a", background: "#fff", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+            />
+            <button
+              type="button"
+              disabled={!liveSlug}
+              onClick={() => { navigator.clipboard?.writeText(livePlaceUrl); setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 1800); }}
+              style={{ padding: "8px 16px", borderRadius: 7, border: "none", background: copiedUrl ? "#16a34a" : "#0e1d4f", color: "#fff", fontSize: 13, fontWeight: 700, cursor: liveSlug ? "pointer" : "not-allowed", opacity: liveSlug ? 1 : 0.5, whiteSpace: "nowrap" }}
+            >
+              {copiedUrl ? "✓ Tersalin" : "Salin"}
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: "#15803d", margin: "6px 0 0", lineHeight: 1.5 }}>
+            Catatan: link baru aktif <b>setelah listing dibuat</b> — klik &ldquo;+ Create Listing&rdquo;, isi form, lalu simpan dengan slug yang sama. Approve saja belum membuat halaman.
+          </p>
+        </div>
+      )}
 
       {/* Auto-fill from Google */}
       <GoogleEnrich
