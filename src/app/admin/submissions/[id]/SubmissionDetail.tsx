@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
-import { updateSubmissionStatus, deleteSubmission, enrichSubmissionFromGoogle, applySubmissionEnrichment, updateSubmissionFields } from "../../actions";
-import type { GoogleEnrichment } from "@/lib/enrichment";
+import { updateSubmissionStatus, deleteSubmission, enrichSubmissionFromGoogle, updateSubmissionFields } from "../../actions";
 
 type Submission = {
   id: string;
@@ -58,15 +57,13 @@ const STATUS_CFG = {
 function fmt(d: string) {
   return new Date(d).toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-const ROW: React.CSSProperties = { display: "flex", gap: 8, marginBottom: 8, fontSize: 13 };
-const KEY: React.CSSProperties = { fontWeight: 600, color: "#374151", minWidth: 160, flexShrink: 0 };
-const VAL: React.CSSProperties = { color: "#111827" };
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{ background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 20, overflow: "clip" }}>
-      <div style={{ padding: "12px 20px", borderBottom: "1px solid #f3f4f6", fontWeight: 700, fontSize: 13, color: "#0e1d4f" }}>
-        {title}
+      <div style={{ padding: "12px 20px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ fontWeight: 700, fontSize: 13, color: "#0e1d4f" }}>{title}</span>
+        {action}
       </div>
       <div style={{ padding: "16px 20px" }}>
         {children}
@@ -80,39 +77,6 @@ const primaryBtn: React.CSSProperties = {
   fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer",
 };
 
-function tag(bg: string, color: string): React.CSSProperties {
-  return { marginLeft: 8, fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 10, background: bg, color, verticalAlign: "middle" };
-}
-
-function Stat({ label, value, copy }: { label: string; value: string; copy?: string }) {
-  return (
-    <div
-      onClick={copy ? () => navigator.clipboard?.writeText(copy) : undefined}
-      title={copy ? "Click to copy" : undefined}
-      style={{ background: "#f9fafb", border: "1px solid #f3f4f6", borderRadius: 8, padding: "8px 10px", cursor: copy ? "pointer" : "default" }}
-    >
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginTop: 2 }}>{value}</div>
-    </div>
-  );
-}
-
-function EnrichRow({ label, current, suggested }: { label: string; current?: string | null; suggested?: string | null }) {
-  if (!suggested) return null;
-  const isNew = !current;
-  const differs = !!current && current.trim() !== suggested.trim();
-  return (
-    <div style={{ ...ROW, alignItems: "flex-start" }}>
-      <span style={KEY}>{label}</span>
-      <span style={{ ...VAL, whiteSpace: "pre-wrap" }}>
-        {suggested}
-        {isNew && <span style={tag("#dcfce7", "#166534")}>NEW</span>}
-        {differs && <span style={tag("#fef3c7", "#b45309")}>differs</span>}
-      </span>
-    </div>
-  );
-}
-
 function GoogleEnrich({
   s,
   current,
@@ -122,97 +86,51 @@ function GoogleEnrich({
   current?: { address: string; phone: string; hours: string; website: string };
   onFill?: (patch: Record<string, string>) => void;
 }) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [applying, setApplying] = useState(false);
-  const [result, setResult] = useState<GoogleEnrichment | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [filled, setFilled] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   async function run() {
-    setLoading(true); setError(null); setResult(null); setFilled(false);
+    setLoading(true); setStatus(null);
     try {
       const r = await enrichSubmissionFromGoogle(s.id);
-      if (r.ok) setResult(r.data);
-      else setError(r.error);
+      if (!r.ok) { setStatus({ ok: false, msg: r.error }); return; }
+      const result = r.data;
+      const base = current ?? { address: s.address ?? "", phone: s.phone ?? "", hours: s.hours ?? "", website: s.website ?? "" };
+      const gaps: Record<string, string> = {};
+      if (!base.address.trim() && result.formattedAddress) gaps.address = result.formattedAddress;
+      if (!base.phone.trim()   && result.phone)            gaps.phone = result.phone;
+      if (!base.hours.trim()   && result.hours)            gaps.hours = result.hours;
+      if (!base.website.trim() && result.website)          gaps.website = result.website;
+      const keys = Object.keys(gaps);
+      if (keys.length && onFill) onFill(gaps);
+      setStatus({
+        ok: true,
+        msg: keys.length
+          ? `✓ Terisi dari Google (${result.name}): ${keys.join(", ")} — cek field di bawah.`
+          : `Ditemukan: ${result.name} — semua field sudah terisi.`,
+      });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Enrichment failed.");
+      setStatus({ ok: false, msg: e instanceof Error ? e.message : "Gagal mengambil data Google." });
     } finally {
       setLoading(false);
     }
   }
 
-  // Compare against the live form values (when wired) so already-typed fields aren't "gaps".
-  const base = current ?? { address: s.address ?? "", phone: s.phone ?? "", hours: s.hours ?? "", website: s.website ?? "" };
-
-  const gaps: Record<string, string> = {};
-  if (result) {
-    if (!base.address.trim() && result.formattedAddress) gaps.address = result.formattedAddress;
-    if (!base.phone.trim() && result.phone) gaps.phone = result.phone;
-    if (!base.hours.trim() && result.hours) gaps.hours = result.hours;
-    if (!base.website.trim() && result.website) gaps.website = result.website;
-  }
-  const gapKeys = Object.keys(gaps);
-
-  async function applyGaps() {
-    if (onFill) { onFill(gaps); setFilled(true); return; }
-    setApplying(true);
-    try {
-      await applySubmissionEnrichment(s.id, gaps);
-      router.refresh();
-    } finally {
-      setApplying(false);
-    }
-  }
-
   return (
-    <Section title="🔍 Auto-fill from Google">
-      <p style={{ margin: "0 0 12px", fontSize: 12.5, color: "#6b7280" }}>
-        Searches Google Maps for this place and suggests rating, coordinates, address, phone, hours and website.
-      </p>
-      <button onClick={run} disabled={loading} style={{ ...primaryBtn, opacity: loading ? 0.6 : 1 }}>
-        {loading ? "Searching Google…" : result ? "Search again" : "✨ Auto-fill from Google"}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, maxWidth: 300 }}>
+      <button
+        onClick={run}
+        disabled={loading}
+        style={{ padding: "6px 12px", borderRadius: 7, border: "none", background: "#0e1d4f", color: "#fff", fontSize: 12, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading ? 0.6 : 1, whiteSpace: "nowrap" }}
+      >
+        {loading ? "Mencari…" : "✨ Auto-fill Google"}
       </button>
-
-      {error && (
-        <div style={{ marginTop: 12, padding: "10px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 12.5, color: "#991b1b", whiteSpace: "pre-wrap" }}>
-          {error}
-        </div>
+      {status && (
+        <span style={{ fontSize: 11, lineHeight: 1.4, textAlign: "right", color: status.ok ? "#15803d" : "#b45309" }}>
+          {status.msg}
+        </span>
       )}
-
-      {result && (
-        <div style={{ marginTop: 16 }}>
-          <p style={{ margin: "0 0 12px", fontSize: 12, color: "#b45309", fontWeight: 600 }}>
-            ⚠️ Found: <b>{result.name}</b> — verify this is the right place before filling (Google returns its best guess).
-          </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 16 }}>
-            <Stat label="Google Rating" value={result.rating != null ? `⭐ ${result.rating} (${result.userRatingCount ?? 0} reviews)` : "—"} />
-            <Stat label="Latitude" value={result.lat != null ? String(result.lat) : "—"} copy={result.lat != null ? String(result.lat) : undefined} />
-            <Stat label="Longitude" value={result.lng != null ? String(result.lng) : "—"} copy={result.lng != null ? String(result.lng) : undefined} />
-          </div>
-
-          <EnrichRow label="Address" current={base.address} suggested={result.formattedAddress} />
-          <EnrichRow label="Phone"   current={base.phone}   suggested={result.phone} />
-          <EnrichRow label="Hours"   current={base.hours}   suggested={result.hours} />
-          <EnrichRow label="Website" current={base.website} suggested={result.website} />
-          {result.googleMapsUri && (
-            <div style={{ ...ROW, marginTop: 6 }}>
-              <span style={KEY}>Google Maps</span>
-              <a href={result.googleMapsUri} target="_blank" rel="noopener noreferrer" style={{ color: "#2563eb", fontSize: 13 }}>Open ↗</a>
-            </div>
-          )}
-
-          {gapKeys.length > 0 ? (
-            <button onClick={applyGaps} disabled={applying} style={{ ...primaryBtn, marginTop: 14, background: "#16a34a", opacity: applying ? 0.6 : 1 }}>
-              {applying ? "Applying…" : `Fill ${gapKeys.length} empty field${gapKeys.length > 1 ? "s" : ""}${onFill ? " below" : ""} (${gapKeys.join(", ")})`}
-            </button>
-          ) : (
-            <p style={{ marginTop: 14, fontSize: 12.5, color: "#9ca3af" }}>No empty fields to fill — rating &amp; coordinates above are ready to copy into the listing.</p>
-          )}
-          {filled && <p style={{ marginTop: 10, fontSize: 12.5, color: "#16a34a", fontWeight: 600 }}>✓ Filled into the form below — review and click “Save changes”.</p>}
-        </div>
-      )}
-    </Section>
+    </div>
   );
 }
 
@@ -492,7 +410,7 @@ function CatFieldEditor({ field, cat, set }: { field: CatField; cat: Record<stri
 export default function SubmissionDetail({ submission: s }: { submission: Submission }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [notes, setNotes] = useState(s.admin_notes ?? "");
+  const [notes] = useState(s.admin_notes ?? "");
   const [status, setStatus] = useState(s.status);
   const [form, setForm] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
@@ -504,7 +422,6 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [copiedUrl, setCopiedUrl] = useState(false);
   const setField = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
   const baseCat = CATEGORY_EDIT_FIELDS[s.category] ?? CATEGORY_EDIT_DEFAULT;
@@ -626,41 +543,6 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         )}
       </div>
 
-      {/* Copyable place URL (after approval) */}
-      {status === "approved" && (
-        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "#f0faf4", border: "1px solid #bbf7d0" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#15803d", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
-            URL Halaman Tempat
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              readOnly
-              value={liveSlug ? livePlaceUrl : `${SITE_URL}/place/(isi Slug dulu)`}
-              onFocus={(e) => e.currentTarget.select()}
-              style={{ flex: 1, padding: "8px 10px", borderRadius: 7, border: "1.5px solid #bbf7d0", fontSize: 13, color: "#0f172a", background: "#fff", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
-            />
-            <button
-              type="button"
-              disabled={!liveSlug}
-              onClick={() => { navigator.clipboard?.writeText(livePlaceUrl); setCopiedUrl(true); setTimeout(() => setCopiedUrl(false), 1800); }}
-              style={{ padding: "8px 16px", borderRadius: 7, border: "none", background: copiedUrl ? "#16a34a" : "#0e1d4f", color: "#fff", fontSize: 13, fontWeight: 700, cursor: liveSlug ? "pointer" : "not-allowed", opacity: liveSlug ? 1 : 0.5, whiteSpace: "nowrap" }}
-            >
-              {copiedUrl ? "✓ Tersalin" : "Salin"}
-            </button>
-          </div>
-          <p style={{ fontSize: 11, color: "#15803d", margin: "6px 0 0", lineHeight: 1.5 }}>
-            Catatan: link baru aktif <b>setelah listing dibuat</b> — klik &ldquo;+ Create Listing&rdquo;, isi form, lalu simpan dengan slug yang sama. Approve saja belum membuat halaman.
-          </p>
-        </div>
-      )}
-
-      {/* Auto-fill from Google */}
-      <GoogleEnrich
-        s={s}
-        current={{ address: form.address, phone: form.phone, hours: form.hours, website: form.website }}
-        onFill={(patch) => setForm((f) => ({ ...f, ...patch }))}
-      />
-
       {/* Submitter info */}
       {(s.submitter_name || s.submitter_phone) && (
         <Section title="Submitted by">
@@ -713,9 +595,18 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
       )}
 
       {/* Editable details */}
-      <Section title="✏️ Details — edit &amp; fill missing fields">
+      <Section
+        title="✏️ Details — edit & fill missing fields"
+        action={
+          <GoogleEnrich
+            s={s}
+            current={{ address: form.address, phone: form.phone, hours: form.hours, website: form.website }}
+            onFill={(patch) => setForm((f) => ({ ...f, ...patch }))}
+          />
+        }
+      >
         <p style={{ margin: "0 0 14px", fontSize: 12.5, color: "#6b7280" }}>
-          Fields marked <span style={{ color: "#b45309", fontWeight: 700 }}>⚠️ missing</span> are empty. Edit any field by hand (or use Auto-fill above), then click Save.
+          Fields marked <span style={{ color: "#b45309", fontWeight: 700 }}>⚠️ missing</span> are empty. Edit any field by hand (or use Auto-fill Google, top-right), then click Save.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 18px" }}>
           {EDIT_FIELDS.filter((f) => f.group === "contact").map((f) => (
@@ -803,57 +694,24 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         </Section>
       )}
 
-      {/* Admin review */}
+      {/* Approve */}
       <Section title="Review">
         {s.reviewed_at && (
-          <p style={{ margin: "0 0 12px", fontSize: 12, color: "#9ca3af" }}>Last reviewed {fmt(s.reviewed_at)}</p>
+          <p style={{ margin: "0 0 14px", fontSize: 12, color: "#9ca3af", textAlign: "center" }}>Last reviewed {fmt(s.reviewed_at)}</p>
         )}
-
-        {/* Status buttons */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-          {(["pending", "approved", "rejected"] as const).map(st => {
-            const cfg = STATUS_CFG[st];
-            const isActive = status === st;
-            return (
-              <button
-                key={st}
-                onClick={() => handleStatus(st)}
-                disabled={isPending}
-                style={{
-                  padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: isPending ? "not-allowed" : "pointer",
-                  border: isActive ? `2px solid ${cfg.color}` : "2px solid #e5e7eb",
-                  background: isActive ? cfg.bg : "#fff",
-                  color: isActive ? cfg.color : "#6b7280",
-                  opacity: isPending ? 0.6 : 1,
-                }}
-              >
-                {cfg.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Admin notes */}
-        <div>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#6b7280", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-            Admin Notes
-          </label>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            rows={3}
-            placeholder="Internal notes about this submission…"
-            style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1.5px solid #e5e7eb", fontSize: 13, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
-          />
+        <div style={{ display: "flex", justifyContent: "center" }}>
           <button
-            onClick={() => handleStatus(status as "pending" | "approved" | "rejected")}
-            disabled={isPending}
+            onClick={() => handleStatus("approved")}
+            disabled={isPending || status === "approved"}
             style={{
-              marginTop: 8, padding: "8px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: isPending ? "not-allowed" : "pointer",
-              background: "#0e1d4f", color: "#fff", border: "none", opacity: isPending ? 0.6 : 1,
+              padding: "12px 44px", borderRadius: 10, fontSize: 15, fontWeight: 700,
+              border: "none", cursor: (isPending || status === "approved") ? "default" : "pointer",
+              background: status === "approved" ? "#dcfce7" : "#16a34a",
+              color: status === "approved" ? "#166534" : "#fff",
+              opacity: isPending ? 0.6 : 1,
             }}
           >
-            {isPending ? "Saving…" : "Save Notes"}
+            {status === "approved" ? "✓ Approved" : isPending ? "Menyimpan…" : "Approve"}
           </button>
         </div>
       </Section>
