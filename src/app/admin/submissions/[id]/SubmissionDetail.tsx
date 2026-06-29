@@ -615,13 +615,13 @@ export default function SubmissionDetail({ submission: s }: { submission: Submis
         {/* Create Listing shortcut */}
         {status === "approved" && adminCategoryHref[s.category] && (
           <Link
-            href={adminCategoryHref[s.category]}
+            href={`${adminCategoryHref[s.category]}?from=${s.id}`}
             style={{
               padding: "9px 18px", borderRadius: 8, background: "#0e1d4f", color: "#fff",
               fontSize: 13, fontWeight: 600, textDecoration: "none", flexShrink: 0,
             }}
           >
-            + Create Listing →
+            + Create Listing (pre-filled) →
           </Link>
         )}
       </div>
