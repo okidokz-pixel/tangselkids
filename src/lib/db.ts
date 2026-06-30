@@ -259,14 +259,43 @@ export function getCachedAllPlaces(): Place[] {
 
 // ── Public API ───────────────────────────────────────────────────────────────
 
+// Columns each category's search scans. Every column listed MUST exist on that
+// category's table, or the whole query errors. `jenjang` is where a school's
+// level ("SD"/"SMP"/"TK") lives, so "SD Anderson" can match name + jenjang.
+const SEARCH_COLUMNS: Record<Place["category"], string[]> = {
+  school:            ["name", "jenjang", "curriculum", "curriculum_category", "area"],
+  "learning-center": ["name", "area"],
+  daycare:           ["name", "area"],
+  playground:        ["name", "area"],
+  clinic:            ["name", "area"],
+  cafe:              ["name", "area"],
+  "mini-zoo":        ["name", "area"],
+  "swimming-pool":   ["name", "area"],
+  bookstore:         ["name", "area"],
+  other:             ["name", "area"],
+};
+
 export async function searchAllPlaces(query: string, limit = 30): Promise<Place[]> {
+  // Split into words so order doesn't matter and each word can match a
+  // different field. Strip chars that would break PostgREST's .or() syntax.
+  const tokens = query
+    .toLowerCase()
+    .split(/\s+/)
+    .map((t) => t.replace(/[,().*%"]/g, "").trim())
+    .filter(Boolean);
+  if (tokens.length === 0) return [];
+
   const categories = Object.keys(TABLE).filter((c) => c !== "other") as Place["category"][];
   const results = await Promise.all(
     categories.map(async (category) => {
-      const { data } = await supabase
-        .from(TABLE[category])
-        .select("*")
-        .ilike("name", `%${query}%`)
+      const cols = SEARCH_COLUMNS[category];
+      let q = supabase.from(TABLE[category]).select("*");
+      // Each word must match SOME column (AND across words, OR across columns).
+      // Chained .or() calls are ANDed together by PostgREST.
+      for (const token of tokens) {
+        q = q.or(cols.map((c) => `${c}.ilike.*${token}*`).join(","));
+      }
+      const { data } = await q
         .order("is_featured", { ascending: false })
         .limit(limit);
       return (data ?? []).map((row) => mapRow(row, category));
