@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useDraft, DraftButton } from "./DraftButton";
+import { GoogleMapsFill } from "./GoogleMapsFill";
 import { savePlayground, deletePlayground } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { ImproveButton, TranslateButton } from "./AiButtons";
@@ -34,6 +35,7 @@ export function PlaygroundForm({ initial, id, initialDraftId }: { initial?: Reco
   const [address, setAddress] = useState(initial?.address ?? "");
   const [latitude, setLatitude] = useState(initial?.latitude ?? "");
   const [longitude, setLongitude] = useState(initial?.longitude ?? "");
+  const [googlePlaceId, setGooglePlaceId] = useState(initial?.google_place_id ?? "");
   const [yearFounded, setYearFounded] = useState(initial?.year_founded ?? "");
   const [isFeatured, setIsFeatured] = useState(initial?.is_featured ?? false);
   const [about, setAbout] = useState(initial?.about ?? "");
@@ -87,6 +89,7 @@ export function PlaygroundForm({ initial, id, initialDraftId }: { initial?: Reco
       address: address || null,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
+      google_place_id: googlePlaceId || null,
       year_founded: yearFounded ? Number(yearFounded) : null,
       is_featured: isFeatured,
       about: about || null, about_en: aboutEn || null, hours: hours || null,
@@ -229,6 +232,12 @@ export function PlaygroundForm({ initial, id, initialDraftId }: { initial?: Reco
 
           <Field label="Address">
             <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical" }} value={address} onChange={(e) => setAddress(e.target.value)} />
+          </Field>
+
+          <GoogleMapsFill onResult={(r) => { if (r.placeId) setGooglePlaceId(r.placeId); if (r.lat) setLatitude(r.lat); if (r.lng) setLongitude(r.lng); }} />
+
+          <Field label="Google Place ID">
+            <input style={inputStyle} value={googlePlaceId} onChange={(e) => setGooglePlaceId(e.target.value)} placeholder="ChIJ…" />
           </Field>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

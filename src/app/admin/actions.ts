@@ -899,6 +899,121 @@ export async function applySubmissionEnrichment(
   revalidatePath(`/admin/submissions/${id}`);
 }
 
+/**
+ * Resolve a pasted Google Maps link into { placeId, lat, lng } to auto-fill the
+ * admin place forms. Handles short links (maps.app.goo.gl / goo.gl) by following
+ * the redirect, then reads coordinates + name from the URL, and resolves the
+ * canonical Place ID via the Places "Find Place From Text" endpoint.
+ *
+ * Reuses GOOGLE_MAPS_API_KEY (same key + APIs as /api/geocode and the submission
+ * enricher). The key must NOT be HTTP-referrer restricted — server calls have no
+ * referrer. Restrict it by API (Places API + Geocoding API) instead.
+ */
+export async function resolveGoogleMapsLink(link: string): Promise<{
+  ok: boolean;
+  placeId?: string;
+  lat?: number;
+  lng?: number;
+  name?: string;
+  error?: string;
+}> {
+  await assertAdmin();
+
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return { ok: false, error: "GOOGLE_MAPS_API_KEY belum diset di server." };
+
+  let url = link.trim();
+  if (!url) return { ok: false, error: "Tempel link Google Maps dulu." };
+
+  // 1) Expand short links so we can read the coords/name out of the full URL.
+  if (/(maps\.app\.goo\.gl|goo\.gl)/.test(url)) {
+    try {
+      const r = await fetch(url, { redirect: "follow" });
+      url = r.url || url;
+    } catch {
+      /* keep the original URL and try to parse it as-is */
+    }
+  }
+
+  // 2) Coordinates: "@lat,lng,zoom" or the "!3dlat!4dlng" data segment.
+  let lat: number | undefined;
+  let lng: number | undefined;
+  const coord = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ?? url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (coord) {
+    lat = parseFloat(coord[1]);
+    lng = parseFloat(coord[2]);
+  }
+
+  // 3) Place name from the "/place/<name>/" segment.
+  let name: string | undefined;
+  const pm = url.match(/\/place\/([^/@]+)/);
+  if (pm) {
+    try { name = decodeURIComponent(pm[1].replace(/\+/g, " ")); }
+    catch { name = pm[1].replace(/\+/g, " "); }
+  }
+
+  // 4) A place_id sometimes rides in the URL directly.
+  let placeId: string | undefined;
+  const direct = url.match(/query_place_id=([A-Za-z0-9_-]+)/) ?? url.match(/[?&]place_id=([A-Za-z0-9_-]+)/);
+  if (direct) placeId = direct[1];
+
+  // 5) No explicit place_id → resolve it from the name (biased by coords).
+  if (!placeId) {
+    const query = name ?? (lat != null && lng != null ? `${lat},${lng}` : null);
+    if (!query) {
+      return { ok: false, error: "Tidak bisa membaca nama/koordinat dari link. Pastikan ini link Google Maps yang valid (buka lokasinya di Maps, lalu Share → Copy link)." };
+    }
+    const params = new URLSearchParams({
+      input: query,
+      inputtype: "textquery",
+      fields: "place_id,geometry,name",
+      language: "id",
+      key,
+    });
+    if (lat != null && lng != null) params.set("locationbias", `point:${lat},${lng}`);
+
+    try {
+      const r = await fetch(
+        `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?${params.toString()}`,
+        { cache: "no-store" },
+      );
+      const j = await r.json();
+      if (j.status === "OK" && j.candidates?.length) {
+        const c = j.candidates[0];
+        placeId = c.place_id;
+        if (c.geometry?.location) { lat = c.geometry.location.lat; lng = c.geometry.location.lng; }
+        name = c.name ?? name;
+      } else {
+        const hint = j.status === "REQUEST_DENIED"
+          ? " (kemungkinan API key punya restriksi HTTP-referrer — hapus; key ini dipakai server-side)"
+          : "";
+        return { ok: false, error: `Google Places: ${j.status ?? "unknown"}${j.error_message ? " — " + j.error_message : ""}${hint}` };
+      }
+    } catch {
+      return { ok: false, error: "Tidak bisa menghubungi Google Places API." };
+    }
+  } else if (lat == null || lng == null) {
+    // Have a place_id but no coords → fetch details for geometry.
+    try {
+      const r = await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry,name&language=id&key=${key}`,
+        { cache: "no-store" },
+      );
+      const j = await r.json();
+      if (j.status === "OK" && j.result?.geometry?.location) {
+        lat = j.result.geometry.location.lat;
+        lng = j.result.geometry.location.lng;
+        name = j.result.name ?? name;
+      }
+    } catch {
+      /* keep the place_id we already have */
+    }
+  }
+
+  if (!placeId) return { ok: false, error: "Tidak menemukan Place ID untuk link ini." };
+  return { ok: true, placeId, lat, lng, name };
+}
+
 // ── AI assist (Claude) ────────────────────────────────────────────────────────
 
 /** Rewrite/expand an Indonesian description into ~4 clean paragraphs. */

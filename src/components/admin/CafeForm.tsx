@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useDraft, DraftButton } from "./DraftButton";
+import { GoogleMapsFill } from "./GoogleMapsFill";
 import { saveCafe, deleteCafe } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { ImproveButton, TranslateButton } from "./AiButtons";
@@ -222,6 +223,8 @@ export function CafeForm({ initial, id, initialDraftId }: { initial?: Record<str
           <Field label="Address">
             <textarea style={{ ...inputStyle, minHeight: 72, resize: "vertical" }} value={address} onChange={(e) => setAddress(e.target.value)} />
           </Field>
+
+          <GoogleMapsFill onResult={(r) => { if (r.placeId) setGooglePlaceId(r.placeId); if (r.lat) setLatitude(r.lat); if (r.lng) setLongitude(r.lng); }} />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field label="Latitude">
