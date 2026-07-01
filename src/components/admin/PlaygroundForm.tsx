@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useDraft, DraftButton } from "./DraftButton";
 import { savePlayground, deletePlayground } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { ImproveButton, TranslateButton } from "./AiButtons";
@@ -17,12 +18,13 @@ function generateSlug(name: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function PlaygroundForm({ initial, id }: { initial?: Record<string, any>; id?: string }) {
+export function PlaygroundForm({ initial, id, initialDraftId }: { initial?: Record<string, any>; id?: string; initialDraftId?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState("general");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const draft = useDraft("playgrounds", initialDraftId);
 
   // General
   const [name, setName] = useState(initial?.name ?? "");
@@ -74,14 +76,13 @@ export function PlaygroundForm({ initial, id }: { initial?: Record<string, any>;
     if (!id) setSlug(generateSlug(n));
   }
 
-  async function handleSave() {
-    setSaveError("");
+  function buildPayload() {
     const photoMap: Record<string, string | null> = {};
     photoColumns.forEach((c, i) => { photoMap[c] = photos[i] ?? null; });
     const videoMap: Record<string, string | null> = {};
     ["video_1","video_2","video_3","video_4"].forEach((c, i) => { videoMap[c] = videos[i] ?? null; });
 
-    const payload = {
+    return {
       name, slug, area: area || null, location_detail: locationDetail || null,
       address: address || null,
       latitude: latitude ? Number(latitude) : null,
@@ -103,10 +104,13 @@ export function PlaygroundForm({ initial, id }: { initial?: Record<string, any>;
       fee_image_url: feeImageUrl || null,
       ...photoMap, ...videoMap,
     };
+  }
 
+  async function handleSave() {
+    setSaveError("");
     startTransition(async () => {
       try {
-        await savePlayground(id ?? null, payload);
+        await savePlayground(id ?? null, buildPayload(), draft.draftId);
       } catch (e: unknown) {
         setSaveError(e instanceof Error ? e.message : "Save failed");
       }
@@ -165,6 +169,7 @@ export function PlaygroundForm({ initial, id }: { initial?: Record<string, any>;
               </button>
             </>
           )}
+          {!id && <DraftButton draft={draft} name={name} buildPayload={buildPayload} disabled={isPending} />}
           <button type="button" onClick={handleSave} disabled={isPending}
             style={{ padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: isPending ? "#9ca3af" : "#0e1d4f", color: "#fff", border: "none", cursor: isPending ? "not-allowed" : "pointer" }}>
             {isPending ? "Saving…" : "Save"}

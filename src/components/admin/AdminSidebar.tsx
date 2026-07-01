@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   LayoutDashboard, Users, Inbox, Star, MessageCircle, FileText, LineChart,
-  BadgeCheck,
+  BadgeCheck, FilePen,
   type LucideIcon,
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase-browser";
@@ -15,6 +15,7 @@ const NAV_MAIN: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Dashboard",   href: "/admin",             icon: LayoutDashboard },
   { label: "Users",       href: "/admin/users",       icon: Users },
   { label: "Submissions", href: "/admin/submissions",  icon: Inbox },
+  { label: "Draf",        href: "/admin/drafts",        icon: FilePen },
   { label: "Claims",      href: "/admin/claims",        icon: BadgeCheck },
   { label: "Reviews",     href: "/admin/reviews",       icon: Star },
   { label: "Feedback",    href: "/admin/feedback",     icon: MessageCircle },

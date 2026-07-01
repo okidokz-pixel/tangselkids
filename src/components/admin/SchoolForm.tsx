@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useDraft, DraftButton } from "./DraftButton";
 import { saveSchool, deleteSchool } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { TagInput } from "./TagInput";
@@ -30,12 +31,13 @@ function generateSlug(name: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?: string }) {
+export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<string, any>; id?: string; initialDraftId?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState("general");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const draft = useDraft("schools", initialDraftId);
 
   // Form state
   const [name, setName] = useState(initial?.name ?? "");
@@ -114,15 +116,14 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
     setKategoriBahasa((prev) => prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]);
   }
 
-  async function handleSave() {
-    setSaveError("");
+  function buildPayload() {
     const photoMap: Record<string, string | null> = {};
     photoColumns.forEach((c, i) => { photoMap[c] = photos[i] ?? null; });
 
     const videoMap: Record<string, string | null> = {};
     ["video_1","video_2","video_3","video_4"].forEach((c, i) => { videoMap[c] = videos[i] ?? null; });
 
-    const payload = {
+    return {
       name, slug, area, location_detail: locationDetail, address,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
@@ -155,10 +156,13 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
       fee_image_url: feeImageUrl || null,
       ...photoMap, ...videoMap,
     };
+  }
 
+  async function handleSave() {
+    setSaveError("");
     startTransition(async () => {
       try {
-        await saveSchool(id ?? null, payload);
+        await saveSchool(id ?? null, buildPayload(), draft.draftId);
       } catch (e: unknown) {
         setSaveError(e instanceof Error ? e.message : "Save failed");
       }
@@ -234,6 +238,7 @@ export function SchoolForm({ initial, id }: { initial?: Record<string, any>; id?
               </button>
             </>
           )}
+          {!id && <DraftButton draft={draft} name={name} buildPayload={buildPayload} disabled={isPending} />}
           <button
             type="button"
             onClick={handleSave}

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useDraft, DraftButton } from "./DraftButton";
 import { saveLearningCenter, deleteLearningCenter } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { ImproveButton, TranslateButton } from "./AiButtons";
@@ -22,12 +23,13 @@ function generateSlug(name: string) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function LearningCenterForm({ initial, id }: { initial?: Record<string, any>; id?: string }) {
+export function LearningCenterForm({ initial, id, initialDraftId }: { initial?: Record<string, any>; id?: string; initialDraftId?: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState("general");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const draft = useDraft("learning-centers", initialDraftId);
 
   // General
   const [name, setName] = useState(initial?.name ?? "");
@@ -89,14 +91,13 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
     setCourseTypes((prev) => prev.includes(ct) ? prev.filter((x) => x !== ct) : [...prev, ct]);
   }
 
-  async function handleSave() {
-    setSaveError("");
+  function buildPayload() {
     const photoMap: Record<string, string | null> = {};
     photoColumns.forEach((c, i) => { photoMap[c] = photos[i] ?? null; });
     const videoMap: Record<string, string | null> = {};
     ["video_1","video_2","video_3","video_4"].forEach((c, i) => { videoMap[c] = videos[i] ?? null; });
 
-    const payload = {
+    return {
       name, slug, area: area || null, location_detail: locationDetail || null,
       address: address || null,
       latitude: latitude ? Number(latitude) : null,
@@ -122,10 +123,13 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
       fee_image_url: feeImageUrl || null,
       ...photoMap, ...videoMap,
     };
+  }
 
+  async function handleSave() {
+    setSaveError("");
     startTransition(async () => {
       try {
-        await saveLearningCenter(id ?? null, payload);
+        await saveLearningCenter(id ?? null, buildPayload(), draft.draftId);
       } catch (e: unknown) {
         setSaveError(e instanceof Error ? e.message : "Save failed");
       }
@@ -184,6 +188,7 @@ export function LearningCenterForm({ initial, id }: { initial?: Record<string, a
               </button>
             </>
           )}
+          {!id && <DraftButton draft={draft} name={name} buildPayload={buildPayload} disabled={isPending} />}
           <button type="button" onClick={handleSave} disabled={isPending}
             style={{ padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: isPending ? "#9ca3af" : "#0e1d4f", color: "#fff", border: "none", cursor: isPending ? "not-allowed" : "pointer" }}>
             {isPending ? "Saving…" : "Save"}

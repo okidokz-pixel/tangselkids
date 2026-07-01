@@ -1,13 +1,13 @@
 import Link from "next/link";
 import {
-  Inbox, Star, MessageCircle, ArrowRight, UserPlus, FileText,
+  Inbox, Star, MessageCircle, ArrowRight, UserPlus, FileText, FilePen,
   ChevronUp, ChevronDown, Plus, Pencil, LineChart, Check, BadgeCheck,
   type LucideIcon,
 } from "lucide-react";
 import {
   getDashboardStats, getPendingSubmissionsCount,
   getPendingReviewsCount, getFeedbackCount, getRecentActivity,
-  getPendingClaimsCount, getRegistrationStats,
+  getPendingClaimsCount, getRegistrationStats, getDraftsCount,
   type ActivityEvent,
 } from "./actions";
 import { getGaStats } from "@/lib/ga-data";
@@ -49,7 +49,7 @@ function timeAgo(iso: string): string {
 }
 
 export default async function AdminDashboard() {
-  const [stats, ga, pendingSubmissions, pendingReviews, feedbackCount, pendingClaims, activity, reg] =
+  const [stats, ga, pendingSubmissions, pendingReviews, feedbackCount, pendingClaims, activity, reg, draftsCount] =
     await Promise.all([
       getDashboardStats(),
       getGaStats().catch(() => null),
@@ -59,6 +59,7 @@ export default async function AdminDashboard() {
       getPendingClaimsCount(),
       getRecentActivity(8),
       getRegistrationStats().catch(() => null),
+      getDraftsCount(),
     ]);
 
   const totalEntries = stats.categories.reduce((s, c) => s + c.total, 0);
@@ -90,6 +91,38 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="content">
+
+        {/* ===== DRAF BELUM SELESAI ===== */}
+        {draftsCount > 0 && (
+          <section className="section" style={{ paddingTop: 26, paddingBottom: 0 }}>
+            <Link
+              href="/admin/drafts"
+              style={{
+                display: "flex", alignItems: "center", gap: 14,
+                background: "var(--gold-soft, #fef9ec)",
+                border: "1px solid color-mix(in srgb, var(--gold, #c99a2e) 34%, transparent)",
+                borderRadius: 14, padding: "14px 18px", textDecoration: "none",
+              }}
+            >
+              <span style={{
+                width: 42, height: 42, flex: "0 0 42px", borderRadius: 11,
+                display: "grid", placeItems: "center",
+                background: "var(--gold-soft, #fdf2d6)", color: "var(--gold, #c99a2e)",
+              }}>
+                <FilePen size={20} strokeWidth={1.7} />
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "var(--ink, #0e1d4f)" }}>
+                  {num(draftsCount)} draf belum selesai
+                </span>
+                <span style={{ display: "block", fontSize: 12.5, color: "var(--muted, #6b7280)", marginTop: 2 }}>
+                  Lanjutkan mengisi listing yang belum dipublikasikan.
+                </span>
+              </span>
+              <ArrowRight size={18} strokeWidth={2} style={{ color: "var(--gold, #c99a2e)", flex: "0 0 auto" }} />
+            </Link>
+          </section>
+        )}
 
         {/* ===== PERLU TINDAKAN ===== */}
         <section className="section" style={{ paddingTop: 26 }}>

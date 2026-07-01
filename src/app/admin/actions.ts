@@ -40,7 +40,7 @@ export async function getSchool(id: string) {
   return data;
 }
 
-export async function saveSchool(id: string | null, payload: Record<string, unknown>) {
+export async function saveSchool(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -56,6 +56,7 @@ export async function saveSchool(id: string | null, payload: Record<string, unkn
       .select("id")
       .single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/schools");
     revalidatePath("/admin/schools");
     redirect(`/admin/schools/${data.id}`);
@@ -109,7 +110,7 @@ export async function getLearningCenter(id: string) {
   return data;
 }
 
-export async function saveLearningCenter(id: string | null, payload: Record<string, unknown>) {
+export async function saveLearningCenter(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -125,6 +126,7 @@ export async function saveLearningCenter(id: string | null, payload: Record<stri
       .select("id")
       .single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/learning-centers");
     revalidatePath("/admin/learning-centers");
     redirect(`/admin/learning-centers/${data.id}`);
@@ -178,7 +180,7 @@ export async function getDaycare(id: string) {
   return data;
 }
 
-export async function saveDaycare(id: string | null, payload: Record<string, unknown>) {
+export async function saveDaycare(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -187,6 +189,7 @@ export async function saveDaycare(id: string | null, payload: Record<string, unk
   } else {
     const { data, error } = await supabaseAdmin.from("daycares").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/daycare");
     revalidatePath("/admin/daycares");
     redirect(`/admin/daycares/${data.id}`);
@@ -237,7 +240,7 @@ export async function getPlayground(id: string) {
   return data;
 }
 
-export async function savePlayground(id: string | null, payload: Record<string, unknown>) {
+export async function savePlayground(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -246,6 +249,7 @@ export async function savePlayground(id: string | null, payload: Record<string, 
   } else {
     const { data, error } = await supabaseAdmin.from("playgrounds").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/playgrounds");
     revalidatePath("/admin/playgrounds");
     redirect(`/admin/playgrounds/${data.id}`);
@@ -296,7 +300,7 @@ export async function getClinic(id: string) {
   return data;
 }
 
-export async function saveClinic(id: string | null, payload: Record<string, unknown>) {
+export async function saveClinic(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -305,6 +309,7 @@ export async function saveClinic(id: string | null, payload: Record<string, unkn
   } else {
     const { data, error } = await supabaseAdmin.from("clinics").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/clinics");
     revalidatePath("/admin/clinics");
     redirect(`/admin/clinics/${data.id}`);
@@ -355,7 +360,7 @@ export async function getCafe(id: string) {
   return data;
 }
 
-export async function saveCafe(id: string | null, payload: Record<string, unknown>) {
+export async function saveCafe(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -364,6 +369,7 @@ export async function saveCafe(id: string | null, payload: Record<string, unknow
   } else {
     const { data, error } = await supabaseAdmin.from("cafes").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/cafes");
     revalidatePath("/admin/cafes");
     redirect(`/admin/cafes/${data.id}`);
@@ -414,7 +420,7 @@ export async function getMiniZoo(id: string) {
   return data;
 }
 
-export async function saveMiniZoo(id: string | null, payload: Record<string, unknown>) {
+export async function saveMiniZoo(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -423,6 +429,7 @@ export async function saveMiniZoo(id: string | null, payload: Record<string, unk
   } else {
     const { data, error } = await supabaseAdmin.from("mini_zoo").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/mini-zoo");
     revalidatePath("/admin/mini-zoo");
     redirect(`/admin/mini-zoo/${data.id}`);
@@ -473,7 +480,7 @@ export async function getSwimmingPool(id: string) {
   return data;
 }
 
-export async function saveSwimmingPool(id: string | null, payload: Record<string, unknown>) {
+export async function saveSwimmingPool(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -482,6 +489,7 @@ export async function saveSwimmingPool(id: string | null, payload: Record<string
   } else {
     const { data, error } = await supabaseAdmin.from("swimming_pools").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/swimming-pools");
     revalidatePath("/admin/swimming-pools");
     redirect(`/admin/swimming-pools/${data.id}`);
@@ -532,7 +540,7 @@ export async function getBookstore(id: string) {
   return data;
 }
 
-export async function saveBookstore(id: string | null, payload: Record<string, unknown>) {
+export async function saveBookstore(id: string | null, payload: Record<string, unknown>, draftId?: string | null) {
   await assertAdmin();
 
   if (id) {
@@ -541,6 +549,7 @@ export async function saveBookstore(id: string | null, payload: Record<string, u
   } else {
     const { data, error } = await supabaseAdmin.from("bookstores").insert(payload).select("id").single();
     if (error) throw error;
+    if (draftId) await supabaseAdmin.from("place_drafts").delete().eq("id", draftId);
     revalidatePath("/bookstores");
     revalidatePath("/admin/bookstores");
     redirect(`/admin/bookstores/${data.id}`);
@@ -624,6 +633,93 @@ export async function deleteArticle(id: string) {
   revalidatePath("/berita");
   revalidatePath("/admin/articles");
   redirect("/admin/articles");
+}
+
+// ── Place Drafts ──────────────────────────────────────────────────────────────
+// Staging area for half-finished listings. Stored as a JSONB payload in the
+// column shape the category form uses, so resuming just feeds it back as the
+// form's `initial`. Never touches a live category table until published.
+
+export type DraftRow = {
+  id: string;
+  category: string;
+  name: string | null;
+  updated_at: string;
+};
+
+/** Upsert a draft. Returns the draft id so the form can keep updating the same row. */
+export async function saveDraft(input: {
+  id?: string | null;
+  category: string;
+  name: string;
+  payload: Record<string, unknown>;
+}): Promise<string> {
+  await assertAdmin();
+  const row = {
+    category: input.category,
+    name: input.name?.trim() || "(tanpa nama)",
+    payload: input.payload,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.id) {
+    const { error } = await supabaseAdmin.from("place_drafts").update(row).eq("id", input.id);
+    if (error) throw error;
+    revalidatePath("/admin/drafts");
+    revalidatePath("/admin");
+    return input.id;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("place_drafts")
+    .insert(row)
+    .select("id")
+    .single();
+  if (error) throw error;
+  revalidatePath("/admin/drafts");
+  revalidatePath("/admin");
+  return data.id as string;
+}
+
+export async function getDrafts(): Promise<DraftRow[]> {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("place_drafts")
+    .select("id,category,name,updated_at")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as DraftRow[];
+}
+
+export async function getDraft(id: string) {
+  await assertAdmin();
+  const { data, error } = await supabaseAdmin
+    .from("place_drafts")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteDraft(id: string) {
+  await assertAdmin();
+  const { error } = await supabaseAdmin.from("place_drafts").delete().eq("id", id);
+  if (error) throw error;
+  revalidatePath("/admin/drafts");
+  revalidatePath("/admin");
+}
+
+export async function getDraftsCount(): Promise<number> {
+  try {
+    await assertAdmin();
+    const { count } = await supabaseAdmin
+      .from("place_drafts")
+      .select("id", { count: "exact", head: true });
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
 }
 
 // ── Dashboard stats ───────────────────────────────────────────────────────────
