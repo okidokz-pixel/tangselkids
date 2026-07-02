@@ -1,11 +1,11 @@
 import { SwimmingPoolForm } from "@/components/admin/SwimmingPoolForm";
-import { getSubmission, getDraft } from "@/app/admin/actions";
+import { getSubmission, getDraft, getSwimmingPool } from "@/app/admin/actions";
 import { submissionToListingInitial } from "@/lib/submissionToListing";
 
 export const metadata = { title: "Tambah Kolam Renang" };
 
-export default async function NewSwimmingPoolPage({ searchParams }: { searchParams: Promise<{ from?: string; draft?: string }> }) {
-  const { from, draft } = await searchParams;
+export default async function NewSwimmingPoolPage({ searchParams }: { searchParams: Promise<{ from?: string; duplicate?: string; draft?: string }> }) {
+  const { from, duplicate, draft } = await searchParams;
   let initial: Record<string, unknown> | undefined;
   let initialDraftId: string | undefined;
   if (draft) {
@@ -16,6 +16,8 @@ export default async function NewSwimmingPoolPage({ searchParams }: { searchPara
     } catch {}
   } else if (from) {
     try { initial = submissionToListingInitial(await getSubmission(from), "swimming-pool"); } catch {}
+  } else if (duplicate) {
+    try { initial = { ...(await getSwimmingPool(duplicate)), slug: "" }; } catch {}
   }
   return <SwimmingPoolForm initial={initial} initialDraftId={initialDraftId} />;
 }

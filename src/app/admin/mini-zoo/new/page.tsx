@@ -1,11 +1,11 @@
 import { MiniZooForm } from "@/components/admin/MiniZooForm";
-import { getSubmission, getDraft } from "@/app/admin/actions";
+import { getSubmission, getDraft, getMiniZoo } from "@/app/admin/actions";
 import { submissionToListingInitial } from "@/lib/submissionToListing";
 
 export const metadata = { title: "Tambah Animal Encounter" };
 
-export default async function NewMiniZooPage({ searchParams }: { searchParams: Promise<{ from?: string; draft?: string }> }) {
-  const { from, draft } = await searchParams;
+export default async function NewMiniZooPage({ searchParams }: { searchParams: Promise<{ from?: string; duplicate?: string; draft?: string }> }) {
+  const { from, duplicate, draft } = await searchParams;
   let initial: Record<string, unknown> | undefined;
   let initialDraftId: string | undefined;
   if (draft) {
@@ -16,6 +16,8 @@ export default async function NewMiniZooPage({ searchParams }: { searchParams: P
     } catch {}
   } else if (from) {
     try { initial = submissionToListingInitial(await getSubmission(from), "mini-zoo"); } catch {}
+  } else if (duplicate) {
+    try { initial = { ...(await getMiniZoo(duplicate)), slug: "" }; } catch {}
   }
   return <MiniZooForm initial={initial} initialDraftId={initialDraftId} />;
 }

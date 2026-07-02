@@ -1,11 +1,11 @@
 import { PlaygroundForm } from "@/components/admin/PlaygroundForm";
-import { getSubmission, getDraft } from "@/app/admin/actions";
+import { getSubmission, getDraft, getPlayground } from "@/app/admin/actions";
 import { submissionToListingInitial } from "@/lib/submissionToListing";
 
 export const metadata = { title: "Tambah Playground" };
 
-export default async function NewPlaygroundPage({ searchParams }: { searchParams: Promise<{ from?: string; draft?: string }> }) {
-  const { from, draft } = await searchParams;
+export default async function NewPlaygroundPage({ searchParams }: { searchParams: Promise<{ from?: string; duplicate?: string; draft?: string }> }) {
+  const { from, duplicate, draft } = await searchParams;
   let initial: Record<string, unknown> | undefined;
   let initialDraftId: string | undefined;
   if (draft) {
@@ -16,6 +16,8 @@ export default async function NewPlaygroundPage({ searchParams }: { searchParams
     } catch {}
   } else if (from) {
     try { initial = submissionToListingInitial(await getSubmission(from), "playground"); } catch {}
+  } else if (duplicate) {
+    try { initial = { ...(await getPlayground(duplicate)), slug: "" }; } catch {}
   }
   return <PlaygroundForm initial={initial} initialDraftId={initialDraftId} />;
 }

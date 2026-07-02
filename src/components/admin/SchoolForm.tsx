@@ -8,6 +8,8 @@ import { saveSchool, deleteSchool } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { TagInput } from "./TagInput";
 import { ImproveButton, TranslateButton } from "./AiButtons";
+import { FillDataButton } from "./FillDataButton";
+import type { PlaceFillData } from "@/app/admin/actions";
 
 const JENJANG_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
 const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
@@ -161,6 +163,19 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
     };
   }
 
+  // Fill Data: apply auto-fetched values to EMPTY fields only.
+  function applyFill(d: PlaceFillData) {
+    if (d.googlePlaceId && !googlePlaceId) setGooglePlaceId(d.googlePlaceId);
+    if (d.address && !address) setAddress(d.address);
+    if (d.latitude != null && !latitude) setLatitude(String(d.latitude));
+    if (d.longitude != null && !longitude) setLongitude(String(d.longitude));
+    if (d.phone && !phone) setPhone(d.phone);
+    if (d.website && !website) setWebsite(d.website);
+    if (d.hours && !hours) setHours(d.hours);
+    if (d.about && !about) setAbout(d.about);
+    if (d.facilities.length && facilities.length === 0) setFacilities(d.facilities);
+  }
+
   async function handleSave() {
     setSaveError("");
     startTransition(async () => {
@@ -241,6 +256,7 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
               </button>
             </>
           )}
+          <FillDataButton category="schools" name={name} address={address} googlePlaceId={googlePlaceId} instagram={instagram} website={website} onResult={applyFill} disabled={isPending} />
           {!id && <DraftButton draft={draft} name={name} buildPayload={buildPayload} disabled={isPending} />}
           <button
             type="button"
@@ -248,11 +264,11 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
             disabled={isPending}
             style={{
               padding: "8px 24px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-              background: isPending ? "#9ca3af" : "#0e1d4f", color: "#fff",
+              background: isPending ? "#9ca3af" : "#16a34a", color: "#fff",
               border: "none", cursor: isPending ? "not-allowed" : "pointer",
             }}
           >
-            {isPending ? "Saving…" : "Save"}
+            {isPending ? "Publishing…" : "Publish"}
           </button>
         </div>
       </div>

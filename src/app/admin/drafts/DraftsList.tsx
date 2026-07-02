@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { deleteDraft, type DraftRow } from "@/app/admin/actions";
-import { ADMIN_CATEGORY_LABEL } from "@/lib/adminCategories";
+import { ADMIN_CATEGORIES, ADMIN_CATEGORY_LABEL } from "@/lib/adminCategories";
 import { Trash2, ArrowRight } from "lucide-react";
 
 function formatWhen(iso: string): string {
@@ -36,61 +36,96 @@ export function DraftsList({ drafts }: { drafts: DraftRow[] }) {
     });
   }
 
-  return (
-    <div className="card" style={{ overflow: "hidden", padding: 0 }}>
-      {drafts.map((d, i) => (
-        <div
-          key={d.id}
+  // Group by category, preserving the canonical category order; any unknown
+  // categories fall to the end. Drafts keep their incoming (updated_at desc) order.
+  const byCategory = new Map<string, DraftRow[]>();
+  for (const d of drafts) {
+    const list = byCategory.get(d.category) ?? [];
+    list.push(d);
+    byCategory.set(d.category, list);
+  }
+  const orderedCats = [
+    ...ADMIN_CATEGORIES.map((c) => c.route).filter((r) => byCategory.has(r)),
+    ...[...byCategory.keys()].filter((c) => !ADMIN_CATEGORIES.some((ac) => ac.route === c)),
+  ];
+
+  function renderRow(d: DraftRow, i: number) {
+    return (
+      <div
+        key={d.id}
+        style={{
+          display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+          borderTop: i === 0 ? "none" : "1px solid var(--line)", flexWrap: "wrap",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {d.name || "(tanpa nama)"}
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
+            diperbarui {formatWhen(d.updated_at)}
+          </div>
+        </div>
+
+        <Link
+          href={`/admin/${d.category}/new?draft=${d.id}`}
           style={{
-            display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
-            borderTop: i === 0 ? "none" : "1px solid var(--line)", flexWrap: "wrap",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: "#0e1d4f", color: "#fff", textDecoration: "none",
           }}
         >
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {d.name || "(tanpa nama)"}
+          Lanjutkan <ArrowRight size={15} strokeWidth={2} />
+        </Link>
+
+        {confirmId === d.id ? (
+          <>
+            <button
+              type="button" onClick={() => remove(d.id)} disabled={isPending}
+              style={{ padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#dc2626", color: "#fff", border: "none", cursor: "pointer" }}
+            >
+              {isPending ? "Menghapus…" : "Hapus"}
+            </button>
+            <button
+              type="button" onClick={() => setConfirmId(null)}
+              style={{ padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#f3f4f6", color: "#374151", border: "none", cursor: "pointer" }}
+            >
+              Batal
+            </button>
+          </>
+        ) : (
+          <button
+            type="button" onClick={() => setConfirmId(d.id)} title="Hapus draf"
+            style={{ padding: 8, borderRadius: 8, border: "1.5px solid #fca5a5", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "grid", placeItems: "center" }}
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
+      {orderedCats.map((cat) => {
+        const rows = byCategory.get(cat)!;
+        return (
+          <div key={cat}>
+            <div
+              style={{
+                display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
+                fontSize: 13, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase", color: "var(--muted)",
+              }}
+            >
+              {ADMIN_CATEGORY_LABEL[cat] ?? cat}
+              <span style={{ fontWeight: 600, color: "var(--muted)", opacity: 0.7 }}>({rows.length})</span>
             </div>
-            <div style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
-              {ADMIN_CATEGORY_LABEL[d.category] ?? d.category} · diperbarui {formatWhen(d.updated_at)}
+            <div className="card" style={{ overflow: "hidden", padding: 0 }}>
+              {rows.map((d, i) => renderRow(d, i))}
             </div>
           </div>
-
-          <Link
-            href={`/admin/${d.category}/new?draft=${d.id}`}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-              background: "#0e1d4f", color: "#fff", textDecoration: "none",
-            }}
-          >
-            Lanjutkan <ArrowRight size={15} strokeWidth={2} />
-          </Link>
-
-          {confirmId === d.id ? (
-            <>
-              <button
-                type="button" onClick={() => remove(d.id)} disabled={isPending}
-                style={{ padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#dc2626", color: "#fff", border: "none", cursor: "pointer" }}
-              >
-                {isPending ? "Menghapus…" : "Hapus"}
-              </button>
-              <button
-                type="button" onClick={() => setConfirmId(null)}
-                style={{ padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, background: "#f3f4f6", color: "#374151", border: "none", cursor: "pointer" }}
-              >
-                Batal
-              </button>
-            </>
-          ) : (
-            <button
-              type="button" onClick={() => setConfirmId(d.id)} title="Hapus draf"
-              style={{ padding: 8, borderRadius: 8, border: "1.5px solid #fca5a5", background: "#fef2f2", color: "#dc2626", cursor: "pointer", display: "grid", placeItems: "center" }}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

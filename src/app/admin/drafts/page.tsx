@@ -1,7 +1,7 @@
 import { getDrafts } from "@/app/admin/actions";
 import { DraftsList } from "./DraftsList";
 
-export const metadata = { title: "Draf" };
+export const metadata = { title: "Drafts" };
 
 export default async function DraftsPage() {
   const drafts = await getDrafts();
@@ -12,7 +12,7 @@ export default async function DraftsPage() {
         <div className="topbar-inner">
           <div>
             <p className="eyebrow"><span className="num">—</span>TangselKids · Internal</p>
-            <h1 className="page-title">Draf</h1>
+            <h1 className="page-title">Drafts</h1>
             <div className="page-meta">
               <span className="txt">Listing yang disimpan tapi belum dipublikasikan.</span>
             </div>

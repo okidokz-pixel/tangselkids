@@ -114,3 +114,71 @@ export async function translateFields(
   }
   return out;
 }
+
+/**
+ * Generate the *descriptive* fields for a place from grounded context: a short
+ * Indonesian "about" paragraph and a facilities list. Everything factual (phone,
+ * hours, coordinates, rating) comes from Google elsewhere — this only writes prose
+ * and infers facilities, and it is told NOT to invent hard facts. Returns empty
+ * fields when the context is too thin to write anything faithful.
+ */
+export async function generatePlaceDetails(opts: {
+  name: string;
+  category: string;
+  address?: string;
+  website?: string;
+  instagram?: string;
+  googleSummary?: string;
+  googleTypes?: string[];
+  siteText?: string;
+}): Promise<{ about: string; facilities: string[] }> {
+  const { name, category, address, website, instagram, googleSummary, googleTypes, siteText } = opts;
+  const client = getClient();
+
+  const context = [
+    `Name: ${name}`,
+    `Category: ${category}`,
+    address ? `Address: ${address}` : null,
+    website ? `Website: ${website}` : null,
+    instagram ? `Instagram: ${instagram}` : null,
+    googleSummary ? `Google editorial summary: ${googleSummary}` : null,
+    googleTypes?.length ? `Google place types: ${googleTypes.join(", ")}` : null,
+    siteText ? `Website text (excerpt):\n${siteText.slice(0, 6000)}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const message = await client.messages.create({
+    model: MODEL_WRITE,
+    max_tokens: 1600,
+    system:
+      "You write accurate, parent-facing content for TangselKids, a directory of children's facilities in Tangerang Selatan, Indonesia. Given grounded context about ONE place, produce a short Indonesian description and a list of facilities. " +
+      "CRITICAL: Do NOT invent concrete facts. Only state facilities and details that are present in or clearly implied by the provided context (website text, Google summary, category). If the context is thin, keep the description general and the facilities list short — an empty list is better than guessed facilities. No prices, no accreditations, no founding years unless explicitly given. No marketing fluff, no emoji.",
+    messages: [
+      {
+        role: "user",
+        content:
+          "From the context below, return ONLY a JSON object of the form " +
+          '{ "about": string, "facilities": string[] }. ' +
+          '"about" is 2–3 natural Indonesian paragraphs for parents. ' +
+          '"facilities" is a short list of concrete facilities/features (Indonesian, e.g. "Area indoor", "Parkir luas"). ' +
+          "Return no markdown and no commentary.\n\n" +
+          context,
+      },
+    ],
+  });
+
+  const raw = stripFences(textOf(message));
+  let parsed: { about?: unknown; facilities?: unknown };
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { about: "", facilities: [] };
+  }
+
+  const about = typeof parsed.about === "string" ? parsed.about.trim() : "";
+  const facilities = Array.isArray(parsed.facilities)
+    ? parsed.facilities.filter((f): f is string => typeof f === "string").map((f) => f.trim()).filter(Boolean)
+    : [];
+  return { about, facilities };
+}

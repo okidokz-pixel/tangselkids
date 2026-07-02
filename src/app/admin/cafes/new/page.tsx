@@ -1,11 +1,11 @@
 import { CafeForm } from "@/components/admin/CafeForm";
-import { getSubmission, getDraft } from "@/app/admin/actions";
+import { getSubmission, getDraft, getCafe } from "@/app/admin/actions";
 import { submissionToListingInitial } from "@/lib/submissionToListing";
 
 export const metadata = { title: "Tambah Kafe" };
 
-export default async function NewCafePage({ searchParams }: { searchParams: Promise<{ from?: string; draft?: string }> }) {
-  const { from, draft } = await searchParams;
+export default async function NewCafePage({ searchParams }: { searchParams: Promise<{ from?: string; duplicate?: string; draft?: string }> }) {
+  const { from, duplicate, draft } = await searchParams;
   let initial: Record<string, unknown> | undefined;
   let initialDraftId: string | undefined;
   if (draft) {
@@ -16,6 +16,8 @@ export default async function NewCafePage({ searchParams }: { searchParams: Prom
     } catch {}
   } else if (from) {
     try { initial = submissionToListingInitial(await getSubmission(from), "cafe"); } catch {}
+  } else if (duplicate) {
+    try { initial = { ...(await getCafe(duplicate)), slug: "" }; } catch {}
   }
   return <CafeForm initial={initial} initialDraftId={initialDraftId} />;
 }

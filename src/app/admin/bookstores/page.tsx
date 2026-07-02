@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { Copy } from "lucide-react";
 import { getBookstores, toggleBookstoreFeatured } from "../actions";
 
 type Bookstore = Awaited<ReturnType<typeof getBookstores>>[number];
@@ -102,7 +103,12 @@ export default function BookstoresPage() {
                   </button>
                 </td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                    <Link href={`/admin/bookstores/new?duplicate=${bs.id}`}
+                      title="Duplicate"
+                      style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#374151", textDecoration: "none" }}>
+                      <Copy size={14} />
+                    </Link>
                     <Link href={`/admin/bookstores/${bs.id}`}
                       style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#fce7f3", color: "#9d174d", textDecoration: "none" }}>
                       Edit

@@ -2,20 +2,20 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, Inbox, Star, MessageCircle, FileText, LineChart,
   BadgeCheck, FilePen,
   type LucideIcon,
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase-browser";
+import { getDraftsCount } from "@/app/admin/actions";
 import { AdminLogo } from "./AdminLogo";
 
 const NAV_MAIN: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Dashboard",   href: "/admin",             icon: LayoutDashboard },
   { label: "Users",       href: "/admin/users",       icon: Users },
   { label: "Submissions", href: "/admin/submissions",  icon: Inbox },
-  { label: "Draf",        href: "/admin/drafts",        icon: FilePen },
   { label: "Claims",      href: "/admin/claims",        icon: BadgeCheck },
   { label: "Reviews",     href: "/admin/reviews",       icon: Star },
   { label: "Feedback",    href: "/admin/feedback",     icon: MessageCircle },
@@ -39,6 +39,15 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [draftCount, setDraftCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    getDraftsCount()
+      .then((n) => { if (alive) setDraftCount(n); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [pathname]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -75,6 +84,17 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="nav-group-label">Kategori</div>
       <nav className="nav">
+        <Link
+          href="/admin/drafts"
+          className={isActive("/admin/drafts") ? "active" : ""}
+          onClick={onNavigate}
+          style={{ paddingLeft: 12, color: "#b45309", fontWeight: 600 }}
+        >
+          <FilePen size={16} strokeWidth={1.8} style={{ color: "#d97706" }} />
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            Drafts{draftCount != null ? ` (${draftCount})` : ""}
+          </span>
+        </Link>
         {NAV_CATEGORIES.map(({ label, href }) => (
           <Link
             key={href}

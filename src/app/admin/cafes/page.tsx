@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { Copy } from "lucide-react";
 import { getCafes, toggleCafeFeatured } from "../actions";
 
 type Cafe = Awaited<ReturnType<typeof getCafes>>[number];
@@ -104,7 +105,12 @@ export default function CafesPage() {
                   </button>
                 </td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                    <Link href={`/admin/cafes/new?duplicate=${cf.id}`}
+                      title="Duplicate"
+                      style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#374151", textDecoration: "none" }}>
+                      <Copy size={14} />
+                    </Link>
                     <Link href={`/admin/cafes/${cf.id}`}
                       style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#fef3c7", color: "#92400e", textDecoration: "none" }}>
                       Edit

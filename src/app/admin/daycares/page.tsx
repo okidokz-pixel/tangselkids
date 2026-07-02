@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { Copy } from "lucide-react";
 import { getDaycares, toggleDaycareFeatured } from "../actions";
 
 type DC = Awaited<ReturnType<typeof getDaycares>>[number];
@@ -104,7 +105,12 @@ export default function DaycaresPage() {
                   </button>
                 </td>
                 <td style={{ ...tdStyle, textAlign: "right" }}>
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", alignItems: "center" }}>
+                    <Link href={`/admin/daycares/new?duplicate=${dc.id}`}
+                      title="Duplicate"
+                      style={{ display: "inline-flex", alignItems: "center", padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f3f4f6", color: "#374151", textDecoration: "none" }}>
+                      <Copy size={14} />
+                    </Link>
                     <Link href={`/admin/daycares/${dc.id}`}
                       style={{ padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#e6f4ed", color: "#2e8a5a", textDecoration: "none" }}>
                       Edit

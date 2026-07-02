@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createAdminServerClient } from "@/lib/supabase-server";
 import { isAdminEmail } from "@/lib/adminEmails";
 import type { EnrichmentResult, GoogleEnrichment } from "@/lib/enrichment";
-import { hasAnthropicKey, improveDescription, translateFields } from "@/lib/ai";
+import { hasAnthropicKey, improveDescription, translateFields, generatePlaceDetails } from "@/lib/ai";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -1051,6 +1051,170 @@ export async function aiTranslateFields(
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "AI request failed." };
   }
+}
+
+// ── Fill Data (Google Places + Claude auto-fill) ───────────────────────────────
+
+/** Normalized result the admin place forms map onto their own setters. */
+export type PlaceFillData = {
+  googlePlaceId: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string | null;
+  website: string | null;
+  hours: string | null;
+  rating: number | null;
+  about: string;
+  facilities: string[];
+  sources: string[]; // human-readable note of where data came from
+};
+
+/** Best-effort fetch of a website's visible text, for grounding the AI. */
+async function fetchSiteText(url: string): Promise<string> {
+  try {
+    let u = url.trim();
+    if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch(u, { signal: ctrl.signal, redirect: "follow", headers: { "user-agent": "Mozilla/5.0 (compatible; TangselKidsBot/1.0)" } });
+    clearTimeout(timer);
+    if (!r.ok) return "";
+    const html = await r.text();
+    return html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 8000);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * "Fill Data": from a few critical fields (name, address, Google Place ID,
+ * Instagram), gather the rest. Google Places supplies the factual fields
+ * (phone, website, hours, coordinates, rating); Claude writes the descriptive
+ * fields (about, facilities) grounded in the place's website + Google summary.
+ * The form fills only its EMPTY fields with this, and the admin reviews before
+ * publishing — nothing is written to the database here.
+ */
+export async function aiFillPlaceData(input: {
+  category: string;
+  name: string;
+  address?: string;
+  googlePlaceId?: string;
+  instagram?: string;
+  website?: string;
+}): Promise<{ ok: true; data: PlaceFillData } | { ok: false; error: string }> {
+  await assertAdmin();
+
+  if (!input.name?.trim()) return { ok: false, error: "Isi Nama dulu, lalu klik Fill Data." };
+
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  const sources: string[] = [];
+
+  // ── 1) Google Places (factual) ──────────────────────────────────────────────
+  let placeId = input.googlePlaceId?.trim() || "";
+  let googleSummary = "";
+  let googleTypes: string[] = [];
+  const g: {
+    address: string | null; phone: string | null; website: string | null;
+    hours: string | null; lat: number | null; lng: number | null; rating: number | null;
+  } = { address: null, phone: null, website: null, hours: null, lat: null, lng: null, rating: null };
+
+  const detailFields =
+    "formatted_phone_number,international_phone_number,website,opening_hours,url," +
+    "geometry,formatted_address,rating,user_ratings_total,editorial_summary,types,name";
+
+  if (key) {
+    try {
+      // Resolve a Place ID from name+address if none was supplied.
+      if (!placeId) {
+        const query = [input.name, input.address, "Tangerang Selatan"].filter(Boolean).join(", ");
+        const r = await fetch(
+          "https://maps.googleapis.com/maps/api/place/textsearch/json" +
+            `?query=${encodeURIComponent(query)}&language=id&region=id&key=${key}`,
+          { cache: "no-store" },
+        );
+        const j = await r.json();
+        if (j.status === "OK" && j.results?.length) placeId = j.results[0].place_id;
+      }
+
+      if (placeId) {
+        const r = await fetch(
+          "https://maps.googleapis.com/maps/api/place/details/json" +
+            `?place_id=${encodeURIComponent(placeId)}&fields=${detailFields}&language=id&key=${key}`,
+          { cache: "no-store" },
+        );
+        const j = await r.json();
+        if (j.status === "OK" && j.result) {
+          const d = j.result;
+          g.address = d.formatted_address ?? null;
+          g.phone = d.formatted_phone_number ?? d.international_phone_number ?? null;
+          g.website = d.website ?? null;
+          g.hours = d.opening_hours?.weekday_text?.join("\n") ?? null;
+          g.lat = d.geometry?.location?.lat ?? null;
+          g.lng = d.geometry?.location?.lng ?? null;
+          g.rating = typeof d.rating === "number" ? d.rating : null;
+          googleSummary = d.editorial_summary?.overview ?? "";
+          googleTypes = Array.isArray(d.types) ? d.types : [];
+          sources.push("Google Places");
+        }
+      }
+    } catch {
+      /* Google is best-effort — keep going with whatever we have */
+    }
+  }
+
+  // ── 2) Claude (descriptive), grounded in the website + Google summary ────────
+  let about = "";
+  let facilities: string[] = [];
+  const websiteForAi = input.website?.trim() || g.website || "";
+  if (hasAnthropicKey()) {
+    try {
+      const siteText = websiteForAi ? await fetchSiteText(websiteForAi) : "";
+      const gen = await generatePlaceDetails({
+        name: input.name,
+        category: input.category,
+        address: input.address || g.address || undefined,
+        website: websiteForAi || undefined,
+        instagram: input.instagram || undefined,
+        googleSummary: googleSummary || undefined,
+        googleTypes,
+        siteText: siteText || undefined,
+      });
+      about = gen.about;
+      facilities = gen.facilities;
+      if (about || facilities.length) sources.push("Claude");
+    } catch {
+      /* AI is best-effort — return the Google data regardless */
+    }
+  }
+
+  if (!key && !hasAnthropicKey()) {
+    return { ok: false, error: "Belum ada GOOGLE_MAPS_API_KEY atau ANTHROPIC_API_KEY di server." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      googlePlaceId: placeId || null,
+      address: g.address,
+      latitude: g.lat,
+      longitude: g.lng,
+      phone: g.phone,
+      website: g.website,
+      hours: g.hours,
+      rating: g.rating,
+      about,
+      facilities,
+      sources,
+    },
+  };
 }
 
 /** Editable top-level columns on a submission (admin can fix/fill these by hand). */
