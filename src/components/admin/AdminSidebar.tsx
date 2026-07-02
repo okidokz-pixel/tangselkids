@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Users, Inbox, Star, MessageCircle, FileText, LineChart,
   BadgeCheck, FilePen,
   type LucideIcon,
 } from "lucide-react";
-import { createAdminClient } from "@/lib/supabase-browser";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getDraftsCount } from "@/app/admin/actions";
 import { AdminLogo } from "./AdminLogo";
 
@@ -37,7 +37,6 @@ const NAV_CATEGORIES = [
 
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
   const [draftCount, setDraftCount] = useState<number | null>(null);
 
@@ -51,9 +50,18 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   async function handleLogout() {
     setLoggingOut(true);
-    const supabase = createAdminClient();
-    await supabase.auth.signOut();
-    router.push("/admin/login");
+    try {
+      // Local scope only: clears the session cookies without a network call to
+      // revoke server-side. The global default can hang (leaving "Keluar…" stuck)
+      // if that request stalls — clearing locally is instant and enough here.
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Ignore — we redirect regardless so the admin never gets stuck.
+    }
+    // Hard redirect so middleware re-runs with the cleared cookies and confirms
+    // the sign-out (a soft router.push can leave the server session in place).
+    window.location.href = "/admin/login";
   }
 
   function isActive(href: string) {
