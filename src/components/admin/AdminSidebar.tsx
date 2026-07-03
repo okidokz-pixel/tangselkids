@@ -51,11 +51,15 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   async function handleLogout() {
     setLoggingOut(true);
     try {
-      // Local scope only: clears the session cookies without a network call to
-      // revoke server-side. The global default can hang (leaving "Keluar…" stuck)
-      // if that request stalls — clearing locally is instant and enough here.
+      // Local scope: clears the session cookies without a server-side revoke call.
+      // Race it against a short timeout — @supabase/ssr's browser client runs auth
+      // ops through the Web Locks API, and that await can hang indefinitely (stuck
+      // on "Keluar…"). The cookie clear happens fast; we just don't wait forever.
       const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut({ scope: "local" });
+      await Promise.race([
+        supabase.auth.signOut({ scope: "local" }),
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
     } catch {
       // Ignore — we redirect regardless so the admin never gets stuck.
     }
