@@ -122,9 +122,12 @@ function buildAreas(schools: Place[], lcs: Place[]): { key: AreaKey; counts: Rec
 }
 
 function countSchoolByGrade(gradeKey: string, areaKey: AreaKey, schools: Place[]): number {
+  // Count by the row's own jenjang (its single level) — NOT p.grades (the full
+  // range a school offers), which would count a TK–SMA school under every level
+  // and inflate the totals past the area count. This matches the /schools filter
+  // (s.jenjang === grade) and the tier-3 lang pills.
   return schools.filter(p =>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    p.grades?.includes(gradeKey as any) && matchesArea(p.area, areaKey)
+    p.jenjang === gradeKey && matchesArea(p.area, areaKey)
   ).length;
 }
 
@@ -773,53 +776,98 @@ function AreaPills({
   areas: { key: AreaKey; counts: Record<CategoryKey, number> }[];
 }) {
   const { t } = useLang();
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(true);
+
+  const updateArrows = () => {
+    const el = railRef.current;
+    if (!el) return;
+    setCanL(el.scrollLeft > 4);
+    setCanR(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const id = requestAnimationFrame(updateArrows);
+    return () => cancelAnimationFrame(id);
+  }, [category, areas.length]);
+
+  const nudge = (dir: number) => {
+    const el = railRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * 140, behavior: "smooth" });
+  };
+
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ flexShrink: 0 }}>
-        <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35 }}>
-          {t.homeAltAreaWhere}
-        </div>
+      <div style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", lineHeight: 1.35, whiteSpace: "pre-line" }}>
+        {t.homeAltAreaWhere.replace(" ", "\n")}
       </div>
-      <div style={{ display: "flex", gap: 8, flex: 1 }}>
-        {areas.map((a) => {
-          const active = value === a.key;
-          const displayLabel = a.key === "Semua" ? t.homeAltAreaAll : a.key;
-          return (
-            <Pressable
-              key={a.key}
-              scale={0.94}
-              onClick={() => onPick(a.key)}
-              style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: active
-                  ? "1px solid #0e1d4f"
-                  : "1px solid rgba(15,23,42,0.14)",
-                background: active ? "#0e1d4f" : "#fff",
-                display: "flex", alignItems: "center",
-                justifyContent: "center", gap: 5,
-                transition: "background .2s ease, border-color .2s ease",
-              }}
-            >
-              <span style={{
-                fontFamily: "var(--font-fraunces), Georgia, serif",
-                fontSize: 15.5, fontWeight: 700, letterSpacing: -0.2,
-                color: active ? "#fff" : "#0e1d4f",
-                whiteSpace: "nowrap",
-              }}>
-                {displayLabel}
-              </span>
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                color: active ? "rgba(255,255,255,0.8)" : "#94a3b8",
-                fontVariantNumeric: "tabular-nums",
-              }}>
-                {a.counts[category]}
-              </span>
-            </Pressable>
-          );
-        })}
+      <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+        {/* scrollable rail */}
+        <div
+          ref={railRef}
+          onScroll={updateArrows}
+          className="tk-age-rail"
+          style={{
+            display: "flex", gap: 8,
+            overflowX: "auto", overflowY: "hidden",
+            padding: "4px 2px 2px",
+            scrollbarWidth: "none",
+            margin: "0 -22px 0 0",
+            paddingLeft: 0, paddingRight: 22,
+          } as React.CSSProperties}
+        >
+          {areas.map((a) => {
+            const active = value === a.key;
+            const displayLabel = a.key === "Semua" ? t.homeAltAreaAll : a.key;
+            return (
+              <Pressable
+                key={a.key}
+                scale={0.94}
+                onClick={() => onPick(a.key)}
+                style={{
+                  flexShrink: 0,
+                  padding: "10px 16px",
+                  borderRadius: 999,
+                  border: active
+                    ? "1px solid #0e1d4f"
+                    : "1px solid rgba(15,23,42,0.14)",
+                  background: active ? "#0e1d4f" : "#fff",
+                  display: "flex", alignItems: "center",
+                  justifyContent: "center", gap: 5,
+                  transition: "background .2s ease, border-color .2s ease",
+                }}
+              >
+                <span style={{
+                  fontFamily: "var(--font-fraunces), Georgia, serif",
+                  fontSize: 15.5, fontWeight: 700, letterSpacing: -0.2,
+                  color: active ? "#fff" : "#0e1d4f",
+                  whiteSpace: "nowrap",
+                }}>
+                  {displayLabel}
+                </span>
+                <span style={{
+                  fontSize: 10, fontWeight: 700,
+                  color: active ? "rgba(255,255,255,0.8)" : "#94a3b8",
+                  fontVariantNumeric: "tabular-nums",
+                }}>
+                  {a.counts[category]}
+                </span>
+              </Pressable>
+            );
+          })}
+        </div>
+
+        {/* edge fade — right */}
+        <div style={{
+          position: "absolute", top: 0, bottom: 0, right: -22, width: 28,
+          background: "linear-gradient(270deg, #f6f1e8, rgba(246,241,232,0))",
+          opacity: canR ? 1 : 0, transition: "opacity .2s", pointerEvents: "none",
+        }} />
+
+        <RailArrow side="left"  show={canL} onClick={() => nudge(-1)} />
+        <RailArrow side="right" show={canR} onClick={() => nudge(1)}  />
       </div>
     </div>
   );
