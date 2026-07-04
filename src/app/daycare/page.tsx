@@ -130,7 +130,7 @@ function DaycareContent() {
   const view: "filter" | "results" =
     searchParams.get("view") === "results" ? "results" : "filter";
 
-  const [area,          setArea]          = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
+  const [area,          setArea]          = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
   const [usiaSelections, setUsiaSelections] = useState<string[]>(() => {
     const v = searchParams.get("usia");
     return v && v !== "all" ? v.split(",") : [];
@@ -284,9 +284,9 @@ function DaycareContent() {
           <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-              {(["all","bintaro","bsd"] as const).map(v => (
+              {(["all","bintaro","bsd","tangerang"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
-                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : "BSD"}
+                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : v === "bsd" ? "BSD" : "Tangerang"}
                 </Chip>
               ))}
               <AreaCoverageButton />
@@ -505,7 +505,7 @@ function DaycareContent() {
       {/* Active filter tags */}
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
-          {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
+          {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : area === "bsd" ? "BSD" : "Tangerang"} onRemove={() => setArea("all")} />}
           {usiaSelections.map(u => (
             <FTag key={u} label={u} onRemove={() => setUsiaSelections(prev => prev.filter(x => x !== u))} />
           ))}

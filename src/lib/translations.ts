@@ -49,7 +49,7 @@ export const translations = {
     homeCategoryKicker: "01 — Kategori",
     homeCategoryCount: "9 kategori",
     homeSchoolsPlaces: "9 tempat",
-    homeSchoolsDesc: "TK · SD · SMP · SMA — filter kurikulum & area",
+    homeSchoolsDesc: "TK · SD · SMP · SMA · SMK — filter kurikulum & area",
     homeLCPlaces: "6 tempat",
     homeLCDesc: "English · Math · Art · Music · Coding",
     homePlaygroundSub: "Indoor & outdoor",
@@ -479,6 +479,7 @@ export const translations = {
     areaAll: "Semua Area",
     areaBintaro: "Bintaro",
     areaBSD: "BSD",
+    areaTangerang: "Tangerang",
 
     // ── CATEGORY STUB ────────────────────────────────────────
     catComingSoon: "Segera Hadir",
@@ -842,7 +843,7 @@ export const translations = {
     // ── HOME-ALT PAGE ─────────────────────────────────────────
     homeAltTagline:        "Direktori cerdas orang tua di",
     homeAltFeatureKicker:  "FILTER CEPAT",
-    homeAltSchoolSub:      "TK · SD · SMP · SMA — kurikulum nasional, internasional & alam.",
+    homeAltSchoolSub:      "TK · SD · SMP · SMA · SMK — kurikulum nasional, internasional & alam.",
     homeAltKursusSub:      "English · Math · Art · Music · Coding — kelas privat & grup.",
     homeAltAreaWhere:      "DI MANA?",
     homeAltAreaAll:        "Semua",
@@ -1395,6 +1396,7 @@ export const translations = {
     areaAll: "All Areas",
     areaBintaro: "Bintaro",
     areaBSD: "BSD",
+    areaTangerang: "Tangerang",
 
     // ── CATEGORY STUB ────────────────────────────────────────
     catComingSoon: "Coming Soon",

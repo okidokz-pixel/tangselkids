@@ -55,6 +55,8 @@ export default function BookstoresPage() {
           <option value="all">All Areas</option>
           <option value="Bintaro">Bintaro</option>
           <option value="BSD">BSD</option>
+          <option value="Tangerang">Tangerang</option>
+          <option value="All">All</option>
         </select>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
           <input type="checkbox" checked={filterFeatured} onChange={(e) => setFilterFeatured(e.target.checked)} />

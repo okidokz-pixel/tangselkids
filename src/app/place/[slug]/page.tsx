@@ -1186,7 +1186,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         {/* Info chips */}
         {(() => {
           const ag = getAreaGroup(place.area);
-          const areaLabel = ag === "bsd" ? "BSD" : ag === "both" ? "Bintaro & BSD" : "Bintaro";
+          const areaLabel = ag === "bsd" ? "BSD" : ag === "tangerang" ? "Tangerang" : ag === "all" ? t.areaAll : "Bintaro";
           const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
             ? t.free
             : (!place.priceMax || place.priceMax === place.priceMin)

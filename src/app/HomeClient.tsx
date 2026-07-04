@@ -28,7 +28,7 @@ const P = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type AreaKey     = "Bintaro" | "BSD" | "Semua";
+type AreaKey     = "Bintaro" | "BSD" | "Tangerang" | "Semua";
 type CategoryKey = "sekolah" | "kursus";
 
 // ─── Typewriter words per language ───────────────────────────────────────────
@@ -46,6 +46,7 @@ const SCHOOL_LEVELS_DATA: Record<"id" | "en", { key: string; label: string; sub:
     { key: "SD",        label: "SD",        sub: "6–12 thn",  dot: "#1f9b6a" },
     { key: "SMP",       label: "SMP",       sub: "12–15 thn", dot: "#3a64ee" },
     { key: "SMA",       label: "SMA",       sub: "15–18 thn", dot: "#9c5a7a" },
+    { key: "SMK",       label: "SMK",       sub: "15–18 thn", dot: "#0d9488" },
   ],
   en: [
     { key: "Preschool", label: "Preschool",    sub: "2–4 yrs",   dot: "#f59e0b" },
@@ -53,6 +54,7 @@ const SCHOOL_LEVELS_DATA: Record<"id" | "en", { key: string; label: string; sub:
     { key: "SD",        label: "Primary",      sub: "6–12 yrs",  dot: "#1f9b6a" },
     { key: "SMP",       label: "Jr. High",     sub: "12–15 yrs", dot: "#3a64ee" },
     { key: "SMA",       label: "Sr. High",     sub: "15–18 yrs", dot: "#9c5a7a" },
+    { key: "SMK",       label: "Vocational",   sub: "15–18 yrs", dot: "#0d9488" },
   ],
 };
 
@@ -77,7 +79,10 @@ const LC_AGE_BANDS: Record<"id" | "en", { key: string; label: string; sub: strin
 function matchesArea(area: string, areaKey: AreaKey): boolean {
   if (areaKey === "Semua") return true;
   const g = getAreaGroup(area);
-  return g === "both" || g === (areaKey === "Bintaro" ? "bintaro" : "bsd");
+  // Area-wide places cover Bintaro + BSD, not Tangerang.
+  if (g === "all") return areaKey === "Bintaro" || areaKey === "BSD";
+  const want = areaKey === "Bintaro" ? "bintaro" : areaKey === "BSD" ? "bsd" : "tangerang";
+  return g === want;
 }
 
 // Mirrors the parsing logic in learning-centers/page.tsx
@@ -107,7 +112,7 @@ function matchesLCAgeGroup(ageRange: string | undefined, ageKey: string): boolea
 }
 
 function buildAreas(schools: Place[], lcs: Place[]): { key: AreaKey; counts: Record<CategoryKey, number> }[] {
-  return (["Bintaro", "BSD", "Semua"] as AreaKey[]).map(key => ({
+  return (["Bintaro", "BSD", "Tangerang", "Semua"] as AreaKey[]).map(key => ({
     key,
     counts: {
       sekolah: schools.filter(p => matchesArea(p.area, key)).length,

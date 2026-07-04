@@ -571,18 +571,24 @@ export async function fetchCategoryCounts(): Promise<Partial<Record<Place["categ
 
 export async function fetchAreaCounts(
   category: Place["category"],
-): Promise<{ bintaro: number; bsd: number; all: number }> {
+): Promise<{ bintaro: number; bsd: number; tangerang: number; all: number }> {
   const table = TABLE[category];
-  const [bintaroRes, bsdRes, allRes] = await Promise.all([
+  // "All"/"Semua" and legacy "Bintaro/BSD" are area-wide, so they count toward
+  // every specific area (mirrors getAreaGroup()/placeMatchesAreas()).
+  const AREA_WIDE = "area.eq.Bintaro/BSD,area.eq.All,area.eq.Semua Area";
+  const [bintaroRes, bsdRes, tangerangRes, allRes] = await Promise.all([
     supabase.from(table).select("*", { count: "exact", head: true })
-      .or("area.eq.Bintaro,area.eq.Bintaro/BSD"),
+      .or(`area.eq.Bintaro,${AREA_WIDE}`),
     supabase.from(table).select("*", { count: "exact", head: true })
-      .or("area.eq.BSD,area.eq.Bintaro/BSD"),
+      .or(`area.eq.BSD,${AREA_WIDE}`),
+    supabase.from(table).select("*", { count: "exact", head: true })
+      .eq("area", "Tangerang"),
     supabase.from(table).select("*", { count: "exact", head: true }),
   ]);
   return {
-    bintaro: bintaroRes.count ?? 0,
-    bsd:     bsdRes.count    ?? 0,
-    all:     allRes.count    ?? 0,
+    bintaro:   bintaroRes.count   ?? 0,
+    bsd:       bsdRes.count       ?? 0,
+    tangerang: tangerangRes.count ?? 0,
+    all:       allRes.count       ?? 0,
   };
 }

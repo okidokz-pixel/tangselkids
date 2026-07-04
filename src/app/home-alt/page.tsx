@@ -18,17 +18,18 @@ const P = {
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type AreaKey     = "Bintaro" | "BSD" | "Semua";
+type AreaKey     = "Bintaro" | "BSD" | "Tangerang" | "Semua";
 type CategoryKey = "sekolah" | "kursus";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const AREAS: { key: AreaKey; counts: Record<CategoryKey, number> }[] = [
-  { key: "Bintaro", counts: { sekolah: 5, kursus: 4 } },
-  { key: "BSD",     counts: { sekolah: 4, kursus: 2 } },
-  { key: "Semua",   counts: { sekolah: 9, kursus: 6 } },
+  { key: "Bintaro",   counts: { sekolah: 5, kursus: 4 } },
+  { key: "BSD",       counts: { sekolah: 4, kursus: 2 } },
+  { key: "Tangerang", counts: { sekolah: 0, kursus: 0 } },
+  { key: "Semua",     counts: { sekolah: 9, kursus: 6 } },
 ];
 
-const AREA_MULT: Record<AreaKey, number> = { Bintaro: 1.0, BSD: 0.78, Semua: 1.7 };
+const AREA_MULT: Record<AreaKey, number> = { Bintaro: 1.0, BSD: 0.78, Tangerang: 0.5, Semua: 1.7 };
 
 const SCHOOL_LEVELS = [
   { label: "Preschool", sub: "2–4 thn",   dot: "#f59e0b", count: 2 },
@@ -36,6 +37,7 @@ const SCHOOL_LEVELS = [
   { label: "SD",        sub: "6–12 thn",  dot: "#1f9b6a", count: 5 },
   { label: "SMP",       sub: "12–15 thn", dot: "#3a64ee", count: 3 },
   { label: "SMA",       sub: "15–18 thn", dot: "#9c5a7a", count: 2 },
+  { label: "SMK",       sub: "15–18 thn", dot: "#0d9488", count: 0 },
 ];
 
 const KURSUS_AGES = [
@@ -768,7 +770,7 @@ function FeaturePair() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
         <FeatureSquare
           title="Sekolah" count="9"
-          sub="TK · SD · SMP · SMA — kurikulum nasional, internasional & alam."
+          sub="TK · SD · SMP · SMA · SMK — kurikulum nasional, internasional & alam."
           photo={P.sekolah}
           tone="linear-gradient(165deg,rgba(58,100,238,0.85) 0%,rgba(30,63,176,0.92) 100%)"
           accent="#f6b545"

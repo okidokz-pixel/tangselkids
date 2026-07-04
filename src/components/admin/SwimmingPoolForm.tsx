@@ -10,7 +10,7 @@ import { saveSwimmingPool, deleteSwimmingPool } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
 import { ImproveButton, TranslateButton } from "./AiButtons";
 
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 
 function generateSlug(name: string) {
   return name.toLowerCase()

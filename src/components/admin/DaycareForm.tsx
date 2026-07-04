@@ -16,7 +16,7 @@ const AGE_GROUP_OPTIONS = [
 const METHOD_OPTIONS = [
   "Montessori", "Play-based", "Structured", "Waldorf", "Reggio Emilia",
 ];
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 
 function generateSlug(name: string) {
   return name.toLowerCase()

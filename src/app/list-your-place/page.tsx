@@ -14,7 +14,7 @@ import { compressImage } from "@/lib/compressImage";
 // ── Category-specific options ─────────────────────────────────────────────────
 const CURRICULA       = ["Nasional","Cambridge","International Baccalaureate (IB)","Islamic","Montessori","Lainnya"];
 const BAHASA          = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"];
-const GRADES          = ["Preschool","TK","SD","SMP","SMA"];
+const GRADES          = ["Preschool","TK","SD","SMP","SMA","SMK"];
 const COURSE_TYPES    = ["Bahasa Inggris","Matematika","Seni Rupa","Musik & Vokal","Coding / Robotik","Tari & Balet","Gimnastik","Bahasa Mandarin"];
 const DAYCARE_AGES    = ["Bayi (0–1 thn)","Toddler (1–2 thn)","Balita (2–4 thn)","Usia 4+ thn"];
 const PLAYGROUND_TYPES = ["Indoor","Outdoor","Arcade","Trampoline"];
@@ -969,7 +969,7 @@ export default function ListYourPlacePage() {
         <div style={FIELD}>
           <label style={LABEL}>{t.listLabelArea} <span style={{ color: "#ef4444" }}>*</span></label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {(["Bintaro", "BSD"] as const).map(v => (
+            {(["Bintaro", "BSD", "Tangerang"] as const).map(v => (
               <RadioChip
                 key={v} name="list-area" value={v} label={v}
                 checked={area === v} onChange={() => { setArea(v); setErrors(prev => ({ ...prev, area: false })); }}

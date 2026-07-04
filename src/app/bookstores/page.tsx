@@ -79,7 +79,7 @@ function BookstoresContent() {
   const view: "filter" | "results" =
     searchParams.get("view") === "results" ? "results" : "filter";
 
-  const [area,    setArea]    = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
+  const [area,    setArea]    = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
   const [sortBy,  setSortBy]  = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
   const [sortSeed]            = useState(() => Math.random());
   const [compareIds,  setCompareIds]  = useState<string[]>([]);
@@ -177,9 +177,9 @@ function BookstoresContent() {
           <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-              {(["all","bintaro","bsd"] as const).map(v => (
+              {(["all","bintaro","bsd","tangerang"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
-                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : "BSD"}
+                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : v === "bsd" ? "BSD" : "Tangerang"}
                 </Chip>
               ))}
               <AreaCoverageButton />
@@ -314,7 +314,7 @@ function BookstoresContent() {
       {/* Active filter tags */}
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
-          {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
+          {area !== "all" && <FTag label={area === "bintaro" ? "Bintaro" : area === "bsd" ? "BSD" : "Tangerang"} onRemove={() => setArea("all")} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>

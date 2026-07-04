@@ -22,7 +22,7 @@ const SERVICE_OPTIONS = [
   "Snoezel / Stimulasi Multisensori",
   "Terapi Renang",
 ];
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 
 function generateSlug(name: string) {
   return name.toLowerCase()

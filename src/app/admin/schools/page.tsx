@@ -9,7 +9,7 @@ import { getSchools, toggleSchoolFeatured } from "../actions";
 type School = Awaited<ReturnType<typeof getSchools>>[number];
 
 const JENJANG_COLORS: Record<string, string> = {
-  Preschool: "#fef3c7", TK: "#fce7f3", SD: "#eff2fa", SMP: "#f0fdf4", SMA: "#fef2f2",
+  Preschool: "#fef3c7", TK: "#fce7f3", SD: "#eff2fa", SMP: "#f0fdf4", SMA: "#fef2f2", SMK: "#eef2ff",
 };
 
 export default function SchoolsPage() {
@@ -41,14 +41,19 @@ export default function SchoolsPage() {
 
   const filtered = schools.filter((s) => {
     const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase());
-    const matchArea = filterArea === "all" || s.area === filterArea || (filterArea === "Bintaro" && s.area?.includes("Bintaro")) || (filterArea === "BSD" && s.area?.includes("BSD"));
+    const areaWide = s.area === "All" || s.area === "Semua Area" || s.area === "Bintaro/BSD";
+    const matchArea = filterArea === "all" || s.area === filterArea
+      || (filterArea === "Bintaro"   && s.area?.includes("Bintaro"))
+      || (filterArea === "BSD"       && s.area?.includes("BSD"))
+      || (filterArea === "Tangerang" && s.area === "Tangerang")
+      || (filterArea !== "all" && filterArea !== "All" && areaWide);
     const matchJenjang = filterJenjang === "all" || s.jenjang === filterJenjang;
     const matchFeatured = !filterFeatured || s.is_featured;
     return matchSearch && matchArea && matchJenjang && matchFeatured;
   });
 
-  const areas = ["all", "Bintaro", "BSD", "Bintaro/BSD"];
-  const jenjangs = ["all", "Preschool", "TK", "SD", "SMP", "SMA"];
+  const areas = ["all", "Bintaro", "BSD", "Tangerang", "All"];
+  const jenjangs = ["all", "Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
 
   return (
     <div>

@@ -11,11 +11,11 @@ import { ImproveButton, TranslateButton } from "./AiButtons";
 import { FillDataButton } from "./FillDataButton";
 import type { PlaceFillData } from "@/app/admin/actions";
 
-const JENJANG_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const JENJANG_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 const CURRICULUM_CATEGORY_OPTIONS = ["Nasional", "Cambridge", "International Baccalaureate (IB)", "Islamic", "Montessori", "Lainnya"];
 const BAHASA_OPTIONS = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
-const GRADE_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
+const GRADE_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
 
 const JENJANG_BUCKET: Record<string, string> = {
   "Preschool": "school-image-preschool",
@@ -23,6 +23,7 @@ const JENJANG_BUCKET: Record<string, string> = {
   "SD": "school-image-sd",
   "SMP": "school-image-smp",
   "SMA": "school-image-sma",
+  "SMK": "school-image-smk",
 };
 
 function generateSlug(name: string) {

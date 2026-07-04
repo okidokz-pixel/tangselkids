@@ -1,4 +1,4 @@
-export type Grade = "Preschool" | "TK" | "SD" | "SMP" | "SMA";
+export type Grade = "Preschool" | "TK" | "SD" | "SMP" | "SMA" | "SMK";
 
 export type Review = {
   name: string;
@@ -114,23 +114,33 @@ export type Place = {
 };
 
 /** Returns which area group a place belongs to. */
-export function getAreaGroup(area: string): "bintaro" | "bsd" | "both" {
+export function getAreaGroup(area: string): "bintaro" | "bsd" | "tangerang" | "all" {
   const a = area.toLowerCase();
-  if (a.includes("bintaro") && a.includes("bsd")) return "both";
+  // Explicit "All" / "Semua" and legacy "Bintaro/BSD" both mean area-wide.
+  if (a.includes("semua") || a.trim() === "all") return "all";
+  if (a.includes("bintaro") && a.includes("bsd")) return "all";
+  // Tangerang Selatan is the umbrella that contains Bintaro + BSD → area-wide.
+  // Check this BEFORE the bare "tangerang" match below, since "tangerang selatan"
+  // also contains the substring "tangerang".
+  if (a.includes("tangsel") || a.includes("tangerang selatan")) return "all";
   if (a.includes("bsd")) return "bsd";
-  if (a.includes("tangsel") || a.includes("tangerang selatan")) return "both";
+  if (a.includes("bintaro")) return "bintaro";
+  // A bare "Tangerang" (Kota/Kabupaten Tangerang, north of Tangsel) is its own group.
+  if (a.includes("tangerang")) return "tangerang";
   return "bintaro";
 }
 
 /**
  * Returns true if the place matches at least one of the selected area groups.
  * Pass an empty array (or ["all"]) to match everything.
- * Places whose getAreaGroup() === "both" always match any selection.
+ * Places whose getAreaGroup() === "all" always match any selection.
  */
 export function placeMatchesAreas(place: Place, selectedAreas: string[]): boolean {
   if (selectedAreas.length === 0 || selectedAreas.includes("all")) return true;
   const group = getAreaGroup(place.area);
-  if (group === "both") return true;
+  // Area-wide places (legacy "Bintaro/BSD" / "All") cover Bintaro + BSD only,
+  // NOT Tangerang — so the Tangerang filter shows only schools tagged Tangerang.
+  if (group === "all") return selectedAreas.includes("bintaro") || selectedAreas.includes("bsd");
   return selectedAreas.includes(group);
 }
 

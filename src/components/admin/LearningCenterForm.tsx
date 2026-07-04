@@ -14,7 +14,7 @@ const COURSE_TYPE_OPTIONS = [
   "Bahasa Inggris", "Matematika", "Seni Rupa", "Musik & Vokal",
   "Coding / Robotik", "Tari & Balet", "Gimnastik", "Bahasa Mandarin",
 ];
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 const TEACHING_LANG_OPTIONS = ["Indonesia", "Inggris", "Indonesia + Inggris", "Mandarin"];
 
 function generateSlug(name: string) {

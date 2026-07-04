@@ -136,8 +136,8 @@ function GoogleEnrich({
 
 // ── Editable fields ───────────────────────────────────────────────────────────
 
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
-const GRADE_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
+const GRADE_OPTIONS = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
 const BAHASA_OPTIONS = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
 const CURRICULUM_CATEGORY_OPTIONS = ["Nasional", "Cambridge", "International Baccalaureate (IB)", "Islamic", "Montessori", "Lainnya"];
 

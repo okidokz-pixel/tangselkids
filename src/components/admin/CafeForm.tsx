@@ -10,7 +10,7 @@ import { ImproveButton, TranslateButton } from "./AiButtons";
 import { FillDataButton } from "./FillDataButton";
 import type { PlaceFillData } from "@/app/admin/actions";
 
-const AREA_OPTIONS = ["Bintaro", "BSD", "Bintaro/BSD"];
+const AREA_OPTIONS = ["Bintaro", "BSD", "Tangerang", "All"];
 
 function generateSlug(name: string) {
   return name.toLowerCase()

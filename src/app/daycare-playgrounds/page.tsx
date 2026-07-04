@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { getAreaGroup, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { AreaToggle, type AreaFilter } from "@/components/AreaToggle";
@@ -22,12 +22,12 @@ export default function DaycarePlaygroundsPage() {
   }, []);
 
   const filteredDaycares = daycares
-    .filter((d) => activeArea === "all" || getAreaGroup(d.area) === activeArea);
+    .filter((d) => placeMatchesAreas(d, [activeArea]));
 
   const filteredPlaygrounds = playgrounds
     .filter((p) => playgroundFilter === "all" || p.playgroundType === playgroundFilter)
     .filter((p) => !freeOnly || p.isFree)
-    .filter((p) => activeArea === "all" || getAreaGroup(p.area) === activeArea);
+    .filter((p) => placeMatchesAreas(p, [activeArea]));
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col pb-10">

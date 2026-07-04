@@ -2,7 +2,7 @@
 import { useLang } from "@/context/LanguageContext";
 import { AreaCoverageButton } from "./AreaCoverageButton";
 
-export type AreaFilter = "all" | "bintaro" | "bsd";
+export type AreaFilter = "all" | "bintaro" | "bsd" | "tangerang";
 
 interface Props {
   value: AreaFilter;
@@ -14,9 +14,10 @@ export function AreaToggle({ value, onChange }: Props) {
   const { t } = useLang();
 
   const options: { v: AreaFilter; label: string }[] = [
-    { v: "all",     label: t.areaAll     },
-    { v: "bintaro", label: t.areaBintaro },
-    { v: "bsd",     label: t.areaBSD     },
+    { v: "all",       label: t.areaAll       },
+    { v: "bintaro",   label: t.areaBintaro   },
+    { v: "bsd",       label: t.areaBSD       },
+    { v: "tangerang", label: t.areaTangerang },
   ];
 
   return (

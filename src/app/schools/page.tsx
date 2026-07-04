@@ -122,7 +122,7 @@ function SectionHead({ children }: { children: React.ReactNode }) {
 // ── Constants ─────────────────────────────────────────────────────────────────
 // Derived dynamically from allPlaces — see useMemo below
 const BAHASA = ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"];
-const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA"];
+const GRADES: Grade[] = ["Preschool","TK","SD","SMP","SMA","SMK"];
 
 const UP_LABELS: Record<string, string> = {
   all:    "Semua",
@@ -213,7 +213,7 @@ function SchoolsContent() {
   const view: "filter" | "results" =
     searchParams.get("view") === "results" ? "results" : "filter";
 
-  const [area,       setArea]       = useState<"all"|"bintaro"|"bsd">((searchParams.get("area") as "all"|"bintaro"|"bsd") ?? "all");
+  const [area,       setArea]       = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
   const [grade,      setGrade]      = useState(searchParams.get("grade") ?? "all");
   const [curricula,  setCurricula]  = useState<string[]>(() => {
     const v = searchParams.get("cur");
@@ -373,9 +373,9 @@ function SchoolsContent() {
           <div style={{ background: "#fff", borderRadius: 16, padding: "10px 14px", border: "1px solid #ede8df" }}>
             <SectionHead>Area</SectionHead>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-              {(["all","bintaro","bsd"] as const).map(v => (
+              {(["all","bintaro","bsd","tangerang"] as const).map(v => (
                 <Chip key={v} name="f-area" value={v} checked={area === v} onChange={() => setArea(v)}>
-                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : "BSD"}
+                  {v === "all" ? t.filterAll : v === "bintaro" ? "Bintaro" : v === "bsd" ? "BSD" : "Tangerang"}
                 </Chip>
               ))}
               <AreaCoverageButton />
@@ -635,7 +635,7 @@ function SchoolsContent() {
       {/* Active filter tags */}
       {activeCount > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 14px 0", alignItems: "center" }}>
-          {area !== "all"   && <FTag label={area === "bintaro" ? "Bintaro" : "BSD"} onRemove={() => setArea("all")} />}
+          {area !== "all"   && <FTag label={area === "bintaro" ? "Bintaro" : area === "bsd" ? "BSD" : "Tangerang"} onRemove={() => setArea("all")} />}
           {grade !== "all"  && <FTag label={`Jenjang: ${grade}`}                   onRemove={() => setGrade("all")} />}
           {curricula.map(c  => <FTag key={c} label={`Kurikulum: ${c}`}             onRemove={() => setCurricula(prev => prev.filter(x => x !== c))} />)}
           {bahasaFilter.map(b => <FTag key={b} label={`Bahasa: ${b}`}              onRemove={() => setBahasaFilter(prev => prev.filter(x => x !== b))} />)}

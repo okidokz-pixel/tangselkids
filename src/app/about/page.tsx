@@ -3,8 +3,15 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, MapPin, Heart, Star, Users } from "lucide-react";
 
 const COVERAGE = {
-  bintaro: ["Bintaro Jaya", "Pondok Aren", "Pesanggrahan", "Ciputat", "Ciputat Timur", "Pamulang"],
-  bsd:     ["BSD City", "Serpong", "Serpong Utara", "Gading Serpong", "Alam Sutera", "Cisauk", "Pagedangan"],
+  bintaro:   ["Bintaro Jaya", "Pondok Aren", "Pesanggrahan", "Ciputat", "Ciputat Timur", "Pamulang"],
+  bsd:       ["BSD City", "Serpong", "Serpong Utara", "Gading Serpong", "Alam Sutera", "Cisauk", "Pagedangan"],
+  tangerang: ["Karawaci", "Cikokol", "Cibodas", "Ciledug", "Karang Tengah", "Tangerang Kota"],
+};
+
+const COVERAGE_STYLE: Record<keyof typeof COVERAGE, { bg: string; border: string; head: string; text: string; label: string }> = {
+  bintaro:   { bg: "#f0fdf4", border: "#bbf7d0", head: "#166534", text: "#15803d", label: "Bintaro" },
+  bsd:       { bg: "#eff6ff", border: "#bfdbfe", head: "#1d4ed8", text: "#1d4ed8", label: "BSD" },
+  tangerang: { bg: "#fef2f2", border: "#fecaca", head: "#b91c1c", text: "#b91c1c", label: "Tangerang" },
 };
 import { BottomNav } from "@/components/BottomNav";
 
@@ -126,26 +133,28 @@ export default function AboutPage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {(["bintaro", "bsd"] as const).map((area) => (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            {(["bintaro", "bsd", "tangerang"] as const).map((area) => {
+              const st = COVERAGE_STYLE[area];
+              return (
               <div key={area} style={{
-                background: area === "bintaro" ? "#f0fdf4" : "#eff6ff",
+                background: st.bg,
                 borderRadius: 14, padding: "12px 14px 14px",
-                border: `1.5px solid ${area === "bintaro" ? "#bbf7d0" : "#bfdbfe"}`,
+                border: `1.5px solid ${st.border}`,
               }}>
                 <p style={{
                   fontFamily: "var(--font-fraunces), Georgia, serif",
                   fontSize: 13, fontWeight: 700,
-                  color: area === "bintaro" ? "#166534" : "#1d4ed8",
+                  color: st.head,
                   margin: "0 0 8px",
                 }}>
-                  {area === "bintaro" ? "Bintaro" : "BSD"}
+                  {st.label}
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   {COVERAGE[area].map((name) => (
                     <span key={name} style={{
                       fontSize: 11.5,
-                      color: area === "bintaro" ? "#15803d" : "#1d4ed8",
+                      color: st.text,
                       fontFamily: "var(--font-jakarta), sans-serif",
                       fontWeight: 500, lineHeight: 1.4,
                     }}>
@@ -154,7 +163,8 @@ export default function AboutPage() {
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
