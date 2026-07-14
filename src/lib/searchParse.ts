@@ -28,7 +28,21 @@ export type SearchIntent = {
   bahasa: string[];                    // e.g. ["Inggris"] (schools only)
   playgroundType: "indoor" | "outdoor" | null; // playground only
   free: boolean;                       // "gratis" — playground only (for now)
+  services: string[];                  // clinic service slugs (clinic only)
   keywords: string | null;             // leftover free text (e.g. a place name)
+};
+
+// Clinic service slug (what the parser emits) → canonical value stored in the DB.
+const SERVICE_CANON: Record<string, string> = {
+  wicara: "Terapi Wicara",
+  okupasi: "Terapi Okupasi",
+  fisioterapi: "Fisioterapi",
+  sensori: "Sensori Integrasi (SI)",
+  psikologi: "Psikologi Anak",
+  aba: "Perilaku / ABA",
+  dokter: "Konsultasi Dokter Anak",
+  "tumbuh-kembang": "Asesmen & Tumbuh Kembang",
+  kognitif: "Terapi Kognitif",
 };
 
 // Category → its listing page path.
@@ -75,6 +89,7 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
   "bahasa": array of any of ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"] mentioned, else [],
   "playgroundType": "indoor" | "outdoor" (playground only), or null,
   "free": true if the parent wants free/"gratis" places (mainly playgrounds), else false,
+  "services": array of clinic service slugs mentioned (clinic only), else [],
   "keywords": leftover meaningful text such as a place name, else null
 }
 
@@ -97,6 +112,7 @@ Rules:
 - Do not invent values not implied by the text. Use null / [] when unsure.
 - "curriculum": include ANY curriculum, pedagogy, or teaching-method keyword the parent mentions. Use these canonical short forms for the well-known ones: "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". For other methods, emit the phrase as written (e.g. "play-based"/"play based" -> "Play-Based"; "reggio" -> "Reggio"; "waldorf" -> "Waldorf"; "bilingual" -> "Bilingual"; "steam" -> "STEAM"). Do NOT map a bare "internasional" to any specific curriculum (ambiguous) — leave curriculum empty unless a named framework/method is given.
 - "playgroundType": for playground queries, "indoor" or "outdoor" if the parent says so, else null. "free": true if they ask for gratis/free.
+- "services" (CLINIC only): emit slugs for children's-clinic services the parent names, from: "wicara" (terapi wicara/speech therapy), "okupasi" (terapi okupasi/OT), "fisioterapi" (physio), "sensori" (sensori integrasi/SI), "psikologi" (psikolog anak), "aba" (terapi perilaku/ABA), "dokter" (konsultasi dokter anak), "tumbuh-kembang" (asesmen/tumbuh kembang), "kognitif" (terapi kognitif). Only for category "clinic".
 
 Examples:
 "TK di pamulang dengan SPP di bawah 1 juta" -> {"category":"school","jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
@@ -155,6 +171,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     bahasa: arrOf(p.bahasa, BAHASA),
     playgroundType: oneOf(p.playgroundType, ["indoor", "outdoor"]) as SearchIntent["playgroundType"],
     free: p.free === true,
+    services: arrOf(p.services, Object.keys(SERVICE_CANON)),
     keywords: typeof p.keywords === "string" && p.keywords.trim() ? p.keywords.trim() : null,
   };
 }
@@ -162,7 +179,8 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
 function emptyIntent(): SearchIntent {
   return {
     category: null, jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
-    uangPangkalMax: null, curriculum: [], bahasa: [], playgroundType: null, free: false, keywords: null,
+    uangPangkalMax: null, curriculum: [], bahasa: [], playgroundType: null, free: false,
+    services: [], keywords: null,
   };
 }
 
@@ -194,6 +212,11 @@ function buildCategoryUrl(category: Category, i: SearchIntent): string {
   if (category === "playground") {
     if (i.playgroundType) p.set("type", i.playgroundType);
     if (i.free) p.set("price", "gratis");
+  }
+  if (category === "clinic" && i.services.length) {
+    // The clinics page filter is single-select — use the first named service.
+    const canon = SERVICE_CANON[i.services[0]];
+    if (canon) p.set("service", canon);
   }
   p.set("view", "results");
   return `${CATEGORY_PATH[category]}?${p.toString()}`;

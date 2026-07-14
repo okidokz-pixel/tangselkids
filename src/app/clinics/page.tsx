@@ -92,6 +92,20 @@ const HEADER_STYLE = {
   borderRadius: "0 0 28px 28px", padding: "44px 20px 22px",
 };
 
+// Tolerant service match — the `services` data has variants ("Sensori Integrasi"
+// vs "Sensori Integrasi (SI)", "Perilaku / ABA" vs "Terapi Perilaku (ABA)"), so
+// compare on a punctuation/space-stripped basis, matching either direction.
+function clinicHasService(c: Place, service: string): boolean {
+  if (service === "all") return true;
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const want = norm(service);
+  if (!want) return true;
+  return (c.clinicServices ?? []).some(s => {
+    const sn = norm(s);
+    return sn.includes(want) || want.includes(sn);
+  });
+}
+
 function ClinicsContent() {
   const { t } = useLang();
   const { userLat, userLng, locationStatus, requestLocation } = useLocation();
@@ -173,7 +187,7 @@ function ClinicsContent() {
     return list
       .filter(c => area === "all" || placeMatchesAreas(c, [area]))
       .filter(c => placeMatchesLoc(c, loc))
-      .filter(c => service === "all" || c.clinicServices?.includes(service))
+      .filter(c => clinicHasService(c, service))
       .filter(c => matchesBiaya(c.priceMin));
   }
 
