@@ -144,6 +144,19 @@ export function placeMatchesAreas(place: Place, selectedAreas: string[]): boolea
   return selectedAreas.includes(group);
 }
 
+/**
+ * True if the place matches a free-text neighborhood/kecamatan query (e.g.
+ * "Pamulang"). Used by the smart-search `loc` filter across every category.
+ */
+export function placeMatchesLoc(place: Place, loc: string): boolean {
+  if (!loc) return true;
+  const q = loc.toLowerCase();
+  return (place.locationDetail ?? "").toLowerCase().includes(q)
+    || (place.address ?? "").toLowerCase().includes(q)
+    || place.name.toLowerCase().includes(q)
+    || (place.area ?? "").toLowerCase().includes(q);
+}
+
 export function formatPrice(price: number): string {
   if (price === 0) return "Gratis";
   if (price >= 1000000) {

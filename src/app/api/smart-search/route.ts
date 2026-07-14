@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseSearchQuery, buildSchoolsUrl, isStructured, hasAnthropicKey } from "@/lib/searchParse";
+import { parseSearchQuery, buildResultsUrl, hasAnthropicKey } from "@/lib/searchParse";
 
 /**
  * Smart search — turns a natural-language query ("TK di Pamulang dengan SPP di
@@ -23,12 +23,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const intent = await parseSearchQuery(query);
-    const structured = isStructured(intent);
-    return NextResponse.json({
-      structured,
-      url: structured ? buildSchoolsUrl(intent) : null,
-      intent,
-    });
+    const url = buildResultsUrl(intent);
+    return NextResponse.json({ structured: url !== null, url, intent });
   } catch (err) {
     console.error("[smart-search] parse failed:", err);
     return NextResponse.json({ structured: false, url: null, intent: null });

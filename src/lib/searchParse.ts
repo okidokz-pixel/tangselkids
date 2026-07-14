@@ -12,16 +12,34 @@ import Anthropic from "@anthropic-ai/sdk";
  */
 const MODEL = "claude-haiku-4-5";
 
+export type Category =
+  | "school" | "learning-center" | "daycare" | "playground" | "clinic"
+  | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore";
+
 export type SearchIntent = {
-  jenjang: string | null;              // Preschool | TK | SD | SMP | SMA | SMK
+  category: Category | null;           // which listing the parent wants
+  jenjang: string | null;              // Preschool | TK | SD | SMP | SMA | SMK (schools only)
   area: "bintaro" | "bsd" | "tangerang" | null; // broad area group only
   location: string | null;             // specific kecamatan/neighborhood (e.g. "Pamulang")
-  sppMax: number | null;               // monthly fee ceiling, rupiah
-  sppMin: number | null;               // monthly fee floor, rupiah
-  uangPangkalMax: number | null;       // enrollment fee ceiling, rupiah
-  curriculum: string[];                // e.g. ["Cambridge", "Islam"]
-  bahasa: string[];                    // e.g. ["Inggris"]
-  keywords: string | null;             // leftover free text (e.g. a school name)
+  sppMax: number | null;               // monthly fee ceiling, rupiah (schools only)
+  sppMin: number | null;               // monthly fee floor, rupiah (schools only)
+  uangPangkalMax: number | null;       // enrollment fee ceiling, rupiah (schools only)
+  curriculum: string[];                // e.g. ["Cambridge", "Islam"] (schools only)
+  bahasa: string[];                    // e.g. ["Inggris"] (schools only)
+  keywords: string | null;             // leftover free text (e.g. a place name)
+};
+
+// Category → its listing page path.
+const CATEGORY_PATH: Record<Category, string> = {
+  school: "/schools",
+  "learning-center": "/learning-centers",
+  daycare: "/daycare",
+  playground: "/playgrounds",
+  clinic: "/clinics",
+  cafe: "/cafes",
+  "mini-zoo": "/mini-zoo",
+  "swimming-pool": "/swimming-pools",
+  bookstore: "/bookstores",
 };
 
 export function hasAnthropicKey(): boolean {
@@ -44,6 +62,7 @@ const SYSTEM = `You extract structured school-search filters from an Indonesian 
 
 Return ONLY a JSON object with these exact keys (no markdown, no commentary):
 {
+  "category": one of "school" | "learning-center" | "daycare" | "playground" | "clinic" | "cafe" | "mini-zoo" | "swimming-pool" | "bookstore", or null,
   "jenjang": one of "Preschool" | "TK" | "SD" | "SMP" | "SMA" | "SMK", or null,
   "area": one of "bintaro" | "bsd" | "tangerang", or null,
   "location": a specific neighborhood/kecamatan string (e.g. "Pamulang", "Serpong", "Cipondoh"), or null,
@@ -56,6 +75,18 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
 }
 
 Rules:
+- CATEGORY: infer which listing the parent wants:
+  - "school": mentions "sekolah", a jenjang (TK/SD/SMP/SMA/SMK/preschool/playgroup), or a school curriculum (Cambridge/IB/nasional/montessori).
+  - "learning-center": "kursus", "les", "bimbel", "bimbingan belajar", "tempat belajar", "english course", "math"/"coding"/"musik"/"seni" class, "sanggar".
+  - "daycare": "daycare", "penitipan anak", "tempat penitipan", "TPA", "childcare".
+  - "playground": "playground", "tempat main", "taman bermain", "playpark", "arena bermain".
+  - "clinic": "klinik", "dokter anak", "pediatri", "tumbuh kembang", "terapi anak", "imunisasi", "vaksin".
+  - "cafe": "kafe", "cafe", "restoran/tempat makan ramah anak".
+  - "mini-zoo": "kebun binatang", "mini zoo", "petting zoo", "kontak hewan".
+  - "swimming-pool": "kolam renang", "berenang", "swimming", "les renang".
+  - "bookstore": "toko buku", "bookstore", "toko alat tulis".
+  If none is clear but a jenjang/curriculum/SPP is present, use "school". Otherwise null.
+- The school-only fields (jenjang, sppMax, sppMin, uangPangkalMax, curriculum, bahasa) apply ONLY when category is "school" — leave them null/[] for other categories.
 - jenjang synonyms: "playgroup"/"KB"/"paud" -> "Preschool"; "SMA"/"SMU" -> "SMA"; "SMK"/"vokasi" -> "SMK". Only set jenjang if a school LEVEL is named.
 - Money: "juta"/"jt" = 1000000, "ribu"/"rb"/"k" = 1000. "di bawah"/"kurang dari"/"maksimal"/"under" -> a max. "di atas"/"minimal"/"lebih dari" -> a min. "gratis" -> sppMax 0. "SPP"/"per bulan"/"bulanan" = monthly (sppMax/sppMin). "uang pangkal"/"uang masuk"/"pangkal" = uangPangkalMax.
 - AREA vs LOCATION: If the parent names a BROAD area — "Bintaro", "BSD", or "Tangerang" — set "area" (bintaro/bsd/tangerang) and leave "location" null. If they name a SPECIFIC neighborhood/kecamatan (Pamulang, Serpong, Ciputat, Cipondoh, Karawaci, Ciledug, Alam Sutera, etc.), set "location" to that name and leave "area" null.
@@ -63,10 +94,12 @@ Rules:
 - "curriculum": map "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". Do NOT map a bare "internasional" to any specific curriculum (it is ambiguous) — leave curriculum empty unless a named framework (Cambridge/IB) is given.
 
 Examples:
-"TK di pamulang dengan SPP di bawah 1 juta" -> {"jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
-"SD islam di BSD uang pangkal maksimal 20 juta" -> {"jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":20000000,"curriculum":["Islam"],"bahasa":[],"keywords":null}
-"SD kurikulum IB di BSD" -> {"jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["IB"],"bahasa":[],"keywords":null}
-"sekolah cambridge bahasa inggris di tangerang" -> {"jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["Cambridge"],"bahasa":["Inggris"],"keywords":null}`;
+"TK di pamulang dengan SPP di bawah 1 juta" -> {"category":"school","jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"SD kurikulum IB di BSD" -> {"category":"school","jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["IB"],"bahasa":[],"keywords":null}
+"daycare di serpong" -> {"category":"daycare","jenjang":null,"area":null,"location":"Serpong","sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"les bahasa inggris di bintaro" -> {"category":"learning-center","jenjang":null,"area":"bintaro","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"klinik tumbuh kembang anak di BSD" -> {"category":"clinic","jenjang":null,"area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"playground di tangerang" -> {"category":"playground","jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}`;
 
 /** Parse a free-text query into structured school filters. */
 export async function parseSearchQuery(query: string): Promise<SearchIntent> {
@@ -87,6 +120,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     return emptyIntent();
   }
 
+  const CATEGORIES = Object.keys(CATEGORY_PATH);
   const JENJANG = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
   const AREA = ["bintaro", "bsd", "tangerang"];
   const CURRICULUM = ["Nasional", "Cambridge", "IB", "Islam", "Kristen", "Montessori"];
@@ -100,6 +134,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && list.includes(x)) : [];
 
   return {
+    category: oneOf(p.category, CATEGORIES) as Category | null,
     jenjang: oneOf(p.jenjang, JENJANG),
     area: oneOf(p.area, AREA) as SearchIntent["area"],
     location: typeof p.location === "string" && p.location.trim() ? p.location.trim() : null,
@@ -114,19 +149,18 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
 
 function emptyIntent(): SearchIntent {
   return {
-    jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
+    category: null, jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
     uangPangkalMax: null, curriculum: [], bahasa: [], keywords: null,
   };
 }
 
-/** True when the intent carries at least one structured school filter. */
-export function isStructured(i: SearchIntent): boolean {
-  return !!(i.jenjang || i.area || i.location || i.sppMax != null || i.sppMin != null ||
+function hasSchoolSignal(i: SearchIntent): boolean {
+  return !!(i.jenjang || i.sppMax != null || i.sppMin != null ||
     i.uangPangkalMax != null || i.curriculum.length || i.bahasa.length);
 }
 
 /** Build a /schools URL that pre-applies the parsed filters. */
-export function buildSchoolsUrl(i: SearchIntent): string {
+function buildSchoolsUrl(i: SearchIntent): string {
   const p = new URLSearchParams();
   if (i.jenjang) p.set("grade", i.jenjang);
   if (i.area) p.set("area", i.area);
@@ -138,4 +172,27 @@ export function buildSchoolsUrl(i: SearchIntent): string {
   if (i.bahasa.length) p.set("bhs", i.bahasa.join(","));
   p.set("view", "results");
   return `/schools?${p.toString()}`;
+}
+
+/** Build a non-school category listing URL (area + location filters). */
+function buildCategoryUrl(category: Category, i: SearchIntent): string {
+  const p = new URLSearchParams();
+  if (i.area) p.set("area", i.area);
+  if (i.location) p.set("loc", i.location);
+  p.set("view", "results");
+  return `${CATEGORY_PATH[category]}?${p.toString()}`;
+}
+
+/**
+ * Resolve the parsed intent to a results URL, or null when it isn't a routable
+ * structured query (e.g. a bare place name → keep the plain search/dropdown).
+ */
+export function buildResultsUrl(i: SearchIntent): string | null {
+  // A leftover proper name (e.g. "Cikal", "Ora et Labora") means the parent is
+  // looking for one specific place — let the plain keyword dropdown handle it,
+  // rather than dumping them onto a filtered category list.
+  if (i.keywords) return null;
+  if (i.category === "school" || (!i.category && hasSchoolSignal(i))) return buildSchoolsUrl(i);
+  if (i.category) return buildCategoryUrl(i.category, i);
+  return null;
 }

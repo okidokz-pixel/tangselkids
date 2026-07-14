@@ -3,7 +3,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, Sparkles, X } from "lucide-react";
-import { placeMatchesAreas, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesLoc, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { BottomNav } from "@/components/BottomNav";
@@ -72,10 +72,12 @@ function OthersContent() {
     searchParams.get("view") === "results" ? "results" : "filter";
 
   const [area,   setArea]   = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
+  const [loc] = useState(searchParams.get("loc") ?? "");
   const [sortBy, setSortBy] = useState<"alpha"|"za">((searchParams.get("sort") as "alpha"|"za") ?? "alpha");
 
   const filtered = allPlaces
     .filter(p => area === "all" || placeMatchesAreas(p, [area]))
+    .filter(p => placeMatchesLoc(p, loc))
     .sort((a, b) => {
       if (a.isFeatured && !b.isFeatured) return -1;
       if (!a.isFeatured && b.isFeatured) return 1;

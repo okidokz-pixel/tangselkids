@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Scale } from "lucide-react";
-import { placeMatchesAreas, haversineKm, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesLoc, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
@@ -136,6 +136,7 @@ function ClinicsContent() {
     searchParams.get("view") === "results" ? "results" : "filter";
 
   const [area,    setArea]    = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
+  const [loc] = useState(searchParams.get("loc") ?? "");
   const [service, setService] = useState(searchParams.get("service") ?? "all");
   const [biaya,   setBiaya]   = useState(searchParams.get("biaya") ?? "all");
   const [sortBy,  setSortBy]  = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
@@ -171,6 +172,7 @@ function ClinicsContent() {
   function applyFilters(list: Place[]) {
     return list
       .filter(c => area === "all" || placeMatchesAreas(c, [area]))
+      .filter(c => placeMatchesLoc(c, loc))
       .filter(c => service === "all" || c.clinicServices?.includes(service))
       .filter(c => matchesBiaya(c.priceMin));
   }

@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check, Scale } from "lucide-react";
-import { placeMatchesAreas, haversineKm, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesLoc, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
@@ -189,6 +189,7 @@ function LearningCentersContent() {
 
   // ── Filter state ─────────────────────────────────────────────────────────────
   const [area,         setArea]         = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
+  const [loc] = useState(searchParams.get("loc") ?? "");
   const [courseTypes,  setCourseTypes]  = useState<string[]>(() => {
     const v = searchParams.get("course");
     return v && v !== "all" ? v.split(",") : [];
@@ -224,6 +225,7 @@ function LearningCentersContent() {
   const featuredSpot = useMemo(() => {
     const candidates = allFeatured
       .filter(c => area === "all" || placeMatchesAreas(c, [area]))
+      .filter(c => placeMatchesLoc(c, loc))
       .filter(c => courseTypes.length === 0 || courseTypes.some(ct => c.courseTypes?.includes(ct)))
       .filter(c => matchesRegFee(c.registrationFeeMin, regFeeBucket))
       .filter(c => matchesMonthlyFee(c.priceMin, monthlyBucket))
@@ -237,6 +239,7 @@ function LearningCentersContent() {
   const filtered = allPlaces
     .filter(c => c.id !== featuredSpot?.id)
     .filter(c => area === "all" || placeMatchesAreas(c, [area]))
+    .filter(c => placeMatchesLoc(c, loc))
     .filter(c => courseTypes.length === 0 || courseTypes.some(ct => c.courseTypes?.includes(ct)))
     .filter(c => matchesRegFee(c.registrationFeeMin, regFeeBucket))
     .filter(c => matchesMonthlyFee(c.priceMin, monthlyBucket))
