@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronDown, SlidersHorizontal, Check, Scale, ArrowUpDown, X } from "lucide-react";
-import { placeMatchesAreas, haversineKm, type Grade, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesFeatures, haversineKm, type Grade, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
@@ -269,6 +269,7 @@ function SchoolsContent() {
   const [sppMax, setSppMax] = useState<number | null>(() => { const v = searchParams.get("sppMax"); return v ? Number(v) : null; });
   const [sppMin, setSppMin] = useState<number | null>(() => { const v = searchParams.get("sppMin"); return v ? Number(v) : null; });
   const [upMax,  setUpMax]  = useState<number | null>(() => { const v = searchParams.get("upMax"); return v ? Number(v) : null; });
+  const [feats, setFeats] = useState<string[]>(() => { const v = searchParams.get("feat"); return v ? v.split(",").map(s => s.trim()).filter(Boolean) : []; });
   const [sortBy,      setSortBy]      = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"nearest") ?? "nearest");
   const [sortSeed]                    = useState(() => Math.random());
   const [compareIds,  setCompareIds]  = useState<string[]>([]);
@@ -290,6 +291,7 @@ function SchoolsContent() {
       .filter(s => matchesLoc(s, loc))
       .filter(s => matchesSppMinMax(s.priceMin, sppMin, sppMax))
       .filter(s => matchesUpMax(s.uangPangkalMin, upMax))
+      .filter(s => placeMatchesFeatures(s, feats))
       .filter(s => {
         if (classSizeBucket === "all") return true;
         if (s.studentsPerClass === undefined) return false;
@@ -314,6 +316,7 @@ function SchoolsContent() {
     .filter(s => matchesLoc(s, loc))
     .filter(s => matchesSppMinMax(s.priceMin, sppMin, sppMax))
     .filter(s => matchesUpMax(s.uangPangkalMin, upMax))
+    .filter(s => placeMatchesFeatures(s, feats))
     .filter(s => {
       if (classSizeBucket === "all") return true;
       if (s.studentsPerClass === undefined) return false;
@@ -340,14 +343,14 @@ function SchoolsContent() {
     area !== "all", grade !== "all", curricula.length > 0,
     bahasaFilter.length > 0, upBucket !== "all", sppBucket !== "all",
     classSizeBucket !== "all",
-    loc !== "", sppMax != null, sppMin != null, upMax != null,
+    loc !== "", sppMax != null, sppMin != null, upMax != null, feats.length > 0,
   ].filter(Boolean).length;
 
   function resetFilters() {
     setArea("all"); setGrade("all"); setCurricula([]);
     setBahasaFilter([]); setUpBucket("all"); setSppBucket("all");
     setClassSizeBucket("all");
-    setLoc(""); setSppMax(null); setSppMin(null); setUpMax(null);
+    setLoc(""); setSppMax(null); setSppMin(null); setUpMax(null); setFeats([]);
   }
 
   const rp = (n: number) => n >= 1_000_000
@@ -367,6 +370,7 @@ function SchoolsContent() {
     if (sppMax != null) p.set("sppMax", String(sppMax));
     if (sppMin != null) p.set("sppMin", String(sppMin));
     if (upMax != null) p.set("upMax", String(upMax));
+    if (feats.length > 0) p.set("feat", feats.join(","));
     if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
@@ -383,6 +387,7 @@ function SchoolsContent() {
     if (sppMax != null) p.set("sppMax", String(sppMax));
     if (sppMin != null) p.set("sppMin", String(sppMin));
     if (upMax != null) p.set("upMax", String(upMax));
+    if (feats.length > 0) p.set("feat", feats.join(","));
     if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
@@ -709,6 +714,7 @@ function SchoolsContent() {
           {sppMax != null   && <FTag label={`SPP ≤ Rp ${rp(sppMax)}`}          onRemove={() => setSppMax(null)} />}
           {sppMin != null   && <FTag label={`SPP ≥ Rp ${rp(sppMin)}`}          onRemove={() => setSppMin(null)} />}
           {upMax != null    && <FTag label={`UP ≤ Rp ${rp(upMax)}`}            onRemove={() => setUpMax(null)} />}
+          {feats.map(f      => <FTag key={f} label={f} onRemove={() => setFeats(prev => prev.filter(x => x !== f))} />)}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>

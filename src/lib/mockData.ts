@@ -157,6 +157,31 @@ export function placeMatchesLoc(place: Place, loc: string): boolean {
     || (place.area ?? "").toLowerCase().includes(q);
 }
 
+/**
+ * Generic free-text "feature" match for smart search — the long tail of
+ * extracurriculars (Karate), facilities (Mushola), course types (gimnastik),
+ * methods (Montessori, Play-based), teaching language (Bilingual), etc. Every
+ * requested feature must appear (normalized, punctuation/space-insensitive) in
+ * some searchable text field. Scales to any keyword without enumeration.
+ */
+export function placeMatchesFeatures(place: Place, features: string[]): boolean {
+  if (!features.length) return true;
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const parts = [
+    place.name, place.facilities, place.facilitiesEn, place.extracurriculars, place.extracurricularsEn,
+    place.curriculum, place.curriculumCategory, place.description,
+    place.teachingLanguageDisplay, place.teachingLanguage, place.daycareMethod, place.ageRange,
+    (place.courseTypes ?? []).join(" "), (place.clinicServices ?? []).join(" "),
+    (place.daycareAgeGroups ?? []).join(" "), (place.bahasa ?? []).join(" "),
+    place.playgroundTypeRaw,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+  const hay = norm(parts.join(" "));
+  return features.every((f) => {
+    const fn = norm(f);
+    return fn.length >= 3 && hay.includes(fn);
+  });
+}
+
 export function formatPrice(price: number): string {
   if (price === 0) return "Gratis";
   if (price >= 1000000) {

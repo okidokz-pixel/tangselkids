@@ -30,6 +30,10 @@ export type SearchIntent = {
   free: boolean;                       // "gratis" — playground only (for now)
   services: string[];                  // clinic service slugs (clinic only)
   ageYears: number | null;             // child's age in years (learning-center / daycare)
+  features: string[];                  // free-text keywords: extracurriculars, facilities, method, course, language…
+  priceMax: number | null;             // generic price/ticket ceiling for NON-school categories, rupiah
+  hasCctv: boolean;                    // daycare — wants CCTV
+  hasAccreditation: boolean;           // daycare — wants accredited
   keywords: string | null;             // leftover free text (e.g. a place name)
 };
 
@@ -108,6 +112,10 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
   "free": true if the parent wants free/"gratis" places (mainly playgrounds), else false,
   "services": array of clinic service slugs mentioned (clinic only), else [],
   "ageYears": the child's age in YEARS as a number if given (learning-center/daycare), fractions ok, else null,
+  "features": array of distinctive free-text feature keywords the parent mentions — extracurriculars (karate, futsal, renang, robotik, coding), facilities (mushola, kolam renang, trampolin, wall climbing, gokart, perpustakaan), teaching method (montessori, play-based), teaching language (bilingual), course types (gimnastik, musik, tari) — else [],
+  "priceMax": a generic price/ticket ceiling in rupiah for NON-school categories (e.g. swim ticket, monthly course/daycare fee), else null,
+  "hasCctv": true if a daycare with CCTV is requested, else false,
+  "hasAccreditation": true if an accredited/terakreditasi daycare is requested, else false,
   "keywords": leftover meaningful text such as a place name, else null
 }
 
@@ -132,6 +140,9 @@ Rules:
 - "playgroundType": for playground queries, "indoor" or "outdoor" if the parent says so, else null. "free": true if they ask for gratis/free.
 - "services" (CLINIC only): emit slugs for children's-clinic services the parent names, from: "wicara" (terapi wicara/speech therapy), "okupasi" (terapi okupasi/OT), "fisioterapi" (physio), "sensori" (sensori integrasi/SI), "psikologi" (psikolog anak), "aba" (terapi perilaku/ABA), "dokter" (konsultasi dokter anak), "tumbuh-kembang" (asesmen/tumbuh kembang), "kognitif" (terapi kognitif). Only for category "clinic".
 - "ageYears" (learning-center or daycare): the child's age in years. Map: "X tahun"/"umur X"/"anak X tahun" -> X; "X bulan" -> X/12; "bayi" -> 0.5; "batita"/"toddler" -> 1.5; "balita" -> 3; "remaja"/"teenager"/"ABG" -> 14. Leave null if no age is implied.
+- "features": pull out concrete activity/facility/method/language keywords, lowercased, as the parent said them (e.g. "karate", "mushola", "gimnastik", "montessori", "play-based", "bilingual", "wall climbing"). Do NOT include generic words (bagus, murah, dekat, terbaik) or the category word itself. These are for the non-jenjang free-text match.
+- "priceMax": the money handling above, but for NON-school price/ticket (e.g. "tiket di bawah 50ribu", "biaya bulanan maksimal 500rb"). Use sppMax/uangPangkalMax only for schools; use priceMax for every other category.
+- "hasCctv"/"hasAccreditation": daycare — set true when the parent asks for CCTV or an accredited/terakreditasi daycare.
 
 Examples:
 "TK di pamulang dengan SPP di bawah 1 juta" -> {"category":"school","jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
@@ -139,7 +150,12 @@ Examples:
 "daycare di serpong" -> {"category":"daycare","jenjang":null,"area":null,"location":"Serpong","sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
 "les bahasa inggris di bintaro" -> {"category":"learning-center","jenjang":null,"area":"bintaro","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
 "klinik tumbuh kembang anak di BSD" -> {"category":"clinic","jenjang":null,"area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
-"playground di tangerang" -> {"category":"playground","jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}`;
+"playground di tangerang" -> {"category":"playground","jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"SD dengan ekskul karate di bintaro" -> {"category":"school","jenjang":"SD","area":"bintaro","location":null,"curriculum":[],"bahasa":[],"features":["karate"],"keywords":null}
+"tempat les gimnastik dengan bahasa bilingual" -> {"category":"learning-center","area":null,"location":null,"features":["gimnastik","bilingual"],"keywords":null}
+"kolam renang di bintaro dengan tiket di bawah 50ribu" -> {"category":"swimming-pool","area":"bintaro","location":null,"priceMax":50000,"features":[],"keywords":null}
+"daycare montessori ber-CCTV di BSD" -> {"category":"daycare","area":"bsd","location":null,"features":["montessori"],"hasCctv":true,"keywords":null}
+"playground dengan mushola di serpong" -> {"category":"playground","area":null,"location":"Serpong","features":["mushola"],"keywords":null}`;
 
 /** Parse a free-text query into structured school filters. */
 export async function parseSearchQuery(query: string): Promise<SearchIntent> {
@@ -192,6 +208,10 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     free: p.free === true,
     services: arrOf(p.services, Object.keys(SERVICE_CANON)),
     ageYears: num(p.ageYears),
+    features: strArr(p.features),
+    priceMax: num(p.priceMax),
+    hasCctv: p.hasCctv === true,
+    hasAccreditation: p.hasAccreditation === true,
     keywords: typeof p.keywords === "string" && p.keywords.trim() ? p.keywords.trim() : null,
   };
 }
@@ -200,7 +220,8 @@ function emptyIntent(): SearchIntent {
   return {
     category: null, jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
     uangPangkalMax: null, curriculum: [], bahasa: [], playgroundType: null, free: false,
-    services: [], ageYears: null, keywords: null,
+    services: [], ageYears: null, features: [], priceMax: null,
+    hasCctv: false, hasAccreditation: false, keywords: null,
   };
 }
 
@@ -220,6 +241,7 @@ function buildSchoolsUrl(i: SearchIntent): string {
   if (i.uangPangkalMax != null) p.set("upMax", String(i.uangPangkalMax));
   if (i.curriculum.length) p.set("cur", i.curriculum.join(","));
   if (i.bahasa.length) p.set("bhs", i.bahasa.join(","));
+  if (i.features.length) p.set("feat", i.features.join(","));
   p.set("view", "results");
   return `/schools?${p.toString()}`;
 }
@@ -229,6 +251,12 @@ function buildCategoryUrl(category: Category, i: SearchIntent): string {
   const p = new URLSearchParams();
   if (i.area) p.set("area", i.area);
   if (i.location) p.set("loc", i.location);
+  if (i.features.length) p.set("feat", i.features.join(","));
+  if (i.priceMax != null) p.set("priceMax", String(i.priceMax));
+  if (category === "daycare") {
+    if (i.hasCctv) p.set("cctv", "yes");
+    if (i.hasAccreditation) p.set("acc", "yes");
+  }
   if (category === "playground") {
     if (i.playgroundType) p.set("type", i.playgroundType);
     if (i.free) p.set("price", "gratis");

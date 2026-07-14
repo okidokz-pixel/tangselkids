@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Check, Scale } from "lucide-react";
-import { placeMatchesAreas, placeMatchesLoc, haversineKm, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesLoc, placeMatchesFeatures, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
@@ -174,6 +174,8 @@ function DaycareContent() {
 
   const [area,          setArea]          = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
   const [loc] = useState(searchParams.get("loc") ?? "");
+  const [feats] = useState<string[]>(() => { const v = searchParams.get("feat"); return v ? v.split(",").map(s => s.trim()).filter(Boolean) : []; });
+  const [priceMax] = useState<number | null>(() => { const v = searchParams.get("priceMax"); return v ? Number(v) : null; });
   const [usiaSelections, setUsiaSelections] = useState<string[]>(() => {
     const v = searchParams.get("usia");
     return v && v !== "all" ? v.split(",") : [];
@@ -217,6 +219,8 @@ function DaycareContent() {
     return list
       .filter(d => area === "all" || placeMatchesAreas(d, [area]))
       .filter(d => placeMatchesLoc(d, loc))
+      .filter(d => placeMatchesFeatures(d, feats))
+      .filter(d => priceMax == null || d.priceMin <= priceMax)
       .filter(d => daycareMatchesUsia(d.daycareAgeGroups, usiaSelections))
       .filter(d => matchesPriceBucket(d))
       .filter(d => {

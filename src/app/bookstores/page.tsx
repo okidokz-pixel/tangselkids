@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, SlidersHorizontal, ArrowUpDown, X, Scale } from "lucide-react";
-import { placeMatchesAreas, placeMatchesLoc, haversineKm, type Place } from "@/lib/mockData";
+import { placeMatchesAreas, placeMatchesLoc, placeMatchesFeatures, haversineKm, type Place } from "@/lib/mockData";
 import { fetchPlacesByCategory } from "@/lib/db";
 import { useLocation } from "@/context/LocationContext";
 import { useLang } from "@/context/LanguageContext";
@@ -81,6 +81,8 @@ function BookstoresContent() {
 
   const [area,    setArea]    = useState<"all"|"bintaro"|"bsd"|"tangerang">((searchParams.get("area") as "all"|"bintaro"|"bsd"|"tangerang") ?? "all");
   const [loc] = useState(searchParams.get("loc") ?? "");
+  const [feats] = useState<string[]>(() => { const v = searchParams.get("feat"); return v ? v.split(",").map(s => s.trim()).filter(Boolean) : []; });
+  const [priceMax] = useState<number | null>(() => { const v = searchParams.get("priceMax"); return v ? Number(v) : null; });
   const [sortBy,  setSortBy]  = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"random"|"nearest") ?? "nearest");
   const [sortSeed]            = useState(() => Math.random());
   const [compareIds,  setCompareIds]  = useState<string[]>([]);
@@ -106,7 +108,9 @@ function BookstoresContent() {
   function applyFilters(list: Place[]) {
     return list
       .filter(b => area === "all" || placeMatchesAreas(b, [area]))
-      .filter(b => placeMatchesLoc(b, loc));
+      .filter(b => placeMatchesLoc(b, loc))
+      .filter(b => placeMatchesFeatures(b, feats))
+      .filter(b => priceMax == null || b.priceMin <= priceMax);
   }
 
   const featuredSpot = useMemo(() => {
