@@ -275,6 +275,34 @@ const SEARCH_COLUMNS: Record<Place["category"], string[]> = {
   other:             ["name", "area"],
 };
 
+// Jenjang words → the exact `jenjang` value they should match. Keeps "sd" from
+// matching "BSD" in the area column (and "smp"/"sma" etc. from matching names).
+const JENJANG_TOKEN: Record<string, string> = {
+  sd: "sd", tk: "tk", smp: "smp", sma: "sma", smk: "smk",
+  preschool: "preschool", kb: "preschool", paud: "preschool", playgroup: "preschool",
+};
+
+// The text a free-text token may match against, per mapped place.
+function searchHaystack(p: Place): string {
+  return [p.name, p.jenjang, p.curriculum, p.curriculumCategory, p.area, p.locationDetail, p.address]
+    .filter(Boolean).join(" ").toLowerCase();
+}
+
+/**
+ * Strict, in-JS enforcement of "every typed word must actually be present":
+ * a jenjang word must equal the row's jenjang; any other word must appear as a
+ * substring in a searchable field. This guards against loose DB matches (e.g.
+ * "sd" matching the "BSD" area) so results genuinely contain what was typed.
+ */
+function placeMatchesAllTokens(p: Place, tokens: string[], category: Place["category"]): boolean {
+  return tokens.every((tok) => {
+    if (category === "school" && JENJANG_TOKEN[tok]) {
+      return (p.jenjang ?? "").toLowerCase() === JENJANG_TOKEN[tok];
+    }
+    return searchHaystack(p).includes(tok);
+  });
+}
+
 export async function searchAllPlaces(query: string, limit = 30): Promise<Place[]> {
   // Split into words so order doesn't matter and each word can match a
   // different field. Strip chars that would break PostgREST's .or() syntax.
@@ -291,14 +319,24 @@ export async function searchAllPlaces(query: string, limit = 30): Promise<Place[
       const cols = SEARCH_COLUMNS[category];
       let q = supabase.from(TABLE[category]).select("*");
       // Each word must match SOME column (AND across words, OR across columns).
-      // Chained .or() calls are ANDed together by PostgREST.
+      // A jenjang word is constrained to the jenjang column so "sd" can't match
+      // "BSD"; everything else stays a broad cross-column match.
       for (const token of tokens) {
-        q = q.or(cols.map((c) => `${c}.ilike.*${token}*`).join(","));
+        if (category === "school" && JENJANG_TOKEN[token]) {
+          q = q.ilike("jenjang", JENJANG_TOKEN[token]);
+        } else {
+          q = q.or(cols.map((c) => `${c}.ilike.*${token}*`).join(","));
+        }
       }
       const { data } = await q
         .order("is_featured", { ascending: false })
-        .limit(limit);
-      return (data ?? []).map((row) => mapRow(row, category));
+        .limit(limit * 4);
+      // Belt-and-suspenders: re-check every token in JS so a loose DB match
+      // (or any PostgREST quirk) can't leak a place that lacks a typed word.
+      return (data ?? [])
+        .map((row) => mapRow(row, category))
+        .filter((p) => placeMatchesAllTokens(p, tokens, category))
+        .slice(0, limit);
     })
   );
   return results.flat();
