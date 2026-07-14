@@ -1,0 +1,140 @@
+import "server-only";
+import Anthropic from "@anthropic-ai/sdk";
+
+/**
+ * Natural-language → structured school filters, for the homepage smart search.
+ * Turns queries like "TK di Pamulang dengan SPP di bawah 1 juta" into filters the
+ * /schools page already understands (grade, area, location, price ceilings, etc.).
+ *
+ * Server-only. Reads ANTHROPIC_API_KEY (the same Console key the admin translate
+ * feature uses). Uses Haiku — cheap + fast, ideal for this extraction task.
+ * Only runs on explicit submit (never per-keystroke), so cost stays negligible.
+ */
+const MODEL = "claude-haiku-4-5";
+
+export type SearchIntent = {
+  jenjang: string | null;              // Preschool | TK | SD | SMP | SMA | SMK
+  area: "bintaro" | "bsd" | "tangerang" | null; // broad area group only
+  location: string | null;             // specific kecamatan/neighborhood (e.g. "Pamulang")
+  sppMax: number | null;               // monthly fee ceiling, rupiah
+  sppMin: number | null;               // monthly fee floor, rupiah
+  uangPangkalMax: number | null;       // enrollment fee ceiling, rupiah
+  curriculum: string[];                // e.g. ["Cambridge", "Islam"]
+  bahasa: string[];                    // e.g. ["Inggris"]
+  keywords: string | null;             // leftover free text (e.g. a school name)
+};
+
+export function hasAnthropicKey(): boolean {
+  return !!process.env.ANTHROPIC_API_KEY;
+}
+
+function textOf(message: Anthropic.Message): string {
+  return message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+}
+
+function stripFences(s: string): string {
+  return s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+}
+
+const SYSTEM = `You extract structured school-search filters from an Indonesian (or mixed ID/EN) sentence typed by a parent on TangselKids, a children's directory for the Greater Tangerang area (Tangerang Selatan + Kota Tangerang), Indonesia.
+
+Return ONLY a JSON object with these exact keys (no markdown, no commentary):
+{
+  "jenjang": one of "Preschool" | "TK" | "SD" | "SMP" | "SMA" | "SMK", or null,
+  "area": one of "bintaro" | "bsd" | "tangerang", or null,
+  "location": a specific neighborhood/kecamatan string (e.g. "Pamulang", "Serpong", "Cipondoh"), or null,
+  "sppMax": monthly tuition (SPP) ceiling in rupiah as a number, or null,
+  "sppMin": monthly tuition floor in rupiah as a number, or null,
+  "uangPangkalMax": enrollment-fee (uang pangkal) ceiling in rupiah as a number, or null,
+  "curriculum": array of any of ["Nasional","Cambridge","International Baccalaureate (IB)","Islam","Montessori"] mentioned, else [],
+  "bahasa": array of any of ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"] mentioned, else [],
+  "keywords": leftover meaningful text such as a school name, else null
+}
+
+Rules:
+- jenjang synonyms: "playgroup"/"KB"/"paud" -> "Preschool"; "SMA"/"SMU" -> "SMA"; "SMK"/"vokasi" -> "SMK". Only set jenjang if a school LEVEL is named.
+- Money: "juta"/"jt" = 1000000, "ribu"/"rb"/"k" = 1000. "di bawah"/"kurang dari"/"maksimal"/"under" -> a max. "di atas"/"minimal"/"lebih dari" -> a min. "gratis" -> sppMax 0. "SPP"/"per bulan"/"bulanan" = monthly (sppMax/sppMin). "uang pangkal"/"uang masuk"/"pangkal" = uangPangkalMax.
+- AREA vs LOCATION: If the parent names a BROAD area — "Bintaro", "BSD", or "Tangerang" — set "area" (bintaro/bsd/tangerang) and leave "location" null. If they name a SPECIFIC neighborhood/kecamatan (Pamulang, Serpong, Ciputat, Cipondoh, Karawaci, Ciledug, Alam Sutera, etc.), set "location" to that name and leave "area" null.
+- Do not invent values not implied by the text. Use null / [] when unsure.
+- "curriculum": map "internasional"/"cambridge" -> "Cambridge"; "IB" -> "International Baccalaureate (IB)"; "islam"/"islami"/"agama" -> "Islam"; "nasional"/"kurikulum merdeka" -> "Nasional"; "montessori" -> "Montessori".
+
+Examples:
+"TK di pamulang dengan SPP di bawah 1 juta" -> {"jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
+"SD islam di BSD uang pangkal maksimal 20 juta" -> {"jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":20000000,"curriculum":["Islam"],"bahasa":[],"keywords":null}
+"sekolah cambridge bahasa inggris di tangerang" -> {"jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["Cambridge"],"bahasa":["Inggris"],"keywords":null}`;
+
+/** Parse a free-text query into structured school filters. */
+export async function parseSearchQuery(query: string): Promise<SearchIntent> {
+  const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 512,
+    system: SYSTEM,
+    messages: [{ role: "user", content: query.slice(0, 400) }],
+  });
+
+  const raw = stripFences(textOf(message));
+  let p: Record<string, unknown>;
+  try {
+    p = JSON.parse(raw);
+  } catch {
+    return emptyIntent();
+  }
+
+  const JENJANG = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
+  const AREA = ["bintaro", "bsd", "tangerang"];
+  const CURRICULUM = ["Nasional", "Cambridge", "International Baccalaureate (IB)", "Islam", "Montessori"];
+  const BAHASA = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
+
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
+  const oneOf = (v: unknown, list: string[]): string | null =>
+    typeof v === "string" && list.includes(v) ? v : null;
+  const arrOf = (v: unknown, list: string[]): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && list.includes(x)) : [];
+
+  return {
+    jenjang: oneOf(p.jenjang, JENJANG),
+    area: oneOf(p.area, AREA) as SearchIntent["area"],
+    location: typeof p.location === "string" && p.location.trim() ? p.location.trim() : null,
+    sppMax: num(p.sppMax),
+    sppMin: num(p.sppMin),
+    uangPangkalMax: num(p.uangPangkalMax),
+    curriculum: arrOf(p.curriculum, CURRICULUM),
+    bahasa: arrOf(p.bahasa, BAHASA),
+    keywords: typeof p.keywords === "string" && p.keywords.trim() ? p.keywords.trim() : null,
+  };
+}
+
+function emptyIntent(): SearchIntent {
+  return {
+    jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
+    uangPangkalMax: null, curriculum: [], bahasa: [], keywords: null,
+  };
+}
+
+/** True when the intent carries at least one structured school filter. */
+export function isStructured(i: SearchIntent): boolean {
+  return !!(i.jenjang || i.area || i.location || i.sppMax != null || i.sppMin != null ||
+    i.uangPangkalMax != null || i.curriculum.length || i.bahasa.length);
+}
+
+/** Build a /schools URL that pre-applies the parsed filters. */
+export function buildSchoolsUrl(i: SearchIntent): string {
+  const p = new URLSearchParams();
+  if (i.jenjang) p.set("grade", i.jenjang);
+  if (i.area) p.set("area", i.area);
+  if (i.location) p.set("loc", i.location);
+  if (i.sppMax != null) p.set("sppMax", String(i.sppMax));
+  if (i.sppMin != null) p.set("sppMin", String(i.sppMin));
+  if (i.uangPangkalMax != null) p.set("upMax", String(i.uangPangkalMax));
+  if (i.curriculum.length) p.set("cur", i.curriculum.join(","));
+  if (i.bahasa.length) p.set("bhs", i.bahasa.join(","));
+  p.set("view", "results");
+  return `/schools?${p.toString()}`;
+}

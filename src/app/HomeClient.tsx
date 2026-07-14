@@ -286,13 +286,31 @@ function HeroSearch() {
   }, [query]);
 
   const showDropdown = query.trim().length > 0;
+  const [smartLoading, setSmartLoading] = useState(false);
+
+  // Smart search: only on explicit submit/tap (never per-keystroke). Sends the
+  // sentence to the AI parser; if it yields structured filters, jump to the
+  // pre-filtered /schools page. Otherwise fall back to the plain explore search.
+  async function runSmartSearch(q: string) {
+    if (!q || smartLoading) return;
+    track("search", { search_term: q });
+    setSmartLoading(true);
+    try {
+      const res = await fetch("/api/smart-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      const data = await res.json();
+      if (data?.structured && data?.url) { router.push(data.url); return; }
+    } catch { /* fall through to plain search */ }
+    finally { setSmartLoading(false); }
+    router.push(`/explore?q=${encodeURIComponent(q)}`);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-    track("search", { search_term: q });
-    router.push(`/explore?q=${encodeURIComponent(q)}`);
+    runSmartSearch(query.trim());
   }
 
   return (
@@ -366,6 +384,30 @@ function HeroSearch() {
             boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
             overflow: "clip",
           }}>
+            {/* Smart search action — runs the AI parser on tap */}
+            <button
+              type="button"
+              onClick={() => runSmartSearch(query.trim())}
+              onTouchEnd={(e) => { e.preventDefault(); runSmartSearch(query.trim()); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 9, width: "100%",
+                padding: "9px 14px", border: "none", cursor: "pointer", textAlign: "left",
+                borderBottom: "1px solid rgba(15,23,42,0.06)",
+                background: "rgba(46,138,90,0.06)",
+                touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{smartLoading ? "⏳" : "🔍"}</span>
+              <span style={{
+                fontSize: 12.5, color: "#2e8a5a", fontWeight: 700,
+                fontFamily: "var(--font-jakarta), sans-serif",
+                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+              }}>
+                {smartLoading
+                  ? (lang === "id" ? "Mencari…" : "Searching…")
+                  : (lang === "id" ? `Cari: "${query.trim()}"` : `Search: "${query.trim()}"`)}
+              </span>
+            </button>
             {searching ? (
               <div style={{ padding: "11px 16px", fontSize: 13, color: "#94a3b8",
                 fontFamily: "var(--font-jakarta), sans-serif" }}>

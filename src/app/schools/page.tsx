@@ -168,6 +168,25 @@ function matchesSppBucket(priceMin: number, bucket: string): boolean {
   return true;
 }
 
+// Smart-search predicates (kecamatan text + precise price ceilings/floors)
+function matchesLoc(s: Place, loc: string): boolean {
+  if (!loc) return true;
+  const q = loc.toLowerCase();
+  return (s.locationDetail ?? "").toLowerCase().includes(q)
+    || (s.address ?? "").toLowerCase().includes(q)
+    || s.name.toLowerCase().includes(q)
+    || (s.area ?? "").toLowerCase().includes(q);
+}
+function matchesSppMinMax(priceMin: number, min: number | null, max: number | null): boolean {
+  if (min != null && priceMin < min) return false;
+  if (max != null && priceMin > max) return false;
+  return true;
+}
+function matchesUpMax(upMin: number | undefined, max: number | null): boolean {
+  if (max == null) return true;
+  return upMin != null && upMin <= max;
+}
+
 function matchesUpBucket(upMin: number | undefined, bucket: string): boolean {
   if (bucket === "all")    return true;
   if (upMin === undefined) return false;
@@ -226,6 +245,11 @@ function SchoolsContent() {
   const [upBucket,      setUpBucket]      = useState(searchParams.get("up") ?? "all");
   const [sppBucket,     setSppBucket]     = useState(searchParams.get("spp") ?? "all");
   const [classSizeBucket, setClassSizeBucket] = useState(searchParams.get("cs") ?? "all");
+  // Smart-search params: kecamatan text + precise price ceilings/floors.
+  const [loc,    setLoc]    = useState(searchParams.get("loc") ?? "");
+  const [sppMax, setSppMax] = useState<number | null>(() => { const v = searchParams.get("sppMax"); return v ? Number(v) : null; });
+  const [sppMin, setSppMin] = useState<number | null>(() => { const v = searchParams.get("sppMin"); return v ? Number(v) : null; });
+  const [upMax,  setUpMax]  = useState<number | null>(() => { const v = searchParams.get("upMax"); return v ? Number(v) : null; });
   const [sortBy,      setSortBy]      = useState<"alpha"|"za"|"random"|"nearest">((searchParams.get("sort") as "alpha"|"za"|"nearest") ?? "nearest");
   const [sortSeed]                    = useState(() => Math.random());
   const [compareIds,  setCompareIds]  = useState<string[]>([]);
@@ -244,6 +268,9 @@ function SchoolsContent() {
       .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
       .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
       .filter(s => matchesSppBucket(s.priceMin, sppBucket))
+      .filter(s => matchesLoc(s, loc))
+      .filter(s => matchesSppMinMax(s.priceMin, sppMin, sppMax))
+      .filter(s => matchesUpMax(s.uangPangkalMin, upMax))
       .filter(s => {
         if (classSizeBucket === "all") return true;
         if (s.studentsPerClass === undefined) return false;
@@ -255,7 +282,7 @@ function SchoolsContent() {
       });
     if (!candidates.length) return null;
     return candidates[Math.floor(sortSeed * candidates.length) % candidates.length];
-  }, [allFeatured, area, grade, curricula, bahasaFilter, upBucket, sppBucket, classSizeBucket, sortSeed]);
+  }, [allFeatured, area, grade, curricula, bahasaFilter, upBucket, sppBucket, classSizeBucket, loc, sppMin, sppMax, upMax, sortSeed]);
 
   const filtered = allPlaces
     .filter(s => s.id !== featuredSpot?.id)
@@ -265,6 +292,9 @@ function SchoolsContent() {
     .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
     .filter(s => matchesSppBucket(s.priceMin, sppBucket))
+    .filter(s => matchesLoc(s, loc))
+    .filter(s => matchesSppMinMax(s.priceMin, sppMin, sppMax))
+    .filter(s => matchesUpMax(s.uangPangkalMin, upMax))
     .filter(s => {
       if (classSizeBucket === "all") return true;
       if (s.studentsPerClass === undefined) return false;
@@ -291,13 +321,19 @@ function SchoolsContent() {
     area !== "all", grade !== "all", curricula.length > 0,
     bahasaFilter.length > 0, upBucket !== "all", sppBucket !== "all",
     classSizeBucket !== "all",
+    loc !== "", sppMax != null, sppMin != null, upMax != null,
   ].filter(Boolean).length;
 
   function resetFilters() {
     setArea("all"); setGrade("all"); setCurricula([]);
     setBahasaFilter([]); setUpBucket("all"); setSppBucket("all");
     setClassSizeBucket("all");
+    setLoc(""); setSppMax(null); setSppMin(null); setUpMax(null);
   }
+
+  const rp = (n: number) => n >= 1_000_000
+    ? `${(n / 1_000_000) % 1 === 0 ? n / 1_000_000 : (n / 1_000_000).toFixed(1)} jt`
+    : `${Math.round(n / 1000)} rb`;
 
   function toResults() {
     const p = new URLSearchParams({ view: "results" });
@@ -308,6 +344,10 @@ function SchoolsContent() {
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
     if (classSizeBucket !== "all") p.set("cs", classSizeBucket);
+    if (loc !== "") p.set("loc", loc);
+    if (sppMax != null) p.set("sppMax", String(sppMax));
+    if (sppMin != null) p.set("sppMin", String(sppMin));
+    if (upMax != null) p.set("upMax", String(upMax));
     if (sortBy !== "alpha") p.set("sort", sortBy);
     return `${pathname}?${p}`;
   }
@@ -320,6 +360,10 @@ function SchoolsContent() {
     if (upBucket !== "all") p.set("up", upBucket);
     if (sppBucket !== "all") p.set("spp", sppBucket);
     if (classSizeBucket !== "all") p.set("cs", classSizeBucket);
+    if (loc !== "") p.set("loc", loc);
+    if (sppMax != null) p.set("sppMax", String(sppMax));
+    if (sppMin != null) p.set("sppMin", String(sppMin));
+    if (upMax != null) p.set("upMax", String(upMax));
     if (sortBy !== "alpha") p.set("sort", sortBy);
     const qs = p.toString();
     return qs ? `${pathname}?${qs}` : pathname;
@@ -642,6 +686,10 @@ function SchoolsContent() {
           {upBucket !== "all"         && <FTag label={`UP: ${UP_LABELS[upBucket]}`}                            onRemove={() => setUpBucket("all")} />}
           {sppBucket !== "all"        && <FTag label={`SPP: ${SPP_LABELS[sppBucket]}`}                         onRemove={() => setSppBucket("all")} />}
           {classSizeBucket !== "all"  && <FTag label={`Kelas: ${CLASS_SIZE_LABELS[classSizeBucket]}`}          onRemove={() => setClassSizeBucket("all")} />}
+          {loc !== ""       && <FTag label={`📍 ${loc}`}                        onRemove={() => setLoc("")} />}
+          {sppMax != null   && <FTag label={`SPP ≤ Rp ${rp(sppMax)}`}          onRemove={() => setSppMax(null)} />}
+          {sppMin != null   && <FTag label={`SPP ≥ Rp ${rp(sppMin)}`}          onRemove={() => setSppMin(null)} />}
+          {upMax != null    && <FTag label={`UP ≤ Rp ${rp(upMax)}`}            onRemove={() => setUpMax(null)} />}
           <ActionButton onClick={resetFilters} style={{ fontSize: 12, fontWeight: 600, color: "#2e8a5a" }}>
             {t.filterClearAll}
           </ActionButton>
