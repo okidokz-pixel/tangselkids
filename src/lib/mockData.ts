@@ -35,6 +35,7 @@ export type Place = {
   isFree?: boolean;
   priceMin: number;
   priceMax: number;
+  priceKnown?: boolean;         // false when price_min/max are both blank (unknown, not free)
   rating: number;
   reviews: number;
   ageRange: string;

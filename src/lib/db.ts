@@ -69,6 +69,9 @@ function mapRow(row: any, category: Place["category"]): Place {
     email:          row.email      ?? undefined,
     priceMin:       row.price_min  ?? 0,
     priceMax:       row.price_max  ?? row.price_min ?? 0,
+    // Distinguishes a genuine 0 (free) from a blank/unknown price (NULL). Display
+    // must show "—" for unknown, "Gratis" only for a real 0 — never NULL→Gratis.
+    priceKnown:     row.price_min != null || row.price_max != null,
     isFeatured:     row.is_featured  ?? false,
     isVerified:     row.is_verified  ?? false,
     icon:           ICON[category],

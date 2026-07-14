@@ -1187,7 +1187,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
         {(() => {
           const ag = getAreaGroup(place.area);
           const areaLabel = ag === "bsd" ? "BSD" : ag === "tangerang" ? "Tangerang" : ag === "all" ? t.areaAll : "Bintaro";
-          const fmtTicket = (place.priceMin === 0 && place.priceMax === 0)
+          const fmtTicket = place.priceKnown === false
+            ? "—"
+            : (place.priceMin === 0 && place.priceMax === 0)
             ? t.free
             : (!place.priceMax || place.priceMax === place.priceMin)
               ? `Rp ${formatPrice(place.priceMin)}`
@@ -1361,7 +1363,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
             heroItems = [];
             freeRows = [
               [t.pdAgeRange,   place.daycareAgeGroups?.join(", ") ?? place.ageRange],
-              [t.pdMonthlyFee, place.priceMin > 0 ? fmtBulanan : "—"],
+              [t.pdMonthlyFee, place.priceKnown === false ? "—" : place.priceMin > 0 ? fmtBulanan : t.free],
             ];
             if (place.carerChildRatio !== undefined)
               freeRows.push([t.pdCarerRatio, place.carerChildRatio]);
@@ -1385,7 +1387,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
           } else if (place.category === "clinic") {
             heroItems = [];
             freeRows = [
-              [t.pdChipCost, `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`],
+              [t.pdChipCost, place.priceKnown === false ? "—" : `Rp ${formatPrice(place.priceMin)} – ${formatPrice(place.priceMax)}`],
             ];
             if (place.clinicServices?.length)
               freeRows.push([t.pdChipServices, place.clinicServices.join(", ")]);

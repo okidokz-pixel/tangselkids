@@ -22,8 +22,8 @@ export function PlaceCard({
     if (place.category === "learning-center") return place.centerType ?? (place.courseTypes?.[0] ?? null);
     if (place.category === "bookstore") return null;
     if (place.category === "cafe") return null;
-    if (place.category === "daycare") return place.priceMin > 0 ? formatPriceRange(place.priceMin, place.priceMax) : "–";
-    return place.priceMin === 0 ? "Gratis" : formatTicketPrice(place.priceMin, place.priceMax);
+    if (place.category === "daycare") return place.priceKnown === false ? "—" : place.priceMin > 0 ? formatPriceRange(place.priceMin, place.priceMax) : t.free;
+    return place.priceKnown === false ? "—" : place.priceMin === 0 ? t.free : formatTicketPrice(place.priceMin, place.priceMax);
   })();
 
   return (
@@ -141,7 +141,7 @@ export function PlaceCard({
                 {t.pdMonthlyFee}:
               </span>
               <span style={{ fontSize: 12, fontWeight: 400, color: "var(--tk-ink)", fontFamily: "var(--font-jakarta, sans-serif)" }}>
-                {place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax)}
+                {place.priceKnown === false ? "—" : place.priceMin === 0 ? t.free : formatPriceRange(place.priceMin, place.priceMax)}
               </span>
             </div>
           </>

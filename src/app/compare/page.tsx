@@ -21,7 +21,7 @@ function fmtFee(min: number | undefined, max: number | undefined): string {
 function getSchoolValue(place: Place, key: string, distKm: number | null): string {
   if (key === "distance")    return distKm != null ? (distKm < 0.1 ? "Di sini" : `${distKm < 10 ? distKm.toFixed(1) : Math.round(distKm)} km`) : "—";
   if (key === "uangPangkal") return fmtFee(place.uangPangkalMin, place.uangPangkalMax);
-  if (key === "priceRange")  return formatPriceRange(place.priceMin, place.priceMax);
+  if (key === "priceRange")  return place.priceKnown === false ? "—" : formatPriceRange(place.priceMin, place.priceMax);
   if (key === "annualFee")   return fmtFee(place.annualFeeMin, place.annualFeeMax);
   if (key === "bahasa")      return place.teachingLanguageDisplay ?? place.bahasa?.join(", ") ?? "—";
   if (key === "curriculum")  return place.curriculum ?? "—";
@@ -57,7 +57,7 @@ function getLcValue(place: Place, key: string, distKm: number | null): string {
   if (key === "courseType")    return place.courseTypes?.[0] ?? place.centerType ?? "—";
   if (key === "distance")      return distKm != null ? (distKm < 0.1 ? "Di sini" : `${distKm < 10 ? distKm.toFixed(1) : Math.round(distKm)} km`) : "—";
   if (key === "regFee")        return fmtFee(place.registrationFeeMin, place.registrationFeeMax);
-  if (key === "monthlyFee")    return place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax);
+  if (key === "monthlyFee")    return place.priceKnown === false ? "—" : place.priceMin === 0 ? "Gratis" : formatPriceRange(place.priceMin, place.priceMax);
   if (key === "ageRange")      return place.ageRange ?? "—";
   if (key === "teachingLang")  return place.teachingLanguage ?? place.teachingLanguageDisplay ?? "—";
   if (key === "teacherRatio")  return place.teacherStudentRatio ?? "—";
