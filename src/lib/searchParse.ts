@@ -29,8 +29,17 @@ export type SearchIntent = {
   playgroundType: "indoor" | "outdoor" | null; // playground only
   free: boolean;                       // "gratis" — playground only (for now)
   services: string[];                  // clinic service slugs (clinic only)
+  ageYears: number | null;             // child's age in years (learning-center / daycare)
   keywords: string | null;             // leftover free text (e.g. a place name)
 };
+
+// Learning-center age buckets (mirror AGE_BUCKETS in learning-centers/page.tsx).
+function lcAgeKey(age: number): string {
+  if (age <= 3) return "0-3";
+  if (age <= 8) return "4-8";
+  if (age <= 12) return "9-12";
+  return "13+";
+}
 
 // Clinic service slug (what the parser emits) → canonical value stored in the DB.
 const SERVICE_CANON: Record<string, string> = {
@@ -90,6 +99,7 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
   "playgroundType": "indoor" | "outdoor" (playground only), or null,
   "free": true if the parent wants free/"gratis" places (mainly playgrounds), else false,
   "services": array of clinic service slugs mentioned (clinic only), else [],
+  "ageYears": the child's age in YEARS as a number if given (learning-center/daycare), fractions ok, else null,
   "keywords": leftover meaningful text such as a place name, else null
 }
 
@@ -113,6 +123,7 @@ Rules:
 - "curriculum": include ANY curriculum, pedagogy, or teaching-method keyword the parent mentions. Use these canonical short forms for the well-known ones: "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". For other methods, emit the phrase as written (e.g. "play-based"/"play based" -> "Play-Based"; "reggio" -> "Reggio"; "waldorf" -> "Waldorf"; "bilingual" -> "Bilingual"; "steam" -> "STEAM"). Do NOT map a bare "internasional" to any specific curriculum (ambiguous) — leave curriculum empty unless a named framework/method is given.
 - "playgroundType": for playground queries, "indoor" or "outdoor" if the parent says so, else null. "free": true if they ask for gratis/free.
 - "services" (CLINIC only): emit slugs for children's-clinic services the parent names, from: "wicara" (terapi wicara/speech therapy), "okupasi" (terapi okupasi/OT), "fisioterapi" (physio), "sensori" (sensori integrasi/SI), "psikologi" (psikolog anak), "aba" (terapi perilaku/ABA), "dokter" (konsultasi dokter anak), "tumbuh-kembang" (asesmen/tumbuh kembang), "kognitif" (terapi kognitif). Only for category "clinic".
+- "ageYears" (learning-center or daycare): the child's age in years. Map: "X tahun"/"umur X"/"anak X tahun" -> X; "X bulan" -> X/12; "bayi" -> 0.5; "batita"/"toddler" -> 1.5; "balita" -> 3; "remaja"/"teenager"/"ABG" -> 14. Leave null if no age is implied.
 
 Examples:
 "TK di pamulang dengan SPP di bawah 1 juta" -> {"category":"school","jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
@@ -172,6 +183,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     playgroundType: oneOf(p.playgroundType, ["indoor", "outdoor"]) as SearchIntent["playgroundType"],
     free: p.free === true,
     services: arrOf(p.services, Object.keys(SERVICE_CANON)),
+    ageYears: num(p.ageYears),
     keywords: typeof p.keywords === "string" && p.keywords.trim() ? p.keywords.trim() : null,
   };
 }
@@ -180,7 +192,7 @@ function emptyIntent(): SearchIntent {
   return {
     category: null, jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
     uangPangkalMax: null, curriculum: [], bahasa: [], playgroundType: null, free: false,
-    services: [], keywords: null,
+    services: [], ageYears: null, keywords: null,
   };
 }
 
@@ -217,6 +229,9 @@ function buildCategoryUrl(category: Category, i: SearchIntent): string {
     // The clinics page filter is single-select — use the first named service.
     const canon = SERVICE_CANON[i.services[0]];
     if (canon) p.set("service", canon);
+  }
+  if (category === "learning-center" && i.ageYears != null) {
+    p.set("age", lcAgeKey(i.ageYears));
   }
   p.set("view", "results");
   return `${CATEGORY_PATH[category]}?${p.toString()}`;
