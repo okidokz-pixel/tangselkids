@@ -24,8 +24,10 @@ export type SearchIntent = {
   sppMax: number | null;               // monthly fee ceiling, rupiah (schools only)
   sppMin: number | null;               // monthly fee floor, rupiah (schools only)
   uangPangkalMax: number | null;       // enrollment fee ceiling, rupiah (schools only)
-  curriculum: string[];                // e.g. ["Cambridge", "Islam"] (schools only)
+  curriculum: string[];                // e.g. ["Cambridge","IB","Play-Based"] (schools only)
   bahasa: string[];                    // e.g. ["Inggris"] (schools only)
+  playgroundType: "indoor" | "outdoor" | null; // playground only
+  free: boolean;                       // "gratis" — playground only (for now)
   keywords: string | null;             // leftover free text (e.g. a place name)
 };
 
@@ -69,9 +71,11 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
   "sppMax": monthly tuition (SPP) ceiling in rupiah as a number, or null,
   "sppMin": monthly tuition floor in rupiah as a number, or null,
   "uangPangkalMax": enrollment-fee (uang pangkal) ceiling in rupiah as a number, or null,
-  "curriculum": array of any of ["Nasional","Cambridge","IB","Islam","Kristen","Montessori"] mentioned, else [],
+  "curriculum": array of curriculum/pedagogy keywords mentioned (schools only), else [],
   "bahasa": array of any of ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"] mentioned, else [],
-  "keywords": leftover meaningful text such as a school name, else null
+  "playgroundType": "indoor" | "outdoor" (playground only), or null,
+  "free": true if the parent wants free/"gratis" places (mainly playgrounds), else false,
+  "keywords": leftover meaningful text such as a place name, else null
 }
 
 Rules:
@@ -91,7 +95,8 @@ Rules:
 - Money: "juta"/"jt" = 1000000, "ribu"/"rb"/"k" = 1000. "di bawah"/"kurang dari"/"maksimal"/"under" -> a max. "di atas"/"minimal"/"lebih dari" -> a min. "gratis" -> sppMax 0. "SPP"/"per bulan"/"bulanan" = monthly (sppMax/sppMin). "uang pangkal"/"uang masuk"/"pangkal" = uangPangkalMax.
 - AREA vs LOCATION: If the parent names a BROAD area — "Bintaro", "BSD", or "Tangerang" — set "area" (bintaro/bsd/tangerang) and leave "location" null. If they name a SPECIFIC neighborhood/kecamatan (Pamulang, Serpong, Ciputat, Cipondoh, Karawaci, Ciledug, Alam Sutera, etc.), set "location" to that name and leave "area" null.
 - Do not invent values not implied by the text. Use null / [] when unsure.
-- "curriculum": map "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". Do NOT map a bare "internasional" to any specific curriculum (it is ambiguous) — leave curriculum empty unless a named framework (Cambridge/IB) is given.
+- "curriculum": include ANY curriculum, pedagogy, or teaching-method keyword the parent mentions. Use these canonical short forms for the well-known ones: "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". For other methods, emit the phrase as written (e.g. "play-based"/"play based" -> "Play-Based"; "reggio" -> "Reggio"; "waldorf" -> "Waldorf"; "bilingual" -> "Bilingual"; "steam" -> "STEAM"). Do NOT map a bare "internasional" to any specific curriculum (ambiguous) — leave curriculum empty unless a named framework/method is given.
+- "playgroundType": for playground queries, "indoor" or "outdoor" if the parent says so, else null. "free": true if they ask for gratis/free.
 
 Examples:
 "TK di pamulang dengan SPP di bawah 1 juta" -> {"category":"school","jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
@@ -123,7 +128,6 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
   const CATEGORIES = Object.keys(CATEGORY_PATH);
   const JENJANG = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
   const AREA = ["bintaro", "bsd", "tangerang"];
-  const CURRICULUM = ["Nasional", "Cambridge", "IB", "Islam", "Kristen", "Montessori"];
   const BAHASA = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
 
   const num = (v: unknown): number | null =>
@@ -132,6 +136,12 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     typeof v === "string" && list.includes(v) ? v : null;
   const arrOf = (v: unknown, list: string[]): string[] =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && list.includes(x)) : [];
+  // Free-form string list (curriculum) — accept any short keyword the model emits.
+  const strArr = (v: unknown): string[] =>
+    Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string" && !!x.trim() && x.length <= 40)
+         .map((x) => x.trim()).slice(0, 6)
+      : [];
 
   return {
     category: oneOf(p.category, CATEGORIES) as Category | null,
@@ -141,8 +151,10 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
     sppMax: num(p.sppMax),
     sppMin: num(p.sppMin),
     uangPangkalMax: num(p.uangPangkalMax),
-    curriculum: arrOf(p.curriculum, CURRICULUM),
+    curriculum: strArr(p.curriculum),
     bahasa: arrOf(p.bahasa, BAHASA),
+    playgroundType: oneOf(p.playgroundType, ["indoor", "outdoor"]) as SearchIntent["playgroundType"],
+    free: p.free === true,
     keywords: typeof p.keywords === "string" && p.keywords.trim() ? p.keywords.trim() : null,
   };
 }
@@ -150,7 +162,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
 function emptyIntent(): SearchIntent {
   return {
     category: null, jenjang: null, area: null, location: null, sppMax: null, sppMin: null,
-    uangPangkalMax: null, curriculum: [], bahasa: [], keywords: null,
+    uangPangkalMax: null, curriculum: [], bahasa: [], playgroundType: null, free: false, keywords: null,
   };
 }
 
@@ -174,11 +186,15 @@ function buildSchoolsUrl(i: SearchIntent): string {
   return `/schools?${p.toString()}`;
 }
 
-/** Build a non-school category listing URL (area + location filters). */
+/** Build a non-school category listing URL (area + location + a few per-category filters). */
 function buildCategoryUrl(category: Category, i: SearchIntent): string {
   const p = new URLSearchParams();
   if (i.area) p.set("area", i.area);
   if (i.location) p.set("loc", i.location);
+  if (category === "playground") {
+    if (i.playgroundType) p.set("type", i.playgroundType);
+    if (i.free) p.set("price", "gratis");
+  }
   p.set("view", "results");
   return `${CATEGORY_PATH[category]}?${p.toString()}`;
 }

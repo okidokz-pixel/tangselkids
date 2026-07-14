@@ -179,8 +179,22 @@ function matchesLoc(s: Place, loc: string): boolean {
 }
 function matchesCurricula(s: Place, curricula: string[]): boolean {
   if (curricula.length === 0) return true;
-  const want = curricula.map(c => c.toLowerCase());
-  return (s.curriculumCategory ?? "").split(",").map(v => v.trim().toLowerCase()).some(v => want.includes(v));
+  // Match against BOTH curriculum_category (clean tokens like "IB", "Montessori")
+  // and the descriptive curriculum text (e.g. "Play-Based Learning") so richer
+  // pedagogies that never enter the category column are still findable.
+  // Short tokens (≤4 chars, e.g. "IB") only match as a whole category token to
+  // avoid substring false-positives (e.g. "IB" inside "flexible"); longer
+  // phrases match as a case-insensitive substring across either field.
+  const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, ""); // hyphen/space-insensitive
+  const catTokens = (s.curriculumCategory ?? "").split(/[,/]/).map(v => v.trim().toLowerCase()).filter(Boolean);
+  const fullNorm = norm(`${s.curriculumCategory ?? ""} ${s.curriculum ?? ""}`);
+  return curricula.some(c => {
+    const w = c.trim().toLowerCase();
+    if (!w) return false;
+    if (catTokens.includes(w)) return true;          // exact category token (safe for short e.g. "ib")
+    const wn = norm(w);
+    return wn.length >= 5 && fullNorm.includes(wn);  // longer phrase, substring across either field
+  });
 }
 function matchesSppMinMax(priceMin: number, min: number | null, max: number | null): boolean {
   if (min != null && priceMin < min) return false;
