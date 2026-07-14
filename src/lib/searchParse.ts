@@ -50,7 +50,7 @@ Return ONLY a JSON object with these exact keys (no markdown, no commentary):
   "sppMax": monthly tuition (SPP) ceiling in rupiah as a number, or null,
   "sppMin": monthly tuition floor in rupiah as a number, or null,
   "uangPangkalMax": enrollment-fee (uang pangkal) ceiling in rupiah as a number, or null,
-  "curriculum": array of any of ["Nasional","Cambridge","International Baccalaureate (IB)","Islam","Montessori"] mentioned, else [],
+  "curriculum": array of any of ["Nasional","Cambridge","IB","Islam","Kristen","Montessori"] mentioned, else [],
   "bahasa": array of any of ["Indonesia","Inggris","Arab","Mandarin","Jerman","Jepang"] mentioned, else [],
   "keywords": leftover meaningful text such as a school name, else null
 }
@@ -60,11 +60,12 @@ Rules:
 - Money: "juta"/"jt" = 1000000, "ribu"/"rb"/"k" = 1000. "di bawah"/"kurang dari"/"maksimal"/"under" -> a max. "di atas"/"minimal"/"lebih dari" -> a min. "gratis" -> sppMax 0. "SPP"/"per bulan"/"bulanan" = monthly (sppMax/sppMin). "uang pangkal"/"uang masuk"/"pangkal" = uangPangkalMax.
 - AREA vs LOCATION: If the parent names a BROAD area — "Bintaro", "BSD", or "Tangerang" — set "area" (bintaro/bsd/tangerang) and leave "location" null. If they name a SPECIFIC neighborhood/kecamatan (Pamulang, Serpong, Ciputat, Cipondoh, Karawaci, Ciledug, Alam Sutera, etc.), set "location" to that name and leave "area" null.
 - Do not invent values not implied by the text. Use null / [] when unsure.
-- "curriculum": map "internasional"/"cambridge" -> "Cambridge"; "IB" -> "International Baccalaureate (IB)"; "islam"/"islami"/"agama" -> "Islam"; "nasional"/"kurikulum merdeka" -> "Nasional"; "montessori" -> "Montessori".
+- "curriculum": map "cambridge" -> "Cambridge"; "ib"/"international baccalaureate" -> "IB"; "islam"/"islami"/"agama islam" -> "Islam"; "kristen"/"katolik"/"christian"/"katholik" -> "Kristen"; "nasional"/"kurikulum merdeka"/"kurikulum nasional" -> "Nasional"; "montessori" -> "Montessori". Do NOT map a bare "internasional" to any specific curriculum (it is ambiguous) — leave curriculum empty unless a named framework (Cambridge/IB) is given.
 
 Examples:
 "TK di pamulang dengan SPP di bawah 1 juta" -> {"jenjang":"TK","area":null,"location":"Pamulang","sppMax":1000000,"sppMin":null,"uangPangkalMax":null,"curriculum":[],"bahasa":[],"keywords":null}
 "SD islam di BSD uang pangkal maksimal 20 juta" -> {"jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":20000000,"curriculum":["Islam"],"bahasa":[],"keywords":null}
+"SD kurikulum IB di BSD" -> {"jenjang":"SD","area":"bsd","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["IB"],"bahasa":[],"keywords":null}
 "sekolah cambridge bahasa inggris di tangerang" -> {"jenjang":null,"area":"tangerang","location":null,"sppMax":null,"sppMin":null,"uangPangkalMax":null,"curriculum":["Cambridge"],"bahasa":["Inggris"],"keywords":null}`;
 
 /** Parse a free-text query into structured school filters. */
@@ -88,7 +89,7 @@ export async function parseSearchQuery(query: string): Promise<SearchIntent> {
 
   const JENJANG = ["Preschool", "TK", "SD", "SMP", "SMA", "SMK"];
   const AREA = ["bintaro", "bsd", "tangerang"];
-  const CURRICULUM = ["Nasional", "Cambridge", "International Baccalaureate (IB)", "Islam", "Montessori"];
+  const CURRICULUM = ["Nasional", "Cambridge", "IB", "Islam", "Kristen", "Montessori"];
   const BAHASA = ["Indonesia", "Inggris", "Arab", "Mandarin", "Jerman", "Jepang"];
 
   const num = (v: unknown): number | null =>

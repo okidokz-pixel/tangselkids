@@ -177,6 +177,11 @@ function matchesLoc(s: Place, loc: string): boolean {
     || s.name.toLowerCase().includes(q)
     || (s.area ?? "").toLowerCase().includes(q);
 }
+function matchesCurricula(s: Place, curricula: string[]): boolean {
+  if (curricula.length === 0) return true;
+  const want = curricula.map(c => c.toLowerCase());
+  return (s.curriculumCategory ?? "").split(",").map(v => v.trim().toLowerCase()).some(v => want.includes(v));
+}
 function matchesSppMinMax(priceMin: number, min: number | null, max: number | null): boolean {
   if (min != null && priceMin < min) return false;
   if (max != null && priceMin > max) return false;
@@ -264,7 +269,7 @@ function SchoolsContent() {
     const candidates = allFeatured
       .filter(s => area === "all" || placeMatchesAreas(s, [area]))
       .filter(s => grade === "all" || s.jenjang === grade)
-      .filter(s => curricula.length === 0 || (s.curriculumCategory ?? "").split(",").map(v => v.trim()).some(v => curricula.includes(v)))
+      .filter(s => matchesCurricula(s, curricula))
       .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
       .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
       .filter(s => matchesSppBucket(s.priceMin, sppBucket))
@@ -288,7 +293,7 @@ function SchoolsContent() {
     .filter(s => s.id !== featuredSpot?.id)
     .filter(s => area === "all" || placeMatchesAreas(s, [area]))
     .filter(s => grade === "all" || s.jenjang === grade)
-    .filter(s => curricula.length === 0 || (s.curriculumCategory ?? "").split(",").map(v => v.trim()).some(v => curricula.includes(v)))
+    .filter(s => matchesCurricula(s, curricula))
     .filter(s => bahasaFilter.length === 0 || bahasaFilter.some(b => s.bahasa?.includes(b)))
     .filter(s => matchesUpBucket(s.uangPangkalMin, upBucket))
     .filter(s => matchesSppBucket(s.priceMin, sppBucket))
