@@ -41,6 +41,14 @@ function lcAgeKey(age: number): string {
   return "13+";
 }
 
+// Daycare usia label (mirror AGE_GROUP_OPTIONS in daycare/page.tsx).
+function daycareUsia(age: number): string {
+  if (age < 1) return "Bayi (0–1 thn)";
+  if (age < 2) return "Toddler (1–2 thn)";
+  if (age < 4) return "Balita (2–4 thn)";
+  return "Usia 4+ thn";
+}
+
 // Clinic service slug (what the parser emits) → canonical value stored in the DB.
 const SERVICE_CANON: Record<string, string> = {
   wicara: "Terapi Wicara",
@@ -232,6 +240,9 @@ function buildCategoryUrl(category: Category, i: SearchIntent): string {
   }
   if (category === "learning-center" && i.ageYears != null) {
     p.set("age", lcAgeKey(i.ageYears));
+  }
+  if (category === "daycare" && i.ageYears != null) {
+    p.set("usia", daycareUsia(i.ageYears));
   }
   p.set("view", "results");
   return `${CATEGORY_PATH[category]}?${p.toString()}`;

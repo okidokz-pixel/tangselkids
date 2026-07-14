@@ -80,6 +80,48 @@ const AGE_GROUP_OPTIONS = [
   "Bayi (0–1 thn)", "Toddler (1–2 thn)", "Balita (2–4 thn)", "Usia 4+ thn",
 ];
 
+// The age band (in years) each usia option covers.
+const USIA_BANDS: Record<string, [number, number]> = {
+  "Bayi (0–1 thn)":    [0, 1],
+  "Toddler (1–2 thn)": [1, 2],
+  "Balita (2–4 thn)":  [2, 4],
+  "Usia 4+ thn":       [4, 99],
+};
+
+// Parse a free-text age range into [minYears, maxYears]. Handles "0–6 tahun",
+// "3 bulan–5 tahun", "6 bulan ke atas", "2,5 tahun ke atas".
+function parseAgeYears(str: string): [number, number] {
+  const toY = (n: string, unit?: string) => {
+    const v = parseFloat(n.replace(",", "."));
+    return unit && /bulan/i.test(unit) ? v / 12 : v;
+  };
+  const keAtas = str.match(/([\d.,]+)\s*(bulan|tahun|thn)?\s*ke\s*atas/i);
+  if (keAtas) return [toY(keAtas[1], keAtas[2]), 99];
+  const range = str.match(/([\d.,]+)\s*(bulan|tahun|thn)?\s*[-–]\s*([\d.,]+)\s*(bulan|tahun|thn)?/i);
+  if (range) {
+    const unit2 = range[4] || range[2];
+    return [toY(range[1], range[2] || unit2), toY(range[3], unit2)];
+  }
+  const single = str.match(/([\d.,]+)\s*(bulan|tahun|thn)?/i);
+  if (single) { const y = toY(single[1], single[2]); return [y, y]; }
+  return [0, 99];
+}
+
+// A daycare matches a usia selection if its age range OVERLAPS the selection's
+// band — the data stores ranges ("0–6 tahun"), not the discrete usia labels.
+function daycareMatchesUsia(groups: string[] | undefined, selections: string[]): boolean {
+  if (selections.length === 0) return true;
+  if (!groups || groups.length === 0) return false;
+  return selections.some((sel) => {
+    const band = USIA_BANDS[sel];
+    if (!band) return groups.includes(sel);
+    return groups.some((g) => {
+      const [gmin, gmax] = parseAgeYears(g);
+      return gmin <= band[1] && gmax >= band[0];
+    });
+  });
+}
+
 const PRICE_BUCKETS: Record<string, string> = {
   all:      "Semua",
   lt1jt:    "< Rp 1 jt",
@@ -175,7 +217,7 @@ function DaycareContent() {
     return list
       .filter(d => area === "all" || placeMatchesAreas(d, [area]))
       .filter(d => placeMatchesLoc(d, loc))
-      .filter(d => usiaSelections.length === 0 || usiaSelections.some(u => d.daycareAgeGroups?.includes(u)))
+      .filter(d => daycareMatchesUsia(d.daycareAgeGroups, usiaSelections))
       .filter(d => matchesPriceBucket(d))
       .filter(d => {
         if (carerRatio === "all") return true;
