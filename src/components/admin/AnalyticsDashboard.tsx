@@ -280,6 +280,83 @@ export function AnalyticsDashboard({ stats, initial, registrations }: { stats: G
         </a>
       </div>
 
+      {/* Active users banner (always realtime / today — independent of period) */}
+      <div style={{
+        background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)",
+        borderRadius: 16, padding: "20px 28px", marginBottom: 20,
+        display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 10, height: 10, borderRadius: "50%", background: "var(--teal-soft)",
+            boxShadow: "0 0 0 4px rgba(219,237,232,0.35)",
+          }} />
+          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, fontWeight: 500 }}>Pengunjung aktif sekarang</span>
+        </div>
+        <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
+          {stats.activeUsers}
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", gap: 28 }}>
+          {[
+            { label: "Unique User Hari Ini", value: fmt(stats.today.users) },
+            { label: "Sessions hari ini", value: fmt(stats.today.sessions) },
+            { label: "Pageviews hari ini", value: fmt(stats.today.pageviews) },
+          ].map((item) => (
+            <div key={item.label} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>{item.value}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Registrasi Pengguna (independent of the GA range selector) ── */}
+      {registrations && (
+        <div style={{ marginBottom: 20, background: "#e6f4ed", borderRadius: 16, padding: "16px 18px" }}>
+          <p className="eyebrow" style={{ marginBottom: 14 }}>Registrasi Pengguna</p>
+
+          <div style={{ display: "flex", gap: 14, alignItems: "stretch", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, width: 220, flexShrink: 0 }}>
+              <KpiCard label="Total Terdaftar" value={fmt(registrations.total)} current={0} prev={0} sub="" showTrend={false} />
+              <KpiCard label="Daftar Hari Ini" value={fmt(registrations.today)} current={registrations.today} prev={registrations.yesterday} sub="kemarin" />
+            </div>
+
+            <div style={{ ...cardStyle, padding: "20px 24px", flex: 1, minWidth: 300 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Registrasi per Hari</div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>Akun baru · 30 hari terakhir</div>
+              </div>
+            </div>
+            {registrations.daily.every((d) => d.count === 0) ? (
+              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13 }}>
+                Belum ada registrasi dalam 30 hari terakhir
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={registrations.daily.map((d) => ({ date: d.date.slice(5), count: d.count }))} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gRegs" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CHART_PRIMARY} stopOpacity={0.18} />
+                      <stop offset="95%" stopColor={CHART_PRIMARY} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F1E8DA" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 8, border: "1px solid var(--line)", fontSize: 12, background: "var(--surface)" }}
+                    labelStyle={{ fontWeight: 600, color: "var(--ink)" }}
+                  />
+                  <Area type="monotone" dataKey="count" name="Registrasi" stroke={CHART_PRIMARY} strokeWidth={2} fill="url(#gRegs)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Range filter tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: pickerOpen ? 12 : 20, flexWrap: "wrap" }}>
         {RANGES.map(r => {
@@ -344,87 +421,6 @@ export function AnalyticsDashboard({ stats, initial, registrations }: { stats: G
               Aktif: {periodNote}
             </span>
           )}
-        </div>
-      )}
-
-      {/* Active users banner (always realtime / today — independent of period) */}
-      <div style={{
-        background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)",
-        borderRadius: 16, padding: "20px 28px", marginBottom: 20,
-        display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 10, height: 10, borderRadius: "50%", background: "var(--teal-soft)",
-            boxShadow: "0 0 0 4px rgba(219,237,232,0.35)",
-          }} />
-          <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 14, fontWeight: 500 }}>Pengunjung aktif sekarang</span>
-        </div>
-        <div style={{ fontSize: 48, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1 }}>
-          {stats.activeUsers}
-        </div>
-        <div style={{ marginLeft: "auto", display: "flex", gap: 28 }}>
-          {[
-            { label: "Unique User Hari Ini", value: fmt(stats.today.users) },
-            { label: "Sessions hari ini", value: fmt(stats.today.sessions) },
-            { label: "Pageviews hari ini", value: fmt(stats.today.pageviews) },
-          ].map((item) => (
-            <div key={item.label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#fff" }}>{item.value}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Registrasi Pengguna (independent of the GA range selector) ── */}
-      {registrations && (
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ marginBottom: 14 }}>
-            <p className="eyebrow" style={{ marginBottom: 2 }}>Registrasi Pengguna</p>
-            <p style={{ fontSize: 13, color: "var(--ink-2)", margin: 0 }}>
-              Akun baru yang menyelesaikan registrasi · 30 hari terakhir
-            </p>
-          </div>
-
-          <div style={{ display: "flex", gap: 14, marginBottom: 14, flexWrap: "wrap" }}>
-            <KpiCard label="Total Terdaftar" value={fmt(registrations.total)} current={0} prev={0} sub="" showTrend={false} />
-            <KpiCard label="Daftar Hari Ini" value={fmt(registrations.today)} current={registrations.today} prev={registrations.yesterday} sub="kemarin" />
-            <KpiCard label="Daftar 7 Hari" value={fmt(registrations.last7)} current={registrations.last7} prev={registrations.prev7} sub="minggu lalu" />
-          </div>
-
-          <div style={{ ...cardStyle, padding: "20px 24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Registrasi per Hari</div>
-                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>Akun baru · 30 hari terakhir</div>
-              </div>
-            </div>
-            {registrations.daily.every((d) => d.count === 0) ? (
-              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)", fontSize: 13 }}>
-                Belum ada registrasi dalam 30 hari terakhir
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={registrations.daily.map((d) => ({ date: d.date.slice(5), count: d.count }))} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gRegs" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_PRIMARY} stopOpacity={0.18} />
-                      <stop offset="95%" stopColor={CHART_PRIMARY} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F1E8DA" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: "#998C7C" }} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: 8, border: "1px solid var(--line)", fontSize: 12, background: "var(--surface)" }}
-                    labelStyle={{ fontWeight: 600, color: "var(--ink)" }}
-                  />
-                  <Area type="monotone" dataKey="count" name="Registrasi" stroke={CHART_PRIMARY} strokeWidth={2} fill="url(#gRegs)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </div>
         </div>
       )}
 
