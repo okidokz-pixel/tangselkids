@@ -14,6 +14,7 @@ import { formatPriceRange, getAreaGroup, formatPrice, haversineKm, type Place } 
 import { fetchPlaceBySlug, fetchPlaceById, fetchSimilarSchools, fetchSimilarLearningCenters, fetchSimilarDaycares, fetchSimilarPlaygrounds, fetchSimilarClinics, fetchSimilarCafes, fetchSimilarMiniZoos, fetchSimilarSwimmingPools, fetchSimilarBookstores } from "@/lib/db";
 import { useLang } from "@/context/LanguageContext";
 import { ActionButton } from "@/components/ActionButton";
+import { RegisterNudge } from "@/components/RegisterNudge";
 import { fetchMyReviewForPlace, relationshipLabel, type UserReview, type ReviewRelationship } from "@/lib/reviewsStorage";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
@@ -507,6 +508,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ paddingTop: 52 }}>
+
+      {/* Contextual registration nudge — fires once after 4 distinct school views (guests only) */}
+      <RegisterNudge category={place.category} id={place.id} />
 
       {/* ── Sticky top bar — blue gradient ────────────────────────────────── */}
       <div style={{
