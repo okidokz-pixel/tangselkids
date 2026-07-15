@@ -858,8 +858,8 @@ export const translations = {
     homeAltDaftarTitle:    "Daftarkan tempatmu.",
     homeAltDaftarBtn:      "Daftar →",
     homeAltTempatUnit:     "tempat",
-    homeAltTypewriterPre:  "Temukan",
-    homeAltTypewriterPost: "yang tepat.",
+    homeAltTypewriterPre:  "Cari apa saja, misal:",
+    homeAltTypewriterPost: "",
     homeAltSeeAll:         "Lihat semua →",
 
     // ── SAVE GATE (free → premium upgrade prompt) ────────────
@@ -1775,8 +1775,8 @@ export const translations = {
     homeAltDaftarTitle:    "List your place.",
     homeAltDaftarBtn:      "List →",
     homeAltTempatUnit:     "places",
-    homeAltTypewriterPre:  "Find the",
-    homeAltTypewriterPost: "that's right for you.",
+    homeAltTypewriterPre:  "Search anything, e.g.:",
+    homeAltTypewriterPost: "",
     homeAltSeeAll:         "View all →",
 
     // ── SAVE GATE (free → premium upgrade prompt) ────────────

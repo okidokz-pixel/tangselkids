@@ -32,9 +32,33 @@ type AreaKey     = "Bintaro" | "BSD" | "Tangerang" | "Semua";
 type CategoryKey = "sekolah" | "kursus";
 
 // ─── Typewriter words per language ───────────────────────────────────────────
+// Full natural-language example queries — the typewriter cycles these to show
+// people they can search in plain language (not just a school name).
 const TYPE_WORDS: Record<"id" | "en", string[]> = {
-  id: ["sekolah", "tempat kursus", "daycare", "playground", "Klinik Anak", "kafe ramah anak", "kolam renang"],
-  en: ["school", "learning center", "daycare", "playground", "children's clinic", "family café", "swimming pool"],
+  id: [
+    "SD kurikulum IB di BSD",
+    "TK di Pamulang di bawah 1 juta",
+    "daycare ber-CCTV di Serpong",
+    "playground indoor di Bintaro",
+    "les gimnastik bilingual",
+    "klinik terapi wicara di BSD",
+    "kolam renang tiket di bawah 50rb",
+  ],
+  en: [
+    "IB curriculum SD in BSD",
+    "TK in Pamulang under 1 million",
+    "daycare with CCTV in Serpong",
+    "indoor playground in Bintaro",
+    "bilingual gymnastics class",
+    "speech-therapy clinic in BSD",
+    "swimming pool ticket under 50k",
+  ],
+};
+
+// Tappable example chips under the search bar (one-tap smart-search demos).
+const EXAMPLE_CHIPS: Record<"id" | "en", string[]> = {
+  id: ["SD Islam di Bintaro", "TK di bawah 1 juta", "kolam renang tiket < 50rb", "daycare ber-CCTV"],
+  en: ["Islamic SD in Bintaro", "TK under 1 million", "swimming pool < 50k", "daycare with CCTV"],
 };
 
 // ─── Age-band data (bilingual) ────────────────────────────────────────────────
@@ -319,7 +343,7 @@ function HeroSearch() {
       background: "#fff7ec",
       borderTop: "1px solid rgba(15,23,42,0.1)",
       borderBottom: "1px solid rgba(15,23,42,0.1)",
-      padding: "14px 22px 16px",
+      padding: "22px 22px 24px",
     }}>
       {/* Typewriter text */}
       <div style={{
@@ -343,36 +367,80 @@ function HeroSearch() {
       {/* Search input */}
       <div style={{ marginTop: 12, position: "relative" }}>
         <form onSubmit={handleSubmit}>
-          <div style={{
-            position: "absolute", left: 13, top: "50%",
-            transform: "translateY(-50%)", pointerEvents: "none",
-            display: "flex", alignItems: "center",
-          }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="rgba(15,23,42,0.35)" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" />
-            </svg>
+          <div style={{ position: "relative" }}>
+            <div style={{
+              position: "absolute", left: 16, top: "50%",
+              transform: "translateY(-50%)", pointerEvents: "none",
+              display: "flex", alignItems: "center",
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="#2e8a5a" strokeWidth="2.4"
+                strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={lang === "id" ? "Ketik apa saja — sekolah, harga, lokasi…" : "Type anything — school, price, area…"}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                padding: "15px 88px 15px 46px",
+                borderRadius: showDropdown ? "16px 16px 0 0" : 999,
+                border: "2px solid #2e8a5a",
+                borderBottom: showDropdown ? "none" : "2px solid #2e8a5a",
+                background: "#fff",
+                color: "#0e1d4f", fontSize: 16,
+                fontFamily: "var(--font-jakarta), sans-serif",
+                outline: "none",
+                boxShadow: "0 6px 20px rgba(46,138,90,0.18)",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => runSmartSearch(query.trim())}
+              onTouchEnd={(e) => { e.preventDefault(); runSmartSearch(query.trim()); }}
+              style={{
+                position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                padding: "10px 20px", borderRadius: 999, border: "none",
+                background: "#2e8a5a", color: "#fff", fontSize: 14, fontWeight: 700,
+                fontFamily: "var(--font-jakarta), sans-serif",
+                cursor: "pointer", touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {lang === "id" ? "Cari" : "Search"}
+            </button>
           </div>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={lang === "id" ? "Cari sekolah, kursus, daycare..." : "Search schools, courses, daycare..."}
-            style={{
-              width: "100%", boxSizing: "border-box",
-              padding: "10px 14px 10px 36px",
-              borderRadius: showDropdown ? "12px 12px 0 0" : 999,
-              border: "1.5px solid rgba(15,23,42,0.14)",
-              borderBottom: showDropdown ? "none" : "1.5px solid rgba(15,23,42,0.14)",
-              background: "#fff",
-              color: "#0e1d4f", fontSize: 13,
-              fontFamily: "var(--font-jakarta), sans-serif",
-              outline: "none",
-              boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
-            }}
-          />
         </form>
+
+        {/* Example chips — one-tap smart-search demos (hidden while typing) */}
+        {!showDropdown && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#94a3b8", fontFamily: "var(--font-jakarta), sans-serif" }}>
+              ✨ {lang === "id" ? "Coba:" : "Try:"}
+            </span>
+            {EXAMPLE_CHIPS[lang].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => runSmartSearch(c)}
+                onTouchEnd={(e) => { e.preventDefault(); runSmartSearch(c); }}
+                style={{
+                  padding: "7px 13px", borderRadius: 999,
+                  border: "1px solid rgba(46,138,90,0.35)",
+                  background: "rgba(46,138,90,0.08)",
+                  color: "#2e8a5a", fontSize: 12, fontWeight: 600,
+                  fontFamily: "var(--font-jakarta), sans-serif",
+                  cursor: "pointer", whiteSpace: "nowrap",
+                  touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Results dropdown */}
         {showDropdown && (
