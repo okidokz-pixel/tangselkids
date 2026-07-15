@@ -384,29 +384,33 @@ function HeroSearch() {
             boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
             overflow: "clip",
           }}>
-            {/* Smart search action — runs the AI parser on tap */}
+            {/* Smart search action — runs the AI parser on tap. Styled as a
+                clear primary button so it's obviously tappable. */}
             <button
               type="button"
               onClick={() => runSmartSearch(query.trim())}
               onTouchEnd={(e) => { e.preventDefault(); runSmartSearch(query.trim()); }}
               style={{
                 display: "flex", alignItems: "center", gap: 9, width: "100%",
-                padding: "9px 14px", border: "none", cursor: "pointer", textAlign: "left",
-                borderBottom: "1px solid rgba(15,23,42,0.06)",
-                background: "rgba(46,138,90,0.06)",
+                padding: "13px 14px", border: "none", cursor: "pointer", textAlign: "left",
+                background: "#2e8a5a",
                 touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
               }}
             >
-              <span style={{ fontSize: 14 }}>{smartLoading ? "⏳" : "🔍"}</span>
+              <span style={{ fontSize: 15 }}>{smartLoading ? "⏳" : "🔍"}</span>
               <span style={{
-                fontSize: 12.5, color: "#2e8a5a", fontWeight: 700,
+                flex: 1, minWidth: 0,
+                fontSize: 13, color: "#fff", fontWeight: 700,
                 fontFamily: "var(--font-jakarta), sans-serif",
                 whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
               }}>
                 {smartLoading
-                  ? (lang === "id" ? "Mencari…" : "Searching…")
-                  : (lang === "id" ? `Cari: "${query.trim()}"` : `Search: "${query.trim()}"`)}
+                  ? (lang === "id" ? "Mencari hasil…" : "Searching…")
+                  : (lang === "id" ? `Lihat hasil "${query.trim()}"` : `See results for "${query.trim()}"`)}
               </span>
+              {!smartLoading && (
+                <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>→</span>
+              )}
             </button>
             {searching ? (
               <div style={{ padding: "11px 16px", fontSize: 13, color: "#94a3b8",
@@ -414,9 +418,11 @@ function HeroSearch() {
                 {lang === "id" ? "Mencari..." : "Searching..."}
               </div>
             ) : results.length === 0 ? (
-              <div style={{ padding: "11px 16px", fontSize: 13, color: "#94a3b8",
-                fontFamily: "var(--font-jakarta), sans-serif" }}>
-                {lang === "id" ? "Tidak ada hasil." : "No results found."}
+              <div style={{ padding: "10px 16px", fontSize: 12.5, color: "#64748b",
+                fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.4 }}>
+                {lang === "id"
+                  ? "Ketuk tombol hijau di atas ☝️ untuk melihat hasil lengkap."
+                  : "Tap the green button above ☝️ to see full results."}
               </div>
             ) : (
               <>
