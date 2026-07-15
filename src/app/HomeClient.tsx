@@ -477,7 +477,7 @@ function HeroSearch() {
                   : (lang === "id" ? `Lihat hasil "${query.trim()}"` : `See results for "${query.trim()}"`)}
               </span>
               {!smartLoading && (
-                <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, flexShrink: 0 }}>→</span>
+                <span style={{ color: "#fff", fontWeight: 800, fontSize: 16, flexShrink: 0, display: "inline-block", animation: "rail-nudge 1.4s ease-in-out infinite" }}>→</span>
               )}
             </button>
             {searching ? (
@@ -485,14 +485,7 @@ function HeroSearch() {
                 fontFamily: "var(--font-jakarta), sans-serif" }}>
                 {lang === "id" ? "Mencari..." : "Searching..."}
               </div>
-            ) : results.length === 0 ? (
-              <div style={{ padding: "10px 16px", fontSize: 12.5, color: "#64748b",
-                fontFamily: "var(--font-jakarta), sans-serif", lineHeight: 1.4 }}>
-                {lang === "id"
-                  ? "Ketuk tombol hijau di atas ☝️ untuk melihat hasil lengkap."
-                  : "Tap the green button above ☝️ to see full results."}
-              </div>
-            ) : (
+            ) : results.length === 0 ? null : (
               <>
                 {results.slice(0, 5).map((place, i) => (
                   <Link
