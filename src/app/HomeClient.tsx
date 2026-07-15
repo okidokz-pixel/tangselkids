@@ -57,8 +57,8 @@ const TYPE_WORDS: Record<"id" | "en", string[]> = {
 
 // Tappable example chips under the search bar (one-tap smart-search demos).
 const EXAMPLE_CHIPS: Record<"id" | "en", string[]> = {
-  id: ["SD Islam di Bintaro", "TK di bawah 1 juta", "kolam renang tiket < 50rb", "daycare ber-CCTV"],
-  en: ["Islamic SD in Bintaro", "TK under 1 million", "swimming pool < 50k", "daycare with CCTV"],
+  id: ["SD di Ciputat dengan SPP di bawah 3jt"],
+  en: ["SD in Ciputat with SPP under 3M"],
 };
 
 // ─── Age-band data (bilingual) ────────────────────────────────────────────────
@@ -347,7 +347,7 @@ function HeroSearch() {
     }}>
       {/* Typewriter text */}
       <div style={{
-        fontSize: 17, color: "#475569", lineHeight: 1.3,
+        fontSize: 13.5, color: "#475569", lineHeight: 1.35,
         fontFamily: "var(--font-fraunces), Georgia, serif", fontWeight: 500,
       }}>
         {t.homeAltTypewriterPre}{" "}
@@ -391,7 +391,7 @@ function HeroSearch() {
                 border: "2px solid #2e8a5a",
                 borderBottom: showDropdown ? "none" : "2px solid #2e8a5a",
                 background: "#fff",
-                color: "#0e1d4f", fontSize: 16,
+                color: "#0e1d4f", fontSize: 13.5,
                 fontFamily: "var(--font-jakarta), sans-serif",
                 outline: "none",
                 boxShadow: "0 6px 20px rgba(46,138,90,0.18)",
@@ -427,7 +427,7 @@ function HeroSearch() {
                 onClick={() => runSmartSearch(c)}
                 onTouchEnd={(e) => { e.preventDefault(); runSmartSearch(c); }}
                 style={{
-                  padding: "7px 13px", borderRadius: 999,
+                  padding: "3px 12px", borderRadius: 999,
                   border: "1px solid rgba(46,138,90,0.35)",
                   background: "rgba(46,138,90,0.08)",
                   color: "#2e8a5a", fontSize: 12, fontWeight: 600,
