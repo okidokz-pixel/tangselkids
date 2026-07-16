@@ -265,19 +265,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: "Not authenticated" };
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        name:        data.name        ?? null,
-        dob:         data.dob         ?? null,
-        kids:        data.kids        ?? [],
-        address:     data.address     ?? null,
-        address_lat: data.addressLat  ?? null,
-        address_lng: data.addressLng  ?? null,
-      })
-      .eq("id", session.user.id);
+    // Only write fields the caller actually provided, so an omitted field can
+    // never null out saved data (e.g. a returning user's kids/DOB/address).
+    const patch: Record<string, unknown> = {};
+    if (data.name       !== undefined) patch.name        = data.name       || null;
+    if (data.dob        !== undefined) patch.dob         = data.dob        || null;
+    if (data.kids       !== undefined) patch.kids        = data.kids;
+    if (data.address    !== undefined) patch.address     = data.address    || null;
+    if (data.addressLat !== undefined) patch.address_lat = data.addressLat || null;
+    if (data.addressLng !== undefined) patch.address_lng = data.addressLng || null;
 
-    if (error) return { error: error.message };
+    if (Object.keys(patch).length) {
+      const { error } = await supabase.from("profiles").update(patch).eq("id", session.user.id);
+      if (error) return { error: error.message };
+    }
 
     // Keep local photo in localStorage keyed by user ID until Phase 2 Storage migration
     if (data.avatar) localStorage.setItem(`profilePhoto_${session.user.id}`, data.avatar);

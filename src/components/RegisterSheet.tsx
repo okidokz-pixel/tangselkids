@@ -191,14 +191,24 @@ export function RegisterSheet() {
   async function doVerify(code: string) {
     setVerifyingOtp(true);
     setOtpError("");
-    const { error } = await verifyOtp(`+62${phone.replace(/^0/, "")}`, code);
+    const { error, isNewUser } = await verifyOtp(`+62${phone.replace(/^0/, "")}`, code);
     setVerifyingOtp(false);
     if (error) {
       setOtpError("Kode salah atau sudah kedaluwarsa. Coba lagi.");
-    } else {
-      setStep("profile");
-      track("registration_otp_verified");
+      return;
     }
+    track("registration_otp_verified");
+    // Already-registered user who tapped "Daftar" by mistake: OTP just logged
+    // them into their existing account. Do NOT show the profile form — filling
+    // it would overwrite their saved name/kids/DOB/address. Just close (this is
+    // effectively a login) and fire any pending action.
+    if (isNewUser === false) {
+      track("login", { method: "whatsapp_otp", via: "register_sheet" });
+      closeRegisterSheet();
+      onRegisteredRef.current?.();
+      return;
+    }
+    setStep("profile");
   }
 
   function handleOtpChange(i: number, val: string) {
