@@ -406,6 +406,39 @@ async function fetchGaStats(): Promise<GaStats> {
 
 export const getGaStats = unstable_cache(fetchGaStats, ["ga-stats"], { revalidate: 300 });
 
+// On-demand pageviews for a single page (admin lookup box). `needle` is a slug
+// or path fragment, matched as a CONTAINS filter on pagePath.
+export async function fetchPageViews(needle: string): Promise<{
+  needle: string;
+  last7: { views: number; users: number };
+  last30: { views: number; users: number };
+  last90: { views: number; users: number };
+}> {
+  const client = getClient();
+  const q = needle.trim();
+  async function range(startDate: string) {
+    const [r] = await client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate, endDate: "today" }],
+      dimensions: [{ name: "pagePath" }],
+      metrics: [{ name: "screenPageViews" }, { name: "totalUsers" }],
+      dimensionFilter: {
+        filter: { fieldName: "pagePath", stringFilter: { matchType: "CONTAINS", value: q } },
+      },
+    });
+    let views = 0, users = 0;
+    for (const row of r.rows ?? []) {
+      views += Number(row.metricValues?.[0]?.value ?? 0);
+      users += Number(row.metricValues?.[1]?.value ?? 0);
+    }
+    return { views, users };
+  }
+  const [last7, last30, last90] = await Promise.all([
+    range("7daysAgo"), range("30daysAgo"), range("90daysAgo"),
+  ]);
+  return { needle: q, last7, last30, last90 };
+}
+
 // Fetches ALL period-dependent sections for an arbitrary date range.
 // `start`/`end` accept GA relative keywords ("today", "7daysAgo", "2024-01-01", …)
 // or explicit YYYY-MM-DD. `prev` (optional) is the comparison window for trends.

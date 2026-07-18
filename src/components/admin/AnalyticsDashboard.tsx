@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import type { GaStats, RangeStats } from "@/lib/ga-data";
 import { getRangeStats } from "@/app/admin/analytics/actions";
+import { PageViewsLookup } from "./PageViewsLookup";
 
 type Range = "today" | "yesterday" | "7d" | "30d" | "all" | "custom";
 
@@ -309,6 +310,9 @@ export function AnalyticsDashboard({ stats, initial, registrations }: { stats: G
           ))}
         </div>
       </div>
+
+      {/* ── Per-page views lookup (on-demand, independent of the range selector) ── */}
+      <PageViewsLookup />
 
       {/* ── Registrasi Pengguna (independent of the GA range selector) ── */}
       {registrations && (
