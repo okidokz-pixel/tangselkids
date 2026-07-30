@@ -104,7 +104,9 @@ export function LoginSheet() {
     const { error } = await sendOtp(`+62${phone.replace(/^0/, "")}`);
     setSendingOtp(false);
     if (error) {
-      setSendOtpError("Gagal mengirim kode. Coba lagi.");
+      // Surface the specific reason (cooldown / not-on-WhatsApp / generic) —
+      // sendOtp always returns a localised, user-safe message.
+      setSendOtpError(error);
       return;
     }
     setStep("otp");
