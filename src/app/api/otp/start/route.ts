@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   const r = await sendOtp(msisdn);
   if (!r.ok) {
-    return NextResponse.json({ error: r.error }, { status: r.status >= 500 ? 502 : r.status });
+    return NextResponse.json({ error: r.error }, { status: r.status });
   }
   return NextResponse.json({ ok: true });
 }

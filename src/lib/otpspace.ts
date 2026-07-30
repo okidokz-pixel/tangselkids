@@ -24,15 +24,23 @@ type SendResult   = { ok: true; otpId: string } | { ok: false; status: number; e
 type VerifyResult = { ok: true } | { ok: false; status: number; error: string };
 
 async function call(path: string, body: Record<string, unknown>) {
-  const key = process.env.OTPSPACE_API_KEY;
-  if (!key) throw new Error("OTPSPACE_API_KEY not set");
-  const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  return { res, data } as { res: Response; data: Record<string, unknown> & { data?: Record<string, unknown> } };
+  const key = (process.env.OTPSPACE_API_KEY ?? "").trim();
+  if (!key) {
+    console.error("[otpspace] OTPSPACE_API_KEY is missing/empty at runtime");
+    return { keyMissing: true as const };
+  }
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data } as { res: Response; data: Record<string, unknown> & { data?: Record<string, unknown> } };
+  } catch (e) {
+    console.error("[otpspace] network error calling", path, ":", e);
+    return { networkError: true as const };
+  }
 }
 
 /** Map an OTP Space error status to a user-facing Indonesian message. */
@@ -55,7 +63,10 @@ function verifyErrorMessage(status: number): string {
 
 /** Send an OTP over WhatsApp to `phone` (any format — normalised internally). */
 export async function sendOtp(phone: string): Promise<SendResult> {
-  const { res, data } = await call("/otp/send", { phone: toMsisdn(phone) });
+  const r = await call("/otp/send", { phone: toMsisdn(phone) });
+  if ("keyMissing" in r)    return { ok: false, status: 503, error: "Layanan OTP belum dikonfigurasi." };
+  if ("networkError" in r)  return { ok: false, status: 502, error: "Gagal mengirim kode. Coba lagi." };
+  const { res, data } = r;
   if (!res.ok) {
     console.error("[otpspace] send failed:", res.status, JSON.stringify(data));
     return { ok: false, status: res.status, error: sendErrorMessage(res.status) };
@@ -66,7 +77,10 @@ export async function sendOtp(phone: string): Promise<SendResult> {
 
 /** Verify the code the user entered. */
 export async function verifyOtp(phone: string, code: string): Promise<VerifyResult> {
-  const { res, data } = await call("/otp/verify", { phone: toMsisdn(phone), code });
+  const r = await call("/otp/verify", { phone: toMsisdn(phone), code });
+  if ("keyMissing" in r)    return { ok: false, status: 503, error: "Layanan OTP belum dikonfigurasi." };
+  if ("networkError" in r)  return { ok: false, status: 502, error: "Gagal memverifikasi kode. Coba lagi." };
+  const { res, data } = r;
   if (!res.ok) {
     // 400/422 = wrong code, 410 = expired — all "try again" from the UI's view.
     return { ok: false, status: res.status, error: verifyErrorMessage(res.status) };
