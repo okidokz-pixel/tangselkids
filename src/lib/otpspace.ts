@@ -29,6 +29,14 @@ async function call(path: string, body: Record<string, unknown>) {
     console.error("[otpspace] OTPSPACE_API_KEY is missing/empty at runtime");
     return { keyMissing: true as const };
   }
+  // The key must be plain ASCII (it goes into an HTTP header). Non-ASCII means a
+  // corrupted/masked paste in the Vercel env var (e.g. bullet chars from copying
+  // a masked field) — fetch would throw a ByteString error. Fail cleanly instead.
+  if (!/^[\x20-\x7E]+$/.test(key)) {
+    const bad = [...key].find((c) => c.charCodeAt(0) > 126)?.charCodeAt(0);
+    console.error(`[otpspace] OTPSPACE_API_KEY has a non-ASCII char (code ${bad}) — corrupted paste; re-enter the key in Vercel`);
+    return { keyMissing: true as const };
+  }
   try {
     const res = await fetch(`${BASE}${path}`, {
       method: "POST",
