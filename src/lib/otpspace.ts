@@ -20,8 +20,8 @@ export function toMsisdn(raw: string): string {
   return d;
 }
 
-type SendResult   = { ok: true; otpId: string } | { ok: false; status: number; error: string };
-type VerifyResult = { ok: true } | { ok: false; status: number; error: string };
+type SendResult   = { ok: true; otpId: string } | { ok: false; status: number; error: string; detail?: string };
+type VerifyResult = { ok: true } | { ok: false; status: number; error: string; detail?: string };
 
 async function call(path: string, body: Record<string, unknown>) {
   const key = (process.env.OTPSPACE_API_KEY ?? "").trim();
@@ -38,8 +38,11 @@ async function call(path: string, body: Record<string, unknown>) {
     const data = await res.json().catch(() => ({}));
     return { res, data } as { res: Response; data: Record<string, unknown> & { data?: Record<string, unknown> } };
   } catch (e) {
-    console.error("[otpspace] network error calling", path, ":", e);
-    return { networkError: true as const };
+    const cause = (e as { cause?: unknown })?.cause;
+    const detail = `${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}` +
+      (cause ? ` | cause: ${cause instanceof Error ? cause.message : String(cause)}` : "");
+    console.error("[otpspace] network error calling", path, ":", detail);
+    return { networkError: true as const, detail };
   }
 }
 
@@ -65,7 +68,7 @@ function verifyErrorMessage(status: number): string {
 export async function sendOtp(phone: string): Promise<SendResult> {
   const r = await call("/otp/send", { phone: toMsisdn(phone) });
   if ("keyMissing" in r)    return { ok: false, status: 503, error: "Layanan OTP belum dikonfigurasi." };
-  if ("networkError" in r)  return { ok: false, status: 502, error: "Gagal mengirim kode. Coba lagi." };
+  if ("networkError" in r)  return { ok: false, status: 502, error: "Gagal mengirim kode. Coba lagi.", detail: r.detail };
   const { res, data } = r;
   if (!res.ok) {
     console.error("[otpspace] send failed:", res.status, JSON.stringify(data));
