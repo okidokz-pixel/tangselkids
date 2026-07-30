@@ -225,37 +225,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, loadProfile]);
 
   // ── sendOtp ───────────────────────────────────────────────────────────────
+  // Delivery is handled by OTP Space (WhatsApp) via /api/otp/start — NOT
+  // Supabase's own OTP. See src/lib/otpspace.ts + src/lib/otpAuth.ts.
   async function sendOtp(phone: string): Promise<{ error?: string }> {
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: normalizePhone(phone),
-      options: { shouldCreateUser: true },
-    });
-    return error ? { error: error.message } : {};
+    try {
+      const res = await fetch("/api/otp/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        return { error: d.error || "Gagal mengirim kode. Coba lagi." };
+      }
+      return {};
+    } catch {
+      return { error: "Gagal mengirim kode. Coba lagi." };
+    }
   }
 
   // ── verifyOtp ─────────────────────────────────────────────────────────────
+  // Verifies via OTP Space (/api/otp/check); on success the server mints a real
+  // Supabase session, which we install here with setSession() so all downstream
+  // auth (profiles, RLS, refresh) works exactly as before.
   async function verifyOtp(
     phone: string,
     code: string,
   ): Promise<{ error?: string; isNewUser?: boolean }> {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: normalizePhone(phone),
-      token: code,
-      type:  "sms",
-    });
-    if (error) return { error: error.message };
-
-    // Check whether this user already has a named profile
-    let isNew = true;
-    if (data.user) {
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", data.user.id)
-        .single();
-      isNew = !prof?.name;
+    try {
+      const res = await fetch("/api/otp/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { error: d.error || "Kode salah atau sudah kedaluwarsa." };
+      }
+      const { error } = await supabase.auth.setSession({
+        access_token:  d.access_token,
+        refresh_token: d.refresh_token,
+      });
+      if (error) return { error: error.message };
+      return { isNewUser: d.isNewUser };
+    } catch {
+      return { error: "Terjadi kesalahan. Coba lagi." };
     }
-    return { isNewUser: isNew };
   }
 
   // ── register (save / overwrite profile) ──────────────────────────────────
