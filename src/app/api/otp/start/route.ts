@@ -19,8 +19,7 @@ export async function POST(req: NextRequest) {
 
   const r = await sendOtp(msisdn);
   if (!r.ok) {
-    // `detail` is a temporary diagnostic for the OTP Space connectivity issue.
-    return NextResponse.json({ error: r.error, detail: r.detail }, { status: r.status });
+    return NextResponse.json({ error: r.error }, { status: r.status });
   }
   return NextResponse.json({ ok: true });
 }
