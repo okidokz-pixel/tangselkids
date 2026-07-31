@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeft, MapPin, Heart, Star, Users } from "lucide-react";
 
 const COVERAGE = {
@@ -184,6 +185,20 @@ export default function AboutPage() {
           <p style={{ fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12.5, color: "rgba(255,255,255,0.60)", margin: 0 }}>
             Misi kami
           </p>
+        </div>
+
+        {/* The 29 July viral moment — a quiet keepsake, hidden in plain sight */}
+        <div style={{ textAlign: "center", paddingTop: 8 }}>
+          <Link
+            href="/the-viral-moment"
+            style={{
+              fontFamily: "var(--font-jakarta), sans-serif",
+              fontSize: 11, color: "#b9c2cc", textDecoration: "none",
+              letterSpacing: 0.3,
+            }}
+          >
+            The 29 July Viral Moment
+          </Link>
         </div>
 
         {/* Footer */}
