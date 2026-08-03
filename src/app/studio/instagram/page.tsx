@@ -34,7 +34,7 @@ export default function InstagramBankPage() {
     <ContentBank
       posts={posts}
       storageKey="tk_ig_next_v1"
-      brand="Instagram"
+      platform="instagram"
       subtitle="Bank Konten Instagram · 28 postingan (4 minggu)"
       homeHref="/studio"
       doneNext="Tandai selesai & lanjut →"

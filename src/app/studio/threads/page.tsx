@@ -28,7 +28,7 @@ export default function ThreadsBankPage() {
     <ContentBank
       posts={posts}
       storageKey="tk_threads_next_v2"
-      brand="Threads"
+      platform="threads"
       subtitle="Bank Konten Threads · 30 postingan"
       homeHref="/studio"
       doneNext="Tandai selesai & lanjut →"
