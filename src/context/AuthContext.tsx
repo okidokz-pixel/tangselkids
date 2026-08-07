@@ -224,10 +224,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, loadProfile]);
 
+  // ── OTP provider switch ─────────────────────────────────────────────────────
+  // TEMPORARY: OTP Space is down, so OTP is routed through Fazpass again
+  // (Supabase phone OTP → Send-SMS hook → /api/auth/send-otp → Fazpass gateway).
+  // To restore OTP Space, set USE_FAZPASS = false — nothing else changes: the OTP
+  // Space endpoints (/api/otp/start, /api/otp/check), src/lib/otpspace.ts,
+  // src/lib/otpAuth.ts, and OTPSPACE_API_KEY all remain in place and untouched.
+  const USE_FAZPASS: boolean = true;
+
   // ── sendOtp ───────────────────────────────────────────────────────────────
-  // Delivery is handled by OTP Space (WhatsApp) via /api/otp/start — NOT
-  // Supabase's own OTP. See src/lib/otpspace.ts + src/lib/otpAuth.ts.
   async function sendOtp(phone: string): Promise<{ error?: string }> {
+    if (USE_FAZPASS) {
+      // Supabase generates the OTP; its Send-SMS hook forwards it to Fazpass.
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: normalizePhone(phone),
+        options: { shouldCreateUser: true },
+      });
+      return error ? { error: error.message } : {};
+    }
+    // OTP Space (WhatsApp) via /api/otp/start.
     try {
       const res = await fetch("/api/otp/start", {
         method: "POST",
@@ -245,13 +260,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // ── verifyOtp ─────────────────────────────────────────────────────────────
-  // Verifies via OTP Space (/api/otp/check); on success the server mints a real
-  // Supabase session, which we install here with setSession() so all downstream
-  // auth (profiles, RLS, refresh) works exactly as before.
   async function verifyOtp(
     phone: string,
     code: string,
   ): Promise<{ error?: string; isNewUser?: boolean }> {
+    if (USE_FAZPASS) {
+      // Supabase verifies its own OTP and establishes the session directly.
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: normalizePhone(phone),
+        token: code,
+        type:  "sms",
+      });
+      if (error) return { error: error.message };
+      let isNew = true;
+      if (data.user) {
+        const { data: prof } = await supabase
+          .from("profiles").select("name").eq("id", data.user.id).single();
+        isNew = !prof?.name;
+      }
+      return { isNewUser: isNew };
+    }
+    // OTP Space (/api/otp/check) → server mints a Supabase session we install here.
     try {
       const res = await fetch("/api/otp/check", {
         method: "POST",
