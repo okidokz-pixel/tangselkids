@@ -195,24 +195,6 @@ export default function RootLayout({
         gtag('config', 'G-NF3ETB0YG4');
       `}</Script>
       <body className="min-h-full font-jakarta text-gray-800 antialiased" suppressHydrationWarning>
-        {/* ── TEMPORARY: OTP maintenance notice — remove when provider is back ── */}
-        <div
-          role="status"
-          style={{
-            width: "100%",
-            background: "#fef3c7",
-            color: "#92400e",
-            borderBottom: "1px solid #fcd34d",
-            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
-            fontSize: 12.5,
-            fontWeight: 600,
-            lineHeight: 1.45,
-            textAlign: "center",
-            padding: "9px 14px",
-          }}
-        >
-          ⚠️ OTP Provider dalam maintenance. Tidak bisa login/daftar untuk sementara 🙏🏻
-        </div>
         <LanguageProvider>
           <AuthProvider>
             <LocationProvider>
