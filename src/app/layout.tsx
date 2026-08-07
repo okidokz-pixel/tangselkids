@@ -195,6 +195,24 @@ export default function RootLayout({
         gtag('config', 'G-NF3ETB0YG4');
       `}</Script>
       <body className="min-h-full font-jakarta text-gray-800 antialiased" suppressHydrationWarning>
+        {/* ── Announcement: OTP restored — remove when no longer relevant ── */}
+        <div
+          role="status"
+          style={{
+            width: "100%",
+            background: "#dcfce7",
+            color: "#166534",
+            borderBottom: "1px solid #86efac",
+            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+            fontSize: 12.5,
+            fontWeight: 600,
+            lineHeight: 1.45,
+            textAlign: "center",
+            padding: "9px 14px",
+          }}
+        >
+          OTP sudah kembali normal. Daftar/login sudah berfungsi kembali 🙏🏻
+        </div>
         <LanguageProvider>
           <AuthProvider>
             <LocationProvider>
