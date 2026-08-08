@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendOtp, toMsisdn } from "@/lib/otpspace";
+import { logOtpEvent } from "@/lib/otp-events";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,9 @@ export async function POST(req: NextRequest) {
 
   const r = await sendOtp(msisdn);
   if (!r.ok) {
+    await logOtpEvent("send", false, "otpspace", String(r.status));
     return NextResponse.json({ error: r.error }, { status: r.status });
   }
+  await logOtpEvent("send", true, "otpspace");
   return NextResponse.json({ ok: true });
 }

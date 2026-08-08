@@ -63,6 +63,23 @@ export function normalizePhone(raw: string): string {
   return `+62${digits}`;
 }
 
+/**
+ * Fire-and-forget OTP-verify telemetry for the health monitor. Never awaited,
+ * never surfaces an error — if it fails, OTP still works exactly as before.
+ */
+function logVerifyOutcome(ok: boolean, provider: string): void {
+  try {
+    fetch("/api/monitor/otp-event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ok, provider }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 // ── Profile cache ─────────────────────────────────────────────────────────────
 // The logged-in UI must not depend on a live `profiles` fetch (which can be slow
 // or fail under DB load). We cache the last-known profile per user id so name +
@@ -271,6 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: code,
         type:  "sms",
       });
+      logVerifyOutcome(!error, "fazpass");
       if (error) return { error: error.message };
       let isNew = true;
       if (data.user) {
@@ -288,6 +306,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ phone, code }),
       });
       const d = await res.json().catch(() => ({}));
+      logVerifyOutcome(res.ok, "otpspace");
       if (!res.ok) {
         return { error: d.error || "Kode salah atau sudah kedaluwarsa." };
       }

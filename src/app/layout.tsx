@@ -10,6 +10,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { RegisterSheet } from "@/components/RegisterSheet";
 import { LoginSheet } from "@/components/LoginSheet";
 import { DragClickGuard } from "@/components/DragClickGuard";
+import { getOtpBanner } from "@/lib/site-flags";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -61,11 +62,12 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const banner = await getOtpBanner();
   return (
     <html lang="id" className={`${playfair.variable} ${jakarta.variable} ${fraunces.variable} ${frauncesLogo.variable} h-full`}>
       <head>
@@ -195,24 +197,27 @@ export default function RootLayout({
         gtag('config', 'G-NF3ETB0YG4');
       `}</Script>
       <body className="min-h-full font-jakarta text-gray-800 antialiased" suppressHydrationWarning>
-        {/* ── Announcement: OTP restored — remove when no longer relevant ── */}
-        <div
-          role="status"
-          style={{
-            width: "100%",
-            background: "#dcfce7",
-            color: "#166534",
-            borderBottom: "1px solid #86efac",
-            fontFamily: "var(--font-jakarta), system-ui, sans-serif",
-            fontSize: 12.5,
-            fontWeight: 600,
-            lineHeight: 1.45,
-            textAlign: "center",
-            padding: "9px 14px",
-          }}
-        >
-          OTP sudah kembali normal. Daftar/login sudah berfungsi kembali 🙏🏻
-        </div>
+        {/* ── Site banner — DB-driven (site_flags.otp_banner). Toggled by hand or
+            automatically by the OTP health monitor. tone: 'warn'=amber, 'ok'=green ── */}
+        {banner.on && banner.message && (
+          <div
+            role="status"
+            style={{
+              width: "100%",
+              background: banner.tone === "warn" ? "#fef3c7" : "#dcfce7",
+              color: banner.tone === "warn" ? "#92400e" : "#166534",
+              borderBottom: `1px solid ${banner.tone === "warn" ? "#fcd34d" : "#86efac"}`,
+              fontFamily: "var(--font-jakarta), system-ui, sans-serif",
+              fontSize: 12.5,
+              fontWeight: 600,
+              lineHeight: 1.45,
+              textAlign: "center",
+              padding: "9px 14px",
+            }}
+          >
+            {banner.message}
+          </div>
+        )}
         <LanguageProvider>
           <AuthProvider>
             <LocationProvider>

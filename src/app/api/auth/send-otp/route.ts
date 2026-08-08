@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { logOtpEvent } from "@/lib/otp-events";
 
 /**
  * Supabase Auth Hook — "Send SMS"
@@ -118,8 +119,11 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       console.error("[send-otp] Fazpass error:", res.status, JSON.stringify(data));
+      await logOtpEvent("send", false, "fazpass", String(res.status));
       return NextResponse.json({ error: "Failed to deliver OTP" }, { status: 502 });
     }
+
+    await logOtpEvent("send", true, "fazpass");
 
     // Never log the OTP code or full phone number. Keep only delivery diagnostics.
     const maskedPhone = fazpassPhone.replace(/^(\+?\d{2})\d+(\d{4})$/, "$1****$2");
@@ -133,6 +137,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("[send-otp] Network error calling Fazpass:", err);
+    await logOtpEvent("send", false, "fazpass", "network");
     return NextResponse.json({ error: "Network error" }, { status: 502 });
   }
 }
