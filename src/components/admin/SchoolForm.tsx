@@ -6,6 +6,7 @@ import { useDraft, DraftButton } from "./DraftButton";
 import { GoogleMapsFill } from "./GoogleMapsFill";
 import { saveSchool, deleteSchool } from "@/app/admin/actions";
 import { ImageUpload, PhotoGrid } from "./ImageUpload";
+import type { FeeDetails, FeeRow } from "@/lib/mockData";
 import { TagInput } from "./TagInput";
 import { ImproveButton, TranslateButton } from "./AiButtons";
 import { FillDataButton } from "./FillDataButton";
@@ -96,6 +97,33 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
   const [priceMax, setPriceMax] = useState(initial?.price_max ?? "");
   const [tahunBiaya, setTahunBiaya] = useState(initial?.tahun_biaya ?? "");
 
+  // Fee detail (structured text — shown to users, replaces the fee image)
+  const initFee: FeeDetails = (initial?.fee_details as FeeDetails | null) ?? {};
+  const [feeIntro, setFeeIntro] = useState(initFee.intro ?? "");
+  const [feeEstimasi, setFeeEstimasi] = useState<boolean>(!!initFee.estimasi);
+  const [feeRows, setFeeRows] = useState<FeeRow[]>(initFee.rows ?? []);
+  const [feeRowsNote, setFeeRowsNote] = useState(initFee.rowsNote ?? "");
+  const [feeCatatan, setFeeCatatan] = useState(initFee.catatan ?? "");
+
+  function updateFeeRow(i: number, patch: Partial<FeeRow>) {
+    setFeeRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function addFeeRow() {
+    setFeeRows((prev) => [...prev, { label: "", amount: "" }]);
+  }
+  function removeFeeRow(i: number) {
+    setFeeRows((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function moveFeeRow(i: number, dir: -1 | 1) {
+    setFeeRows((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
   // Media
   const [logoUrl, setLogoUrl] = useState(initial?.logo_url ?? "");
   const [feeImageUrl, setFeeImageUrl] = useState(initial?.fee_image_url ?? "");
@@ -119,6 +147,26 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
   }
   function toggleBahasa(b: string) {
     setKategoriBahasa((prev) => prev.includes(b) ? prev.filter((x) => x !== b) : [...prev, b]);
+  }
+
+  /** Assemble the fee_details JSONB (or null if the admin left it all empty). */
+  function buildFeeDetails(): FeeDetails | null {
+    const rows = feeRows
+      .map((r) => {
+        const label = r.label.trim();
+        const amount = r.amount.trim();
+        const note = (r.note ?? "").trim();
+        return { label, amount, ...(note ? { note } : {}) };
+      })
+      .filter((r) => r.label || r.amount);
+    const obj: FeeDetails = {
+      ...(feeIntro.trim() ? { intro: feeIntro.trim() } : {}),
+      ...(feeEstimasi ? { estimasi: true } : {}),
+      ...(rows.length ? { rows } : {}),
+      ...(feeRowsNote.trim() ? { rowsNote: feeRowsNote.trim() } : {}),
+      ...(feeCatatan.trim() ? { catatan: feeCatatan.trim() } : {}),
+    };
+    return Object.keys(obj).length ? obj : null;
   }
 
   function buildPayload() {
@@ -158,6 +206,7 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
       price_min: priceMin ? Number(priceMin) : null,
       price_max: priceMax ? Number(priceMax) : null,
       tahun_biaya: tahunBiaya || null,
+      fee_details: buildFeeDetails(),
       logo_url: logoUrl || null,
       fee_image_url: feeImageUrl || null,
       ...photoMap, ...videoMap,
@@ -479,6 +528,87 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
           <Field label="Tahun Biaya">
             <input style={inputStyle} value={tahunBiaya} onChange={(e) => setTahunBiaya(e.target.value)} placeholder="e.g. 2024/2025" />
           </Field>
+
+          {/* ── Rincian Biaya (structured text shown to users) ─────────────── */}
+          <SectionDivider label="Rincian Biaya (teks — tampil ke user)" />
+          <div style={{ fontSize: 12.5, color: "#6b7280", marginTop: -8, lineHeight: 1.5 }}>
+            Teks ini menggantikan gambar biaya di halaman sekolah. Disclaimer standar
+            otomatis ditambahkan di bawah — tidak perlu diketik ulang.
+          </div>
+
+          <Field label="Intro (kalimat pembuka)">
+            <textarea
+              style={{ ...inputStyle, minHeight: 70, resize: "vertical" }}
+              value={feeIntro}
+              onChange={(e) => setFeeIntro(e.target.value)}
+              placeholder="Ringkasan singkat, mis. 'Estimasi biaya SD … — uang pangkal Rp …, SPP Rp …/bulan.'"
+            />
+          </Field>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13.5, color: "#374151" }}>
+            <input type="checkbox" checked={feeEstimasi} onChange={(e) => setFeeEstimasi(e.target.checked)} />
+            Tandai sebagai estimasi (menampilkan label &ldquo;Estimasi&rdquo;)
+          </label>
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>Baris Biaya</div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {feeRows.map((r, i) => (
+                <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10, background: "#fafbfc" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <input
+                      style={inputStyle}
+                      value={r.label}
+                      onChange={(e) => updateFeeRow(i, { label: e.target.value })}
+                      placeholder="Komponen, mis. Uang Pangkal"
+                    />
+                    <input
+                      style={inputStyle}
+                      value={r.amount}
+                      onChange={(e) => updateFeeRow(i, { amount: e.target.value })}
+                      placeholder="Biaya, mis. Rp 30.000.000 – 45.000.000"
+                    />
+                  </div>
+                  <input
+                    style={{ ...inputStyle, marginTop: 8 }}
+                    value={r.note ?? ""}
+                    onChange={(e) => updateFeeRow(i, { note: e.target.value })}
+                    placeholder="Catatan baris (opsional), mis. Dibayarkan satu kali hingga lulus"
+                  />
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button type="button" onClick={() => moveFeeRow(i, -1)} disabled={i === 0}
+                      style={{ ...miniBtn, opacity: i === 0 ? 0.4 : 1 }}>↑</button>
+                    <button type="button" onClick={() => moveFeeRow(i, 1)} disabled={i === feeRows.length - 1}
+                      style={{ ...miniBtn, opacity: i === feeRows.length - 1 ? 0.4 : 1 }}>↓</button>
+                    <button type="button" onClick={() => removeFeeRow(i)}
+                      style={{ ...miniBtn, marginLeft: "auto", color: "#b91c1c", borderColor: "#fecaca" }}>Hapus</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addFeeRow}
+              style={{ marginTop: 10, padding: "8px 14px", borderRadius: 8, border: "1px dashed #9ca3af", background: "#fff", color: "#374151", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              + Tambah baris
+            </button>
+          </div>
+
+          <Field label="Catatan kaki tabel (italic, opsional)">
+            <textarea
+              style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+              value={feeRowsNote}
+              onChange={(e) => setFeeRowsNote(e.target.value)}
+              placeholder="mis. Rincian resmi sekolah tidak dipublikasikan terbuka; angka di atas merupakan gambaran…"
+            />
+          </Field>
+
+          <Field label="Catatan (kotak di bawah tabel, opsional)">
+            <textarea
+              style={{ ...inputStyle, minHeight: 60, resize: "vertical" }}
+              value={feeCatatan}
+              onChange={(e) => setFeeCatatan(e.target.value)}
+              placeholder="mis. Pendaftaran via PPDB online; tersedia potongan Early Bird."
+            />
+          </Field>
         </div>
       )}
 
@@ -516,7 +646,7 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
           </div>
 
           <div>
-            <SectionDivider label="Fee Detail Image (price-detail bucket)" />
+            <SectionDivider label="Fee Detail Image (legacy — pakai 'Rincian Biaya' di tab Fees)" />
             <ImageUpload
               value={feeImageUrl}
               onChange={setFeeImageUrl}
@@ -588,6 +718,12 @@ const inputStyle: React.CSSProperties = {
   width: "100%", padding: "9px 12px", borderRadius: 8,
   border: "1.5px solid #d1d5db", fontSize: 14, color: "#111827",
   outline: "none", boxSizing: "border-box", background: "#fff",
+};
+
+const miniBtn: React.CSSProperties = {
+  padding: "5px 12px", borderRadius: 7, border: "1px solid #d1d5db",
+  background: "#fff", color: "#374151", fontSize: 12.5, fontWeight: 600,
+  cursor: "pointer", lineHeight: 1,
 };
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
