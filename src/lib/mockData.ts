@@ -16,6 +16,23 @@ export type TangselKidsRating = {
   verdict: string;
 };
 
+/** One line item in a structured fee breakdown. `amount` is free text so ranges,
+ *  "/ bulan", "Sekitar …", or "Tidak dipublikasikan" all render as-is. */
+export type FeeRow = {
+  label: string;
+  amount: string;
+  note?: string;   // optional sub-line under the row (e.g. "Dibayarkan satu kali hingga lulus SD.")
+};
+
+/** Structured, editable fee detail — replaces the uploaded fee image for schools. */
+export type FeeDetails = {
+  intro?: string;       // summary paragraph shown above the table
+  estimasi?: boolean;   // marks the whole breakdown as an estimate (adds an "(Estimasi)" tag)
+  rows?: FeeRow[];      // the fee line items (any number, per-school)
+  rowsNote?: string;    // italic caption shown under the rows
+  catatan?: string;     // free-text notes block below the table
+};
+
 export type Place = {
   id: string;
   slug?: string;
@@ -53,7 +70,8 @@ export type Place = {
   logo?: string;                // URL to facility logo image
   facilities?: string;          // comma-separated, e.g. "Perpustakaan, Kolam Renang, Aula"
   extracurriculars?: string;    // comma-separated, e.g. "Futsal, Basket, Renang"
-  feeImageUrl?: string;         // URL to detailed fee/price list image
+  feeImageUrl?: string;         // URL to detailed fee/price list image (legacy — being replaced by feeDetails)
+  feeDetails?: FeeDetails;      // structured, editable fee breakdown (schools); preferred over feeImageUrl when present
   videos?: string[];            // YouTube video IDs
   reviewsList?: Review[];
   tangselKidsRating?: TangselKidsRating;

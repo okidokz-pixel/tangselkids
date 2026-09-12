@@ -104,6 +104,7 @@ function mapRow(row: any, category: Place["category"]): Place {
         annualFeeMin:           row.annual_fee_min      ?? undefined,
         annualFeeMax:           row.annual_fee_max      ?? undefined,
         tahunBiaya:             row.tahun_biaya         ?? undefined,
+        feeDetails:             (row.fee_details as import("./mockData").FeeDetails | null) ?? undefined,
         bahasa:                 (row.kategori_bahasa as string[] | null) ?? undefined,
         teachingLanguageDisplay: row.teaching_language  ?? undefined,
         studentsPerClass:       row.students_per_class  ?? undefined,

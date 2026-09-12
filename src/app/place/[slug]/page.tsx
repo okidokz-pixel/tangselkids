@@ -20,6 +20,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { getNote, saveNote, deleteNote } from "@/lib/notesStorage";
 import { useAuth } from "@/context/AuthContext";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { FeeDetailsView } from "@/components/FeeDetails";
 import { useLocation } from "@/context/LocationContext";
 import { useRegisterSheet } from "@/context/RegisterSheetContext";
 import { addSaved, removeSaved } from "@/lib/savedPlaces";
@@ -1476,7 +1477,46 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                   {detailOpen && (
                     <div style={{ borderTop: "1px solid #e9eef4", paddingTop: 10, paddingBottom: 6 }}>
                       {(place.category === "school" || place.category === "learning-center" || place.category === "daycare" || place.category === "clinic") ? (
-                        place.feeImageUrl ? (
+                        (place.feeDetails?.rows?.length || place.feeDetails?.intro) ? (
+                          user ? (
+                            /* Logged in — structured fee text */
+                            <FeeDetailsView details={place.feeDetails!} tahun={place.tahunBiaya} />
+                          ) : (
+                            /* Guest — blurred text with register prompt */
+                            <div style={{ position: "relative", borderRadius: 12, overflow: "clip" }}>
+                              <div style={{ filter: "blur(6px)", pointerEvents: "none", userSelect: "none" }} aria-hidden>
+                                <FeeDetailsView details={place.feeDetails!} tahun={place.tahunBiaya} />
+                              </div>
+                              <div
+                                style={{
+                                  position: "absolute", inset: 0,
+                                  display: "flex", flexDirection: "column",
+                                  alignItems: "center", justifyContent: "center", gap: 10,
+                                  background: "rgba(14,29,79,0.28)",
+                                }}
+                              >
+                                <div style={{
+                                  width: 44, height: 44, borderRadius: 999, background: "#fff",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                }}>
+                                  <Lock size={20} color="#0e1d4f" strokeWidth={2.5} />
+                                </div>
+                                <ActionButton
+                                  onClick={() => openRegisterSheet()}
+                                  style={{
+                                    padding: "8px 18px", borderRadius: 999,
+                                    background: "#2e8a5a", color: "#fff",
+                                    fontSize: 12, fontWeight: 700,
+                                    fontFamily: "var(--font-jakarta), sans-serif",
+                                    touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
+                                  }}
+                                >
+                                  {lang === "id" ? "Daftar GRATIS untuk melihat" : "Register FREE to view"}
+                                </ActionButton>
+                              </div>
+                            </div>
+                          )
+                        ) : place.feeImageUrl ? (
                           user ? (
                             /* Logged in — full image */
                             <div
