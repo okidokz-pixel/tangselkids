@@ -1528,7 +1528,7 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
                                     touchAction: "manipulation", WebkitTapHighlightColor: "transparent",
                                   }}
                                 >
-                                  {lang === "id" ? "Daftar untuk melihat" : "Register to view"}
+                                  {lang === "id" ? "Daftar GRATIS untuk melihat" : "Register FREE to view"}
                                 </ActionButton>
                               </div>
                             </div>
