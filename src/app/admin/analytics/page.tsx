@@ -1,4 +1,5 @@
 import { getGaStats, fetchGaRange } from "@/lib/ga-data";
+import { getSearchConsole } from "@/lib/gsc-data";
 import { AnalyticsDashboard } from "@/components/admin/AnalyticsDashboard";
 import { getRegistrationStats } from "@/app/admin/actions";
 
@@ -6,6 +7,7 @@ export const metadata = { title: "Analytics" };
 
 export default async function AnalyticsPage() {
   const registrations = await getRegistrationStats().catch(() => null);
+  const searchConsole = await getSearchConsole().catch(() => null);
 
   let stats, initial;
   try {
@@ -25,5 +27,5 @@ export default async function AnalyticsPage() {
     );
   }
 
-  return <AnalyticsDashboard stats={stats} initial={initial} registrations={registrations} />;
+  return <AnalyticsDashboard stats={stats} initial={initial} registrations={registrations} searchConsole={searchConsole} />;
 }

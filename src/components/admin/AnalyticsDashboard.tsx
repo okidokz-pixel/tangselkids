@@ -5,6 +5,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import type { GaStats, RangeStats } from "@/lib/ga-data";
+import type { SearchConsoleStats } from "@/lib/gsc-data";
 import { getRangeStats } from "@/app/admin/analytics/actions";
 import { PageViewsLookup } from "./PageViewsLookup";
 
@@ -199,7 +200,7 @@ function rangeConfig(key: Range, pickerStart: string, pickerEnd: string): RangeC
   }
 }
 
-export function AnalyticsDashboard({ stats, initial, registrations }: { stats: GaStats; initial: RangeStats; registrations: RegistrationStats | null }) {
+export function AnalyticsDashboard({ stats, initial, registrations, searchConsole }: { stats: GaStats; initial: RangeStats; registrations: RegistrationStats | null; searchConsole?: SearchConsoleStats | null }) {
   const [range, setRange] = useState<Range>("7d");
   const [data, setData] = useState<RangeStats>(initial);
   const [periodNote, setPeriodNote] = useState("7 hari");
@@ -824,6 +825,47 @@ export function AnalyticsDashboard({ stats, initial, registrations }: { stats: G
               )}
             </div>
           </div>
+
+          {/* Google search keywords (Search Console) */}
+          {searchConsole && searchConsole.queries.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ ...cardStyle, padding: "20px 24px" }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>Kata Kunci Google</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                    {searchConsole.totalClicks.toLocaleString("id-ID")} klik · {searchConsole.totalImpressions.toLocaleString("id-ID")} impresi
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 16 }}>
+                  Yang diketik orang di Google untuk menemukan situs · {searchConsole.startDate} – {searchConsole.endDate} (Search Console)
+                </div>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 460 }}>
+                    <thead>
+                      <tr style={{ color: "var(--muted)", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, textAlign: "left" }}>Kata Kunci</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, textAlign: "right" }}>Klik</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, textAlign: "right" }}>Impresi</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, textAlign: "right" }}>CTR</th>
+                        <th style={{ padding: "6px 8px", fontWeight: 600, textAlign: "right" }}>Posisi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {searchConsole.queries.map((q, i) => (
+                        <tr key={i} style={{ borderTop: "1px solid var(--line-soft)" }}>
+                          <td style={{ padding: "8px 8px", color: "var(--ink-2)", maxWidth: 320, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{q.query}</td>
+                          <td style={{ padding: "8px 8px", textAlign: "right", fontWeight: 700, color: "var(--ink)" }}>{q.clicks.toLocaleString("id-ID")}</td>
+                          <td style={{ padding: "8px 8px", textAlign: "right", color: "var(--ink-2)" }}>{q.impressions.toLocaleString("id-ID")}</td>
+                          <td style={{ padding: "8px 8px", textAlign: "right", color: "var(--ink-2)" }}>{(q.ctr * 100).toFixed(1)}%</td>
+                          <td style={{ padding: "8px 8px", textAlign: "right", color: "var(--ink-2)" }}>{q.position.toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Top place pages */}
           {data.topPlaces.length > 0 && (
