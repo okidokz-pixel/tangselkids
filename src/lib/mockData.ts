@@ -72,6 +72,7 @@ export type Place = {
   extracurriculars?: string;    // comma-separated, e.g. "Futsal, Basket, Renang"
   feeImageUrl?: string;         // URL to detailed fee/price list image (legacy — being replaced by feeDetails)
   feeDetails?: FeeDetails;      // structured, editable fee breakdown (schools); preferred over feeImageUrl when present
+  searchAliases?: string;       // extra names/keywords for on-site search (e.g. former name, abbreviation)
   videos?: string[];            // YouTube video IDs
   reviewsList?: Review[];
   tangselKidsRating?: TangselKidsRating;

@@ -47,6 +47,7 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
   // Form state
   const [name, setName] = useState(initial?.name ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
+  const [searchAliases, setSearchAliases] = useState(initial?.search_aliases ?? "");
   const [area, setArea] = useState(initial?.area ?? "");
   const [locationDetail, setLocationDetail] = useState(initial?.location_detail ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
@@ -177,7 +178,7 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
     ["video_1","video_2","video_3","video_4"].forEach((c, i) => { videoMap[c] = videos[i] ?? null; });
 
     return {
-      name, slug, area, location_detail: locationDetail, address,
+      name, slug, search_aliases: searchAliases || null, area, location_detail: locationDetail, address,
       latitude: latitude ? Number(latitude) : null,
       longitude: longitude ? Number(longitude) : null,
       google_place_id: googlePlaceId || null,
@@ -366,6 +367,13 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
             <input style={inputStyle} value={slug} onChange={(e) => setSlug(e.target.value)} />
             <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
               Auto-generated from name. URL: /place/{slug || "…"}
+            </div>
+          </Field>
+
+          <Field label="Nama Alias / Kata Kunci Pencarian">
+            <input style={inputStyle} value={searchAliases} onChange={(e) => setSearchAliases(e.target.value)} placeholder="mis. HighScope Indonesia Bintaro, High Scope, VIS" />
+            <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 4 }}>
+              Nama lama / singkatan agar tetap muncul di pencarian. Pisahkan dengan koma. Tidak tampil di halaman.
             </div>
           </Field>
 

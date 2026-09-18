@@ -79,6 +79,7 @@ function mapRow(row: any, category: Place["category"]): Place {
     facilities:     row.facilities      ?? undefined,
     extracurriculars: row.extracurriculars ?? undefined,
     feeImageUrl:    row.fee_image_url   ?? undefined,
+    searchAliases:  row.search_aliases  ?? undefined,
     photo:          firstPhoto,
     photos:         photos.length > 0 ? photos : undefined,
     videos:         videos.length > 0 ? videos : undefined,
@@ -267,7 +268,7 @@ export function getCachedAllPlaces(): Place[] {
 // category's table, or the whole query errors. `jenjang` is where a school's
 // level ("SD"/"SMP"/"TK") lives, so "SD Anderson" can match name + jenjang.
 const SEARCH_COLUMNS: Record<Place["category"], string[]> = {
-  school:            ["name", "jenjang", "curriculum", "curriculum_category", "area"],
+  school:            ["name", "jenjang", "curriculum", "curriculum_category", "area", "search_aliases"],
   "learning-center": ["name", "area"],
   daycare:           ["name", "area"],
   playground:        ["name", "area"],
@@ -288,7 +289,7 @@ const JENJANG_TOKEN: Record<string, string> = {
 
 // The text a free-text token may match against, per mapped place.
 function searchHaystack(p: Place): string {
-  return [p.name, p.jenjang, p.curriculum, p.curriculumCategory, p.area, p.locationDetail, p.address]
+  return [p.name, p.jenjang, p.curriculum, p.curriculumCategory, p.area, p.locationDetail, p.address, p.searchAliases]
     .filter(Boolean).join(" ").toLowerCase();
 }
 
