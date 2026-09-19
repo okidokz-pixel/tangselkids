@@ -406,6 +406,114 @@ async function fetchGaStats(): Promise<GaStats> {
 
 export const getGaStats = unstable_cache(fetchGaStats, ["ga-stats"], { revalidate: 300 });
 
+export type DailyStatsPoint = { date: string; users: number; pageviews: number; signUps: number };
+
+export type DailyStatsSummary = {
+  today: DailyStatsPoint;
+  last7Days: DailyStatsPoint[];
+  sameWeekdayLast7Weeks: DailyStatsPoint[];
+  last30Days: {
+    totalUsers: number;
+    totalPageviews: number;
+    totalSignUps: number;
+    avgUsersPerDay: number;
+    avgSignUpsPerDay: number;
+  };
+};
+
+function toIsoDate(raw: string) {
+  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+}
+
+// Daily summary for an external monitoring bot (see /api/internal/daily-stats).
+// Pulls traffic (date + screenPageViews + activeUsers) and "sign_up" event counts
+// (see FUNNEL_ORDER / FUNNEL_LABELS above — sign_up = "Registrasi Selesai") over a
+// trailing 60-day window, then buckets everything in code so we get a gap-free
+// calendar (days with zero activity don't come back as GA rows at all).
+async function fetchDailyStatsSummaryUncached(): Promise<DailyStatsSummary> {
+  const client = getClient();
+  const DAYS_BACK = 60;
+
+  const [trafficRes, signUpRes] = await Promise.all([
+    client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate: `${DAYS_BACK}daysAgo`, endDate: "today" }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "screenPageViews" }, { name: "activeUsers" }],
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+    client.runReport({
+      property: PROPERTY,
+      dateRanges: [{ startDate: `${DAYS_BACK}daysAgo`, endDate: "today" }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: { filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "sign_up" } } },
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+  ]);
+
+  const trafficMap = new Map<string, { pageviews: number; users: number }>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const r of (trafficRes[0].rows ?? []) as any[]) {
+    const date = toIsoDate(r.dimensionValues?.[0]?.value ?? "20000101");
+    trafficMap.set(date, { pageviews: rowVal(r, 0), users: rowVal(r, 1) });
+  }
+  const signUpMap = new Map<string, number>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const r of (signUpRes[0].rows ?? []) as any[]) {
+    const date = toIsoDate(r.dimensionValues?.[0]?.value ?? "20000101");
+    signUpMap.set(date, rowVal(r, 0));
+  }
+
+  // Anchor on GA's own newest date row (its reporting timezone), not server UTC —
+  // keeps "today" aligned with the property's calendar day.
+  const knownDates = Array.from(trafficMap.keys()).sort();
+  const anchor = knownDates.length ? knownDates[knownDates.length - 1] : new Date().toISOString().slice(0, 10);
+  const anchorDate = new Date(`${anchor}T00:00:00Z`);
+
+  const days: DailyStatsPoint[] = [];
+  for (let i = DAYS_BACK; i >= 0; i--) {
+    const d = new Date(anchorDate);
+    d.setUTCDate(d.getUTCDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    const t = trafficMap.get(date) ?? { pageviews: 0, users: 0 };
+    days.push({ date, users: t.users, pageviews: t.pageviews, signUps: signUpMap.get(date) ?? 0 });
+  }
+
+  const today = days[days.length - 1];
+  const last7Days = days.slice(-7);
+
+  const todayWeekday = new Date(`${today.date}T00:00:00Z`).getUTCDay();
+  const sameWeekdayLast7Weeks = days
+    .filter((d) => d.date !== today.date && new Date(`${d.date}T00:00:00Z`).getUTCDay() === todayWeekday)
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, 7);
+
+  const last30 = days.slice(-30);
+  const totalUsers = last30.reduce((s, d) => s + d.users, 0);
+  const totalPageviews = last30.reduce((s, d) => s + d.pageviews, 0);
+  const totalSignUps = last30.reduce((s, d) => s + d.signUps, 0);
+
+  return {
+    today,
+    last7Days,
+    sameWeekdayLast7Weeks,
+    last30Days: {
+      totalUsers,
+      totalPageviews,
+      totalSignUps,
+      avgUsersPerDay: Number((totalUsers / last30.length).toFixed(1)),
+      avgSignUpsPerDay: Number((totalSignUps / last30.length).toFixed(1)),
+    },
+  };
+}
+
+export const fetchDailyStatsSummary = unstable_cache(
+  fetchDailyStatsSummaryUncached,
+  ["ga-daily-stats-summary"],
+  { revalidate: 1800 },
+);
+
 // On-demand pageviews for a single page (admin lookup box). `needle` is a slug
 // or path fragment, matched as a CONTAINS filter on pagePath.
 export async function fetchPageViews(needle: string): Promise<{
