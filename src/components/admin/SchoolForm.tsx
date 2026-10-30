@@ -157,7 +157,9 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
         const label = r.label.trim();
         const amount = r.amount.trim();
         const note = (r.note ?? "").trim();
-        return { label, amount, ...(note ? { note } : {}) };
+        const section = (r.section ?? "").trim();
+        const group = (r.group ?? "").trim();
+        return { label, amount, ...(note ? { note } : {}), ...(section ? { section } : {}), ...(group ? { group } : {}) };
       })
       .filter((r) => r.label || r.amount);
     const obj: FeeDetails = {
@@ -583,6 +585,22 @@ export function SchoolForm({ initial, id, initialDraftId }: { initial?: Record<s
                     onChange={(e) => updateFeeRow(i, { note: e.target.value })}
                     placeholder="Catatan baris (opsional), mis. Dibayarkan satu kali hingga lulus"
                   />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+                    <select
+                      style={inputStyle}
+                      value={r.section ?? ""}
+                      onChange={(e) => updateFeeRow(i, { section: e.target.value || undefined })}
+                    >
+                      <option value="">— Kategori (opsional) —</option>
+                      {FEE_SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <input
+                      style={inputStyle}
+                      value={r.group ?? ""}
+                      onChange={(e) => updateFeeRow(i, { group: e.target.value || undefined })}
+                      placeholder="Sub-grup (opsional), mis. Uang Pangkal"
+                    />
+                  </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <button type="button" onClick={() => moveFeeRow(i, -1)} disabled={i === 0}
                       style={{ ...miniBtn, opacity: i === 0 ? 0.4 : 1 }}>↑</button>
@@ -727,6 +745,14 @@ const inputStyle: React.CSSProperties = {
   border: "1.5px solid #d1d5db", fontSize: 14, color: "#111827",
   outline: "none", boxSizing: "border-box", background: "#fff",
 };
+
+const FEE_SECTIONS = [
+  "Biaya Satu Kali",
+  "Biaya Bulanan (SPP)",
+  "Biaya per Term",
+  "Biaya per Tahun",
+  "Biaya Lain",
+];
 
 const miniBtn: React.CSSProperties = {
   padding: "5px 12px", borderRadius: 7, border: "1px solid #d1d5db",

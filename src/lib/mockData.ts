@@ -21,7 +21,9 @@ export type TangselKidsRating = {
 export type FeeRow = {
   label: string;
   amount: string;
-  note?: string;   // optional sub-line under the row (e.g. "Dibayarkan satu kali hingga lulus SD.")
+  note?: string;     // optional sub-line under the row (e.g. "Dibayarkan satu kali hingga lulus SD.")
+  section?: string;  // group label (e.g. "Biaya Satu Kali") — rows sharing a section render under one colored header
+  group?: string;    // optional sub-group within a section (e.g. "Uang Pangkal") — renders as an indented sub-list
 };
 
 /** Structured, editable fee detail — replaces the uploaded fee image for schools. */
