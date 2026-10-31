@@ -747,7 +747,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const FEE_SECTIONS = [
-  "Biaya Satu Kali",
+  "Biaya Awal",
   "Biaya Bulanan (SPP)",
   "Biaya per Term",
   "Biaya per Tahun",
