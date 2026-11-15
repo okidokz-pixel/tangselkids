@@ -33,3 +33,15 @@ export async function sendAlertEmail(subject: string, body: string): Promise<voi
     console.error("[notify] email failed:", e);
   }
 }
+
+/**
+ * Send an alert to the owner via BOTH email and Telegram (whichever are set up).
+ * Used by the monitors and agents. Never throws.
+ */
+export async function notifyOwner(subject: string, body: string): Promise<void> {
+  const { notifyOwnerTelegram } = await import("./telegram");
+  await Promise.all([
+    sendAlertEmail(subject, body),
+    notifyOwnerTelegram(`<b>${subject.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</b>\n\n${body.replace(/&/g, "&amp;").replace(/</g, "&lt;")}`).catch(() => false),
+  ]);
+}

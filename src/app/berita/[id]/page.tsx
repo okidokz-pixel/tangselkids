@@ -43,14 +43,25 @@ export default function ArticlePage({ params }: { params: Promise<{ id: string }
   // Check static articles first (fast, synchronous)
   const staticRaw = articles.find((a) => a.id === id);
 
+  const [previewToken] = useState<string | null>(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("preview") : null);
+
   useEffect(() => {
+    if (previewToken) {
+      // Draft preview — fetch the (possibly unpublished) article by token.
+      fetch(`/api/article-preview/${previewToken}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => setDbArticle(j?.ok ? (j.article as DbArticle) : null))
+        .catch(() => setDbArticle(null));
+      return;
+    }
     // Only fetch from Supabase if not a known static article ID
     if (!staticRaw) {
       fetchArticleBySlug(id).then(setDbArticle);
     } else {
       setDbArticle(null);
     }
-  }, [id, staticRaw]);
+  }, [id, staticRaw, previewToken]);
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (!staticRaw && dbArticle === "loading") {

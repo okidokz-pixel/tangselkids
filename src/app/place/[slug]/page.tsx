@@ -160,6 +160,9 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
   const [place,   setPlace]   = useState<Place | null>(null);
   const [loadingPlace, setLoadingPlace] = useState(true);
+  const [previewToken] = useState<string | null>(() =>
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("preview") : null);
+  const [previewInfo, setPreviewInfo] = useState<{ summary: string; kind: string } | null>(null);
 
   const [heroIndex,      setHeroIndex]      = useState(0);
   const [lightboxOpen,   setLightboxOpen]   = useState(false);
@@ -236,14 +239,28 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
     ? (place.photos && place.photos.length > 0 ? place.photos : [place.photo])
     : [];
 
-  // Fetch place from Supabase
+  // Fetch place from Supabase (with optional pending-edit preview overlay)
   useEffect(() => {
     setLoadingPlace(true);
-    fetchPlaceBySlug(slug).then(p => {
-      if (p) { setPlace(p); setLoadingPlace(false); return; }
-      fetchPlaceById(slug).then(p2 => { setPlace(p2); setLoadingPlace(false); });
-    });
-  }, [slug]);
+    (async () => {
+      let base = await fetchPlaceBySlug(slug);
+      if (!base) base = await fetchPlaceById(slug);
+      if (base && previewToken) {
+        try {
+          const r = await fetch(`/api/preview/${previewToken}`);
+          if (r.ok) {
+            const pv = await r.json();
+            if (pv?.ok && pv.slug === slug && pv.placePatch) {
+              base = { ...base, ...pv.placePatch } as Place;
+              setPreviewInfo({ summary: pv.summary as string, kind: pv.kind as string });
+            }
+          }
+        } catch { /* ignore — show the real page */ }
+      }
+      setPlace(base);
+      setLoadingPlace(false);
+    })();
+  }, [slug, previewToken]);
 
   useEffect(() => {
     if (!place?.id) return;
@@ -509,6 +526,18 @@ export default function PlaceDetailPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="max-w-md mx-auto min-h-screen flex flex-col" style={{ paddingTop: 52 }}>
+
+      {previewInfo && (
+        <div style={{
+          position: "sticky", top: 52, zIndex: 50, margin: "0 0 4px",
+          background: "#fef3c7", borderBottom: "1px solid #fcd34d", color: "#92400e",
+          fontFamily: "var(--font-jakarta), sans-serif", fontSize: 12.5, fontWeight: 600,
+          textAlign: "center", padding: "9px 14px", lineHeight: 1.45,
+        }}>
+          👀 PRATINJAU — perubahan ini <u>belum live</u>. Setujui/batalkan di Telegram.
+          {previewInfo.summary ? <div style={{ fontWeight: 400, marginTop: 2 }}>{previewInfo.summary}</div> : null}
+        </div>
+      )}
 
       {/* Contextual registration nudge — fires once after 4 distinct school views (guests only) */}
       <RegisterNudge category={place.category} id={place.id} />
