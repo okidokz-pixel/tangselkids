@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { kvGet, kvSet, kvDel, kvGetJSON, kvSetJSON } from "@/lib/kv";
+import { kvGet, kvSet, kvDel, kvGetJSON, kvSetJSON, kvList } from "@/lib/kv";
 import { authorizeOwner, sendMessage, answerCallback, editMessageText, downloadFile } from "@/lib/telegram";
 import { analyzeImage, matchSchools, buildPatches, uploadSchoolPhoto, nextPhotoSlot, type Proposal } from "@/lib/data-updater";
+import { otpWindow } from "@/lib/otp-events";
+import { getOtpBannerFresh } from "@/lib/site-flags";
+import { generateDraft } from "@/lib/article-writer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +61,69 @@ async function proposeEdit(chatId: number, p: Proposal, match: { slug: string; n
   );
 }
 
+/** Handle a slash command. Returns false if the command is unknown. */
+async function handleCommand(chatId: number, cmd: string): Promise<boolean> {
+  if (cmd === "/start") {
+    await sendMessage(chatId, "👋 <b>TangselKids Bot</b> siap.\n\n<b>Update data (tanpa perintah):</b>\n• Kirim <b>screenshot</b> biaya / kontak / alamat / kurikulum → saya OCR & susun perubahannya.\n• Kirim <b>foto sekolah</b> + caption nama sekolahnya → saya tambahkan ke galeri.\n\nSemua balasan berupa link pratinjau di halaman asli + tombol Terapkan/Batal — tidak ada yang live tanpa persetujuanmu.\n\nKetik /help kapan saja untuk daftar perintah.");
+    return true;
+  }
+  if (cmd === "/help" || cmd === "/info") {
+    await sendMessage(chatId, [
+      "🤖 <b>TangselKids Bot — perintah</b>",
+      "",
+      "/status — ringkasan OTP, banner situs, usulan menunggu, artikel terakhir",
+      "/article — buat draf artikel baru sekarang (±30 detik)",
+      "/help — tampilkan pesan ini",
+      "",
+      "<b>Tanpa perintah:</b>",
+      "• <b>Screenshot</b> biaya/kontak/alamat/kurikulum → OCR + usulan perubahan.",
+      "• <b>Foto sekolah</b> + caption nama sekolah → tambah ke galeri.",
+      "Semua lewat link pratinjau + tombol Terapkan/Batal.",
+    ].join("\n"));
+    return true;
+  }
+  if (cmd === "/status") {
+    const [w, banner, pend] = await Promise.all([
+      otpWindow(1440),
+      getOtpBannerFresh(),
+      kvList("pe:"),
+    ]);
+    let lastLine = "📰 Artikel terakhir: —";
+    try {
+      const { data } = await supabaseAdmin
+        .from("articles").select("title,is_published,created_at")
+        .order("created_at", { ascending: false }).limit(1);
+      const a = (data as { title: string; is_published: boolean }[] | null)?.[0];
+      if (a) lastLine = `📰 Artikel terakhir: ${a.is_published ? "✅ terbit" : "📝 draf"} — ${a.title}`;
+    } catch { /* ignore */ }
+    await sendMessage(chatId, [
+      "📊 <b>Status TangselKids</b>",
+      "",
+      `🔐 OTP (24 jam): ${w.sends} kirim · ${w.sendErrors} gagal · ${w.verifies} verifikasi`,
+      `🚩 Banner situs: ${banner.on ? `AKTIF — "${banner.message}"` : "mati"}`,
+      `📝 Usulan menunggu persetujuan: ${pend.length}`,
+      lastLine,
+      "",
+      "<i>Monitor kesehatan & OTP berjalan tiap 6 jam; artikel otomatis Sen/Rab/Jum.</i>",
+    ].join("\n"));
+    return true;
+  }
+  if (cmd === "/article") {
+    await sendMessage(chatId, "📝 Membuat draf artikel… (±30 detik)");
+    const draft = await generateDraft();
+    if (!draft) { await sendMessage(chatId, "⚠️ Gagal membuat draf. Cek kredit ANTHROPIC_API_KEY."); return true; }
+    const token = rnd();
+    await kvSetJSON(`ap:${token}`, { id: draft.id, slug: draft.slug });
+    const previewUrl = `${SITE}/berita/${draft.slug}?preview=${token}`;
+    await sendMessage(chatId, `📰 <b>Draf artikel baru</b>\n<b>${draft.title}</b>\n\n👀 Pratinjau di halaman asli:`, [
+      [{ text: "👀 Buka pratinjau", url: previewUrl }],
+      [{ text: "✅ Terbitkan", callback_data: `apub:${draft.id}` }, { text: "🗑️ Buang", callback_data: `adel:${draft.id}` }],
+    ]);
+    return true;
+  }
+  return false;
+}
+
 async function handleMessage(msg: Record<string, unknown>) {
   const chat = msg.chat as { id: number };
   const from = msg.from as { id: number; username?: string } | undefined;
@@ -67,9 +133,15 @@ async function handleMessage(msg: Record<string, unknown>) {
     return;
   }
 
-  const text = (msg.text as string | undefined) ?? (msg.caption as string | undefined);
-  if (typeof text === "string" && text.trim().startsWith("/start")) {
-    await sendMessage(chatId, "👋 <b>TangselKids Data Updater</b> siap.\n\nKirim:\n• <b>Screenshot biaya / kontak / alamat / kurikulum</b> → saya OCR & susun perubahannya.\n• <b>Foto sekolah</b> (gedung/kelas/kegiatan) → saya tambahkan ke galeri. <i>Beri caption nama sekolahnya</i>, karena foto biasanya tidak memuat nama.\n\nSemua perubahan dikirim balik sebagai link pratinjau di halaman asli + tombol Terapkan/Batal. Tidak ada yang live tanpa persetujuanmu.");
+  const rawText = msg.text as string | undefined;
+  const text = rawText ?? (msg.caption as string | undefined); // caption = school-name hint for images
+
+  // Slash commands (only on plain text, so a photo caption like a school name isn't one)
+  if (typeof rawText === "string" && rawText.trim().startsWith("/")) {
+    const cmd = rawText.trim().split(/\s+/)[0].replace(/@\w+$/, "").toLowerCase();
+    if (!(await handleCommand(chatId, cmd))) {
+      await sendMessage(chatId, "Perintah tidak dikenal. Ketik /help untuk daftar perintah.");
+    }
     return;
   }
 
