@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { kvGet, kvSet, kvDel, kvGetJSON, kvSetJSON } from "@/lib/kv";
 import { authorizeOwner, sendMessage, answerCallback, editMessageText, downloadFile } from "@/lib/telegram";
-import { analyzeImage, matchSchools, buildPatches, type Proposal } from "@/lib/data-updater";
+import { analyzeImage, matchSchools, buildPatches, uploadSchoolPhoto, nextPhotoSlot, type Proposal } from "@/lib/data-updater";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,19 +17,37 @@ type PendingEdit = {
 function rnd(): string { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
 
 async function proposeEdit(chatId: number, p: Proposal, match: { slug: string; name: string }, caption?: string) {
-  const { placePatch, dbPatch } = buildPatches(p);
-  if (Object.keys(dbPatch).length === 0) {
-    await sendMessage(chatId, `Saya mengenali <b>${match.name}</b> tapi belum bisa menyusun perubahannya dari gambar ini. Coba kirim ulang yang lebih jelas, atau tambahkan keterangan.`);
-    return;
+  let placePatch: Record<string, unknown>;
+  let dbPatch: Record<string, unknown>;
+  let summary = p.summary || "Perubahan data";
+
+  if (p.kind === "photo") {
+    if (!p.photoUrl) { await sendMessage(chatId, "Foto tidak tersedia lagi. Kirim ulang."); return; }
+    const slot = await nextPhotoSlot(match.slug);
+    if (!slot) {
+      await sendMessage(chatId, `<b>${match.name}</b> sudah punya 10 foto (maksimal). Hapus salah satu lewat admin dulu, lalu kirim lagi.`);
+      return;
+    }
+    placePatch = { photos: [...slot.existing, p.photoUrl] };
+    dbPatch = { [slot.column]: p.photoUrl };
+    summary = `Tambah 1 foto baru (akan jadi foto #${slot.existing.length + 1})`;
+  } else {
+    const built = buildPatches(p);
+    placePatch = built.placePatch; dbPatch = built.dbPatch;
+    if (Object.keys(dbPatch).length === 0) {
+      await sendMessage(chatId, `Saya mengenali <b>${match.name}</b> tapi belum bisa menyusun perubahannya dari gambar ini. Coba kirim ulang yang lebih jelas, atau tambahkan keterangan.`);
+      return;
+    }
   }
+
   const token = rnd();
   const pe: PendingEdit = {
     token, kind: p.kind, slug: match.slug, schoolName: match.name,
-    summary: p.summary || "Perubahan data", placePatch, dbPatch, createdAt: new Date().toISOString(),
+    summary, placePatch, dbPatch, createdAt: new Date().toISOString(),
   };
   await kvSetJSON(`pe:${token}`, pe);
   const previewUrl = `${SITE}/place/${match.slug}?preview=${token}`;
-  const kindLabel: Record<string, string> = { fees: "Biaya", contact: "Kontak", address: "Alamat", curriculum: "Kurikulum" };
+  const kindLabel: Record<string, string> = { fees: "Biaya", contact: "Kontak", address: "Alamat", curriculum: "Kurikulum", photo: "Foto" };
   await sendMessage(
     chatId,
     `📝 <b>${match.name}</b>\nUsulan update <b>${kindLabel[p.kind] ?? p.kind}</b>:\n${p.summary}\n\n👀 Lihat di halaman asli (sebelum diterapkan):`,
@@ -51,7 +69,7 @@ async function handleMessage(msg: Record<string, unknown>) {
 
   const text = (msg.text as string | undefined) ?? (msg.caption as string | undefined);
   if (typeof text === "string" && text.trim().startsWith("/start")) {
-    await sendMessage(chatId, "👋 <b>TangselKids Data Updater</b> siap.\n\nKirim <b>screenshot biaya / kontak / alamat / kurikulum</b> sekolah, nanti saya OCR, cocokkan sekolahnya, dan kasih link pratinjau di halaman asli + tombol Terapkan/Batal.\n\nTip: tambahkan keterangan nama sekolah kalau gambarnya tidak menyebut namanya.");
+    await sendMessage(chatId, "👋 <b>TangselKids Data Updater</b> siap.\n\nKirim:\n• <b>Screenshot biaya / kontak / alamat / kurikulum</b> → saya OCR & susun perubahannya.\n• <b>Foto sekolah</b> (gedung/kelas/kegiatan) → saya tambahkan ke galeri. <i>Beri caption nama sekolahnya</i>, karena foto biasanya tidak memuat nama.\n\nSemua perubahan dikirim balik sebagai link pratinjau di halaman asli + tombol Terapkan/Batal. Tidak ada yang live tanpa persetujuanmu.");
     return;
   }
 
@@ -73,7 +91,23 @@ async function handleMessage(msg: Record<string, unknown>) {
   if (!p) { await sendMessage(chatId, "Gagal membaca gambar (OCR). Coba kirim ulang yang lebih jelas."); return; }
 
   if (p.kind === "photo") {
-    await sendMessage(chatId, "📷 Ini terlihat seperti foto sekolah. Dukungan update foto sedang difinalkan — untuk sekarang saya menangani biaya, kontak, alamat, dan kurikulum.");
+    const nameGuess = (p.schoolNameGuess || text || "").trim();
+    if (!nameGuess) {
+      await sendMessage(chatId, "📷 Foto diterima, tapi saya tidak tahu ini sekolah mana (foto biasanya tidak memuat nama). Kirim ulang fotonya dengan <b>keterangan/caption nama sekolah</b>, mis. \"TK Al Kautsar Bintaro\".");
+      return;
+    }
+    const url = await uploadSchoolPhoto(file.base64, file.mime);
+    if (!url) { await sendMessage(chatId, "Gagal mengunggah foto ke penyimpanan. Coba lagi."); return; }
+    p.photoUrl = url;
+    const matches = await matchSchools(nameGuess);
+    if (matches.length === 0) {
+      await sendMessage(chatId, `Tidak menemukan sekolah "${nameGuess}". Kirim ulang foto dengan keterangan nama sekolah yang benar.`);
+      return;
+    }
+    if (matches.length === 1 || scoreGap(matches)) { await proposeEdit(chatId, p, matches[0], text); return; }
+    const token = rnd();
+    await kvSetJSON(`pp:${token}`, { proposal: p, caption: text });
+    await sendMessage(chatId, `Foto ini untuk sekolah mana?`, matches.map((m) => [{ text: m.name, callback_data: `pick:${token}:${m.slug}` }]));
     return;
   }
   if (p.kind === "unknown") {

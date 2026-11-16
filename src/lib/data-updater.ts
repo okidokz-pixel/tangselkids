@@ -19,6 +19,7 @@ export type Proposal = {
   contact?: { phone?: string; whatsapp?: string; email?: string; website?: string; instagram?: string } | null;
   address?: string | null;
   curriculum?: string | null;
+  photoUrl?: string | null; // set once the photo is uploaded to Storage (kind === "photo")
 };
 
 const SYSTEM = `You read Indonesian school fee sheets / info screenshots and extract structured data for a Tangerang Selatan school directory. Reply with ONLY one JSON object, no prose.
@@ -110,6 +111,45 @@ function scoreName(name: string, ql: string, words: string[]): number {
   for (const w of words) if (nl.includes(w.toLowerCase())) s += 2;
   if (nl.includes(ql)) s += 5;
   return s;
+}
+
+// ── Photo updates ────────────────────────────────────────────────────────────
+const PHOTO_BUCKET = "school-uploads"; // public bucket for owner-submitted photos
+const PHOTO_COLUMNS = ["photo_1", "photo_2", "photo_3", "photo_4", "photo_5",
+                       "photo_6", "photo_7", "photo_8", "photo_9", "photo_10"];
+
+/** Upload an image (base64) to the public photo bucket. Returns its public URL. */
+export async function uploadSchoolPhoto(base64: string, mime: string): Promise<string | null> {
+  try {
+    const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
+    const buffer = Buffer.from(base64, "base64");
+    const path = `bot/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const { error } = await supabaseAdmin.storage.from(PHOTO_BUCKET).upload(path, buffer, {
+      contentType: mime, upsert: false,
+    });
+    if (error) { console.error("[data-updater] photo upload failed:", error.message); return null; }
+    const { data } = supabaseAdmin.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+    return data.publicUrl || null;
+  } catch (e) { console.error("[data-updater] photo upload error:", e); return null; }
+}
+
+/** Find the first empty photo_N column for a school + its existing photo URLs (in order). */
+export async function nextPhotoSlot(slug: string): Promise<{ column: string; existing: string[] } | null> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("schools").select(PHOTO_COLUMNS.join(",")).eq("slug", slug).maybeSingle();
+    if (!data) return null;
+    const row = data as unknown as Record<string, string | null>;
+    const existing: string[] = [];
+    let column: string | null = null;
+    for (const col of PHOTO_COLUMNS) {
+      const v = row[col];
+      if (v && String(v).trim()) existing.push(String(v));
+      else if (!column) column = col;
+    }
+    if (!column) return null; // all 10 slots full
+    return { column, existing };
+  } catch (e) { console.error("[data-updater] slot lookup failed:", e); return null; }
 }
 
 /** Build the preview patch (camelCase Place fields) + DB patch (snake_case columns). */
