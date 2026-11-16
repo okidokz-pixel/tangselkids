@@ -20,7 +20,21 @@ export type Proposal = {
   address?: string | null;
   curriculum?: string | null;
   photoUrl?: string | null; // set once the photo is uploaded to Storage (kind === "photo")
+  summaryFees?: SummaryFees | null; // numeric chips derived from a fee sheet (kind === "fees")
 };
+
+export type SummaryFees = {
+  uangPangkalMin: number | null; uangPangkalMax: number | null;
+  priceMin: number | null; priceMax: number | null;
+  annualFeeMin: number | null; annualFeeMax: number | null;
+};
+
+/** Coerce a model value ("Rp 1.500.000" | 1500000 | null) to an integer or null. */
+function toRupiah(v: unknown): number | null {
+  if (typeof v === "number") return isFinite(v) ? Math.round(v) : null;
+  if (typeof v === "string") { const d = v.replace(/[^0-9]/g, ""); return d ? parseInt(d, 10) : null; }
+  return null;
+}
 
 const SYSTEM = `You read Indonesian school fee sheets / info screenshots and extract structured data for a Tangerang Selatan school directory. Reply with ONLY one JSON object, no prose.
 
@@ -42,7 +56,13 @@ Fees format ("fees"): { intro?, estimasi(bool), rows:[{label, amount, note?, sec
 - Do NOT include bank account numbers or the standard disclaimer in catatan.
 - Keep each amount short.
 
-JSON shape: {"school_name": "...", "kind": "...", "summary": "...", "fees": {...}|null, "tahun": "..."|null, "contact": {...}|null, "address": "..."|null, "curriculum": "..."|null}`;
+For kind "fees" ALSO include "summary_fees" — integer Rupiah (digits only, no "Rp"/dots), or null, read from the SAME sheet. These drive the summary price chips on listing cards:
+- uang_pangkal_min / uang_pangkal_max — the ONE-TIME uang pangkal / uang gedung / enrollment fee. Single value → set both equal.
+- price_min / price_max — the MONTHLY tuition (SPP / biaya bulanan). Single value → set both equal.
+- annual_fee_min / annual_fee_max — the per-YEAR fee (buku + materi + kegiatan tahunan) only if clearly annual; else null.
+Rules: digits only ("Rp 1.500.000" → 1500000). A range "A – B" → min=A, max=B. If a fee type is NOT shown on the sheet, use null for BOTH its min and max — never guess.
+
+JSON shape: {"school_name": "...", "kind": "...", "summary": "...", "fees": {...}|null, "tahun": "..."|null, "contact": {...}|null, "address": "..."|null, "curriculum": "..."|null, "summary_fees": {"uang_pangkal_min": 0|null, "uang_pangkal_max": 0|null, "price_min": 0|null, "price_max": 0|null, "annual_fee_min": 0|null, "annual_fee_max": 0|null}|null}`;
 
 export async function analyzeImage(base64: string, mime: string, caption?: string): Promise<Proposal | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
@@ -73,6 +93,14 @@ export async function analyzeImage(base64: string, mime: string, caption?: strin
       contact: j.contact ?? null,
       address: j.address ?? null,
       curriculum: j.curriculum ?? null,
+      summaryFees: j.summary_fees ? {
+        uangPangkalMin: toRupiah(j.summary_fees.uang_pangkal_min),
+        uangPangkalMax: toRupiah(j.summary_fees.uang_pangkal_max),
+        priceMin: toRupiah(j.summary_fees.price_min),
+        priceMax: toRupiah(j.summary_fees.price_max),
+        annualFeeMin: toRupiah(j.summary_fees.annual_fee_min),
+        annualFeeMax: toRupiah(j.summary_fees.annual_fee_max),
+      } : null,
     };
   } catch (e) {
     console.error("[data-updater] vision failed:", e);
@@ -160,6 +188,19 @@ export function buildPatches(p: Proposal): { placePatch: Record<string, unknown>
     placePatch.feeDetails = p.fees;
     dbPatch.fee_details = p.fees;
     if (p.tahun) { placePatch.tahunBiaya = p.tahun; dbPatch.tahun_biaya = p.tahun; }
+    // Keep the summary price chips in sync — only overwrite values the sheet actually showed.
+    if (p.summaryFees) {
+      const sf = p.summaryFees;
+      const fields: [keyof SummaryFees, string][] = [
+        ["uangPangkalMin", "uang_pangkal_min"], ["uangPangkalMax", "uang_pangkal_max"],
+        ["priceMin", "price_min"], ["priceMax", "price_max"],
+        ["annualFeeMin", "annual_fee_min"], ["annualFeeMax", "annual_fee_max"],
+      ];
+      for (const [camel, col] of fields) {
+        const v = sf[camel];
+        if (typeof v === "number") { dbPatch[col] = v; placePatch[camel] = v; }
+      }
+    }
   } else if (p.kind === "contact" && p.contact) {
     const c = p.contact;
     for (const [k, col] of [["phone", "phone"], ["whatsapp", "whatsapp"], ["email", "email"], ["website", "website"], ["instagram", "instagram"]] as const) {
